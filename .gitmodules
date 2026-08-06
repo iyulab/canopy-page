@@ -1,0 +1,3 @@
+[submodule "canopy"]
+	path = canopy
+	url = https://github.com/iyulab/canopy.git
