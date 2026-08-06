@@ -1,0 +1,54 @@
+{
+  "name": "@iyulab/canopy-page",
+  "version": "0.0.0",
+  "description": "Authoring pipeline for documentation sites: one settings file, integrity checks, and a build.",
+  "type": "module",
+  "license": "MIT",
+  "keywords": [
+    "documentation",
+    "static-site-generator",
+    "markdown",
+    "docs",
+    "canopy"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iyulab/canopy-page.git"
+  },
+  "bugs": {
+    "url": "https://github.com/iyulab/canopy-page/issues"
+  },
+  "homepage": "https://github.com/iyulab/canopy-page#readme",
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "canopy-page": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "check": "tsc --noEmit",
+    "lint": "biome lint ./src",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.0",
+    "@types/node": "^25.9.3",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
+  },
+  "dependencies": {
+    "@iyulab/canopy": "^0.1.0"
+  }
+}
