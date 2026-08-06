@@ -1,0 +1,8 @@
+node_modules/
+dist/
+coverage/
+*.log
+
+# Development tracking documents — not part of the published repo.
+claudedocs/
+CLAUDE.md
