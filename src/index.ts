@@ -11,6 +11,7 @@
  */
 export { buildSite, type BuildOptions } from "./build.js";
 export { checkSite, referenceFindings, siteFindings } from "./check.js";
+export { initSite, InitError, type InitResult } from "./init.js";
 export {
   extractReferences,
   isExternalUrl,
