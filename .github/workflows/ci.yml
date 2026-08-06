@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A new push supersedes whatever is still running for the same ref: the older
+# run's result is about to be irrelevant, and cancelling it frees a runner.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    # Most of this suite is milliseconds — checking a site never renders one.
+    # The exception is the end-to-end test, which starts a renderer and builds a
+    # real site: seconds on an idle machine, and considerably more on a shared
+    # two-core runner competing for cores. 20 minutes is well past any healthy
+    # run while keeping a stuck one from holding a runner for the 6h default.
+    timeout-minutes: 20
+    steps:
+      # The canopy submodule is not checked out: this package depends on the
+      # published one and runs its command line. The submodule is here to read.
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          # Matches the `engines` floor declared in package.json. Raising one
+          # without the other would let CI pass on a version consumers are told
+          # is unsupported, or the reverse.
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
