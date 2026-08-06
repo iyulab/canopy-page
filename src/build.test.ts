@@ -76,6 +76,9 @@ describe("buildSite", () => {
       "release-notes/2026-04.md": "# April\n",
       "release-notes/2026-08.md": "# August\n",
       "_drafts/wip.md": "# Work in progress\n",
+      // A settings file *inside* the site is content: only the one at its root
+      // configures the build, and the exclusion has to tell the two apart.
+      "guide/settings.json": '{"example": true}',
     });
     out = path.join(path.dirname(root), `${path.basename(root)}-out`);
     temporary.push(out);
@@ -119,9 +122,11 @@ describe("buildSite", () => {
     expect(published).not.toContain("_drafts");
   });
 
-  // The settings file configures the site; it is not part of its content.
-  it("keeps the settings file out of the published site", () => {
+  // The settings file configures the site; it is not part of its content. A
+  // file of the same name deeper in the site is content, and ships.
+  it("keeps the site's settings file out of the published site", async () => {
     expect(published).not.toContain("settings.json");
+    expect(await readdir(path.join(out, "guide"))).toContain("settings.json");
   });
 
   it("publishes a page no section covers, and says that it did", () => {

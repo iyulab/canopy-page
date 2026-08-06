@@ -2,7 +2,8 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { runCanopy } from "./canopy.js";
-import { loadSite, navFindings, reportFindings } from "./site.js";
+import { siteFindings } from "./check.js";
+import { loadSite, reportFindings } from "./site.js";
 
 /**
  * Building a site: check first, then hand the whole of it to canopy in one pass.
@@ -54,7 +55,9 @@ function canopyArgs(
 /** Build the site in `dir` into `out`, returning the exit code to leave with. */
 export async function buildSite({ dir, out }: BuildOptions): Promise<number> {
   const site = await loadSite(dir);
-  if (reportFindings(navFindings(site.nav))) return 1;
+  // The same checks `check` runs, on the same view of the site, so a build can
+  // never publish something a passing check said was sound.
+  if (reportFindings(await siteFindings(site))) return 1;
 
   // The spec is derived from settings and means nothing on its own, so it lives
   // in a temporary file rather than in the site or its output: writing it beside

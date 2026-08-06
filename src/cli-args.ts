@@ -7,20 +7,20 @@
  * one until the site is deployed.
  */
 
-/** The commands canopy-page understands. */
-export type Command = "build";
-
 /** A parsed invocation, or the reason it could not be parsed. */
 export type ParsedArgs =
-  | { ok: true; command: Command; dir: string; out: string }
+  | { ok: true; command: "build"; dir: string; out: string }
+  | { ok: true; command: "check"; dir: string }
   | { ok: false; error: string };
 
 export const USAGE = [
-  "Usage: canopy-page build [site-dir] [options]",
+  "Usage: canopy-page <command> [site-dir] [options]",
+  "",
+  "  build [site-dir]           Check the site, then publish it",
+  "  check [site-dir]           Check the site without publishing it",
   "",
   "  [site-dir]                 Folder holding settings.json (defaults to .)",
-  "",
-  "  -o, --out <dir>            Where to write the site (defaults to ./site)",
+  "  -o, --out <dir>            Where build writes the site (defaults to ./site)",
 ].join("\n");
 
 const OUT_FLAGS = new Set(["-o", "--out"]);
@@ -28,7 +28,7 @@ const OUT_FLAGS = new Set(["-o", "--out"]);
 export function parseArgs(argv: readonly string[]): ParsedArgs {
   const [command, ...rest] = argv;
   if (command === undefined) return { ok: false, error: USAGE };
-  if (command === "build") return parseBuild(rest);
+  if (command === "build" || command === "check") return parseCommand(command, rest);
   if (command.startsWith("-")) {
     // A flag where a command belongs usually means the command was forgotten,
     // and "unknown command --out" would send someone looking for the wrong bug.
@@ -37,13 +37,18 @@ export function parseArgs(argv: readonly string[]): ParsedArgs {
   return { ok: false, error: `${USAGE}\n\nUnknown command "${command}".` };
 }
 
-function parseBuild(argv: readonly string[]): ParsedArgs {
+function parseCommand(command: "build" | "check", argv: readonly string[]): ParsedArgs {
   const positional: string[] = [];
   let out: string | undefined;
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i] as string;
     if (OUT_FLAGS.has(arg)) {
+      if (command === "check") {
+        // check writes nothing, so an output directory is not a harmless extra:
+        // whoever passed it expects a site to appear somewhere.
+        return { ok: false, error: `${arg} is for build, which writes a site; check does not.` };
+      }
       const value = argv[i + 1];
       if (value === undefined || value.startsWith("-")) {
         return { ok: false, error: `${arg} needs a directory.` };
@@ -64,5 +69,7 @@ function parseBuild(argv: readonly string[]): ParsedArgs {
     return { ok: false, error: `${USAGE}\n\nUnexpected argument "${positional[1]}".` };
   }
 
-  return { ok: true, command: "build", dir: positional[0] ?? ".", out: out ?? "site" };
+  const dir = positional[0] ?? ".";
+  if (command === "check") return { ok: true, command, dir };
+  return { ok: true, command, dir, out: out ?? "site" };
 }

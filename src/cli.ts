@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { buildSite } from "./build.js";
+import { checkSite } from "./check.js";
 import { parseArgs } from "./cli-args.js";
 import { SiteError } from "./site.js";
 
@@ -11,7 +12,10 @@ async function main(): Promise<void> {
     return;
   }
 
-  process.exitCode = await buildSite({ dir: args.dir, out: args.out });
+  process.exitCode =
+    args.command === "check"
+      ? await checkSite(args.dir)
+      : await buildSite({ dir: args.dir, out: args.out });
 }
 
 main().catch((error: unknown) => {

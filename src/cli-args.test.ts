@@ -38,13 +38,31 @@ describe("parseArgs", () => {
   it("shows usage with no arguments", () => {
     expect(parseArgs([])).toMatchObject({
       ok: false,
-      error: expect.stringContaining("Usage: canopy-page build"),
+      error: expect.stringContaining("Usage: canopy-page <command>"),
     });
   });
 
   it("says a command is missing when given a flag first", () => {
     expect(parseArgs(["-o", "dist"])).toMatchObject({
       error: expect.stringContaining('Expected a command before "-o"'),
+    });
+  });
+
+  it("parses check, which takes no output directory", () => {
+    expect(parseArgs(["check"])).toEqual({ ok: true, command: "check", dir: "." });
+    expect(parseArgs(["check", "docs/site"])).toEqual({
+      ok: true,
+      command: "check",
+      dir: "docs/site",
+    });
+  });
+
+  // Passing an output directory to a command that writes nothing is a
+  // misunderstanding worth naming, not an extra to ignore.
+  it("refuses an output directory for check", () => {
+    expect(parseArgs(["check", "-o", "dist"])).toMatchObject({
+      ok: false,
+      error: expect.stringContaining("check does not"),
     });
   });
 

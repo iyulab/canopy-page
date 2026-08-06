@@ -9,6 +9,21 @@
  * The command line is the intended way in. This entry point exposes the same
  * pieces for a caller that wants to run a check inside its own tooling.
  */
+export { buildSite, type BuildOptions } from "./build.js";
+export { checkSite, referenceFindings, siteFindings } from "./check.js";
+export {
+  extractReferences,
+  isExternalUrl,
+  type Reference,
+} from "./references.js";
+export {
+  loadSite,
+  navFindings,
+  reportFindings,
+  SiteError,
+  type Finding,
+  type LoadedSite,
+} from "./site.js";
 export {
   parseSettings,
   SettingsError,
