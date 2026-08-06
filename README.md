@@ -127,6 +127,11 @@ oversight rather than a decision to hide it.
 Where no ordering is asked for at all, no navigation spec is produced and canopy derives the
 navigation itself. Ordering derived here follows file names rather than page titles.
 
+A page is shown under the name canopy gives it: its frontmatter `title` if it has one, and
+otherwise its filename. `label` overrides that for a page listed in `items`, so a page whose
+filename reads badly can be named without touching the document — worth knowing for a site whose
+files are named in one language and written in another.
+
 ## What `check` reports
 
 Errors — these stop a build:
