@@ -1,6 +1,6 @@
 {
   "name": "@iyulab/canopy-page",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Authoring pipeline for documentation sites: one settings file, integrity checks, and a build.",
   "type": "module",
   "license": "MIT",

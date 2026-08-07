@@ -7,6 +7,24 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [0.2.0] — 2026-08-07
+
+### Added
+
+- `tokens`: a CSS file of design-token overrides, relative to the settings file. It is appended
+  after the renderer's own tokens rather than replacing them, so a file naming one custom
+  property keeps every other default. It is configuration rather than content, so it is excluded
+  from the published site automatically — the same file does not ship twice
+- `logo` and `home`: a site can now say what makes a documentation set read as part of the
+  product it belongs to. `logo` is an image shown beside the site title and must be a published
+  file, the opposite direction from `tokens`. `home` is a link back to the surrounding site —
+  `{ url, label }`, both required together, since naming half of it is not a valid setting. There
+  is no default `label`, because link text has to be written in the site's own language
+- `siteUrl`: an absolute URL naming where the built site will stand. Every link the renderer
+  writes is relative, which is what lets a site be served from any sub-path — and exactly why a
+  sitemap, whose entries must be absolute, needs this stated separately. Setting it makes `build`
+  write `sitemap.xml` and a `robots.txt` pointing at it; leaving it unset writes neither
+
 ## [0.1.0] — 2026-08-07
 
 First release. Development before it is recorded here in one block rather than reconstructed as

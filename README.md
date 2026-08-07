@@ -85,8 +85,35 @@ unpublished.
 | `description` | Fills `<meta name="description">`, which is what link previews show |
 | `lang` | BCP 47 tag for `<html lang>`. Worth setting for any non-English site: assistive technology reads pronunciation from it |
 | `icon` | Favicon, relative to the settings file. Must be a published file |
+| `tokens` | CSS of design-token overrides, relative to the settings file. Appended *after* canopy's own tokens, so a file naming one value keeps the rest. It is configuration rather than content, so — unlike `icon` and `logo` — it is excluded from the published site automatically. Absent: canopy's default palette |
+| `logo` | Image shown beside the site title, relative to the settings file. Must be a published file — the opposite direction from `tokens`, because this one is content. Absent: the sidebar header shows the title text alone |
+| `home` | A link back to the site this documentation sits beside: `{ url, label }`. Both are required together — naming half of it is not a valid setting. `url` must be an absolute http(s) URL; there is no default `label`, because link text has to be written in the site's own language. Absent: no link back to a surrounding site is rendered |
+| `siteUrl` | Absolute URL naming where the built site will stand. Every link canopy writes is relative, which is what lets a site be served from any sub-path — and exactly why a sitemap, whose entries must be absolute, needs this separately. **Only** when it is set does `build` write `sitemap.xml` and a `robots.txt` pointing at it. Absent: neither file is written |
 | `exclude` | Paths to leave unpublished: a directory (`_drafts` or `_drafts/**`), an extension at any depth (`*.tmp`), or one exact path. Patterns are relative to the settings file, and a shape outside that list — `images/*.md` — is refused rather than left to match nothing |
 | `sections` | Ordered regions of the site — see below |
+
+`tokens` is two blocks in practice, not one — a bare `:root` and a `prefers-color-scheme: dark`
+override:
+
+```css
+/* brand.css */
+:root {
+  --accent: #0a7c5a;
+  --accent-hover: #096a4d;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --accent: #4ecfa2;
+    --accent-hover: #6fdcb5;
+  }
+}
+```
+
+canopy's own tokens end with a `prefers-color-scheme: dark` block, and a media query adds no
+specificity over a bare selector — so a bare `:root` appended after that block wins in *both*
+schemes. A one-block file naming only a light-mode colour would ship that colour onto a dark
+sidebar too.
 
 The settings file itself is never published, and neither is anything `exclude` names. A file
 named `settings.json` deeper in the site is content, and ships.
@@ -167,6 +194,10 @@ or inline code are ignored: a fenced example of a broken link is documentation, 
 What canopy states it leaves alone is left alone here too — absolute URLs, protocol-relative URLs,
 bare fragments, and paths above the site root. A target ending in `/` names a directory, and is
 answered by the index page that directory is entered by.
+
+`build` writes two files `check` never sees: with `siteUrl` set, a `sitemap.xml` listing every
+published page and a `robots.txt` pointing at it. Neither is checked, because neither exists until
+the build has already succeeded.
 
 ## What belongs where
 
