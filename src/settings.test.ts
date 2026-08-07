@@ -103,6 +103,16 @@ describe("parseSettings", () => {
   it("refuses a home URL that is not absolute", () => {
     rejects(JSON.stringify({ home: { url: "/", label: "홈" } }), /settings\.home\.url/);
   });
+
+  it("reads a site URL", () => {
+    expect(parseSettings(JSON.stringify({ siteUrl: "https://example.test/help" }))).toEqual({
+      siteUrl: "https://example.test/help",
+    });
+  });
+
+  it("refuses a site URL that is not absolute", () => {
+    rejects(JSON.stringify({ siteUrl: "/help" }), /settings\.siteUrl/);
+  });
 });
 
 describe("parseSettings sections", () => {

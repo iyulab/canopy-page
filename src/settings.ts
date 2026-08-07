@@ -95,6 +95,14 @@ export interface Settings {
    * state unrepresentable rather than merely rejected.
    */
   home?: { url: string; label: string };
+  /**
+   * Where the built site will stand, as an absolute URL.
+   *
+   * Every link canopy writes is relative, so a site needs this for nothing except
+   * the things that must be absolute: `sitemap.xml` and the robots file that
+   * points at it. Absent, neither is written.
+   */
+  siteUrl?: string;
 }
 
 /**
@@ -115,6 +123,7 @@ const SETTINGS_KEYS = new Set([
   "sections",
   "logo",
   "home",
+  "siteUrl",
 ]);
 
 const SECTION_KEYS = new Set(["path", "label", "order", "items"]);
@@ -278,7 +287,7 @@ export function parseSettings(json: string): Settings {
   const value = asObject(raw, "settings", "expected a JSON object");
   rejectUnknownKeys(value, SETTINGS_KEYS, "settings");
 
-  const { title, description, lang, icon, tokens, exclude, sections, logo, home } = value;
+  const { title, description, lang, icon, tokens, exclude, sections, logo, home, siteUrl } = value;
   if (title !== undefined) asString(title, "settings.title");
   if (description !== undefined) asString(description, "settings.description");
   if (lang !== undefined) {
@@ -308,6 +317,13 @@ export function parseSettings(json: string): Settings {
     parsedHome = { url, label: asString(object.label, "settings.home.label") };
   }
 
+  if (siteUrl !== undefined) {
+    const url = asString(siteUrl, "settings.siteUrl");
+    if (!/^https?:\/\//i.test(url)) {
+      fail(`settings.siteUrl: "${url}" must be an absolute http(s) URL`);
+    }
+  }
+
   return {
     ...(title === undefined ? {} : { title: title as string }),
     ...(description === undefined ? {} : { description: description as string }),
@@ -333,5 +349,6 @@ export function parseSettings(json: string): Settings {
         }),
     ...(logo === undefined ? {} : { logo: asRelativePath(logo, "settings.logo") }),
     ...(parsedHome === undefined ? {} : { home: parsedHome }),
+    ...(siteUrl === undefined ? {} : { siteUrl: siteUrl as string }),
   };
 }

@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { runCanopy } from "./canopy.js";
 import { siteFindings } from "./check.js";
+import { listHtmlFiles, robotsTxt, sitemapXml } from "./sitemap.js";
 import { loadSite, reportFindings } from "./site.js";
 
 /**
@@ -83,7 +84,18 @@ export async function buildSite({ dir, out }: BuildOptions): Promise<number> {
       navPath = path.join(workDir, "nav.json");
       await writeFile(navPath, JSON.stringify(site.nav.spec, null, 2), "utf8");
     }
-    return await runCanopy(canopyArgs(site, path.resolve(out), navPath));
+    const code = await runCanopy(canopyArgs(site, path.resolve(out), navPath));
+    // Only after canopy succeeded, and only over what it actually wrote: a
+    // sitemap listing pages a failed build never produced would be a lie a
+    // crawler acts on.
+    if (code === 0 && site.settings.siteUrl !== undefined) {
+      const outDir = path.resolve(out);
+      const pages = await listHtmlFiles(outDir);
+      await writeFile(path.join(outDir, "sitemap.xml"), sitemapXml(site.settings.siteUrl, pages), "utf8");
+      await writeFile(path.join(outDir, "robots.txt"), robotsTxt(site.settings.siteUrl), "utf8");
+      console.log(`canopy-page: sitemap.xml with ${pages.length} page(s)`);
+    }
+    return code;
   } finally {
     if (workDir !== undefined) await rm(workDir, { recursive: true, force: true });
   }
