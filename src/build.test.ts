@@ -83,6 +83,17 @@ describe("canopyArgs", () => {
     // Configuration, not content: canopy would otherwise also copy it as an asset.
     expect(args.join(" ")).toContain("--exclude brand.css");
   });
+
+  it("passes the logo and both halves of the home link", () => {
+    const args = canopyArgs(
+      siteWith({ logo: "assets/logo.svg", home: { url: "https://example.test/", label: "제품 홈" } }),
+      "/out",
+      undefined,
+    );
+    expect(args.join(" ")).toContain("--site-logo assets/logo.svg");
+    expect(args.join(" ")).toContain("--home-url https://example.test/");
+    expect(args).toContain("제품 홈");
+  });
 });
 
 describe("buildSite", () => {

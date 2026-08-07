@@ -49,6 +49,10 @@ export function canopyArgs(
     ...(settings.tokens === undefined
       ? []
       : ["--tokens-css", path.join(site.root, settings.tokens)]),
+    ...(settings.logo === undefined ? [] : ["--site-logo", settings.logo]),
+    ...(settings.home === undefined
+      ? []
+      : ["--home-url", settings.home.url, "--home-label", settings.home.label]),
     ...(navPath === undefined ? [] : ["--nav", navPath]),
     // The settings file is configuration rather than content, and canopy has no
     // reason to know it exists; excluding it keeps it off the published site.

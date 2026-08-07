@@ -85,6 +85,16 @@ export interface Settings {
   exclude?: string[];
   /** Ordered regions of the site. Without them, navigation follows the folder tree. */
   sections?: SettingsSection[];
+  /** Logo shown beside the site title, relative to the settings file. Must be a published file. */
+  logo?: string;
+  /**
+   * A link back to the site this documentation sits beside.
+   *
+   * Both halves or neither: a URL with no text renders an empty link, and text
+   * with no URL links nowhere. Stating them as one object makes the half-filled
+   * state unrepresentable rather than merely rejected.
+   */
+  home?: { url: string; label: string };
 }
 
 /**
@@ -103,9 +113,13 @@ const SETTINGS_KEYS = new Set([
   "tokens",
   "exclude",
   "sections",
+  "logo",
+  "home",
 ]);
 
 const SECTION_KEYS = new Set(["path", "label", "order", "items"]);
+
+const HOME_KEYS = new Set(["url", "label"]);
 
 const NAV_ITEM_KEYS = new Set(["label", "path", "items"]);
 
@@ -264,7 +278,7 @@ export function parseSettings(json: string): Settings {
   const value = asObject(raw, "settings", "expected a JSON object");
   rejectUnknownKeys(value, SETTINGS_KEYS, "settings");
 
-  const { title, description, lang, icon, tokens, exclude, sections } = value;
+  const { title, description, lang, icon, tokens, exclude, sections, logo, home } = value;
   if (title !== undefined) asString(title, "settings.title");
   if (description !== undefined) asString(description, "settings.description");
   if (lang !== undefined) {
@@ -278,6 +292,21 @@ export function parseSettings(json: string): Settings {
   }
   if (exclude !== undefined && !Array.isArray(exclude)) fail("settings.exclude: must be an array");
   if (sections !== undefined && !Array.isArray(sections)) fail("settings.sections: must be an array");
+
+  let parsedHome: { url: string; label: string } | undefined;
+  if (home !== undefined) {
+    const object = asObject(home, "settings.home", 'expected an object with "url" and "label"');
+    rejectUnknownKeys(object, HOME_KEYS, "settings.home");
+    if (object.url === undefined) fail('settings.home.url: needed alongside "label"');
+    if (object.label === undefined) fail('settings.home.label: needed alongside "url"');
+    const url = asString(object.url, "settings.home.url");
+    // The target is normally outside the published site, so a relative path has
+    // nothing here to resolve against.
+    if (!/^https?:\/\//i.test(url)) {
+      fail(`settings.home.url: "${url}" must be an absolute http(s) URL`);
+    }
+    parsedHome = { url, label: asString(object.label, "settings.home.label") };
+  }
 
   return {
     ...(title === undefined ? {} : { title: title as string }),
@@ -302,5 +331,7 @@ export function parseSettings(json: string): Settings {
             parseSection(section, `settings.sections[${i}]`),
           ),
         }),
+    ...(logo === undefined ? {} : { logo: asRelativePath(logo, "settings.logo") }),
+    ...(parsedHome === undefined ? {} : { home: parsedHome }),
   };
 }

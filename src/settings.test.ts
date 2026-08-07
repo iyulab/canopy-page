@@ -80,6 +80,29 @@ describe("parseSettings", () => {
       "*.tmp",
     ]);
   });
+
+  it("reads a logo and a home link", () => {
+    expect(
+      parseSettings(
+        JSON.stringify({
+          logo: "assets/logo.svg",
+          home: { url: "https://example.test/", label: "제품 홈" },
+        }),
+      ),
+    ).toEqual({
+      logo: "assets/logo.svg",
+      home: { url: "https://example.test/", label: "제품 홈" },
+    });
+  });
+
+  it("needs both halves of a home link", () => {
+    rejects(JSON.stringify({ home: { url: "https://example.test/" } }), /settings\.home\.label/);
+    rejects(JSON.stringify({ home: { label: "제품 홈" } }), /settings\.home\.url/);
+  });
+
+  it("refuses a home URL that is not absolute", () => {
+    rejects(JSON.stringify({ home: { url: "/", label: "홈" } }), /settings\.home\.url/);
+  });
 });
 
 describe("parseSettings sections", () => {
