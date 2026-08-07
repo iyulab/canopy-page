@@ -30,7 +30,7 @@ export interface BuildOptions {
  * navigation spec is the one thing that has to be materialized, since canopy
  * reads it from a file.
  */
-function canopyArgs(
+export function canopyArgs(
   site: Awaited<ReturnType<typeof loadSite>>,
   out: string,
   navPath: string | undefined,
@@ -44,10 +44,18 @@ function canopyArgs(
     ...(settings.description === undefined ? [] : ["--site-description", settings.description]),
     ...(settings.lang === undefined ? [] : ["--lang", settings.lang]),
     ...(settings.icon === undefined ? [] : ["--site-icon", settings.icon]),
+    // canopy resolves --tokens-css against the working directory rather than the
+    // vault, so it gets an absolute path — unlike --site-icon just above.
+    ...(settings.tokens === undefined
+      ? []
+      : ["--tokens-css", path.join(site.root, settings.tokens)]),
     ...(navPath === undefined ? [] : ["--nav", navPath]),
     // The settings file is configuration rather than content, and canopy has no
     // reason to know it exists; excluding it keeps it off the published site.
     ...["--exclude", "settings.json"],
+    // Configuration, not content — the same reason settings.json is excluded.
+    // Without this the same CSS ships twice: once as tokens.css, once copied.
+    ...(settings.tokens === undefined ? [] : ["--exclude", settings.tokens]),
     ...(settings.exclude ?? []).flatMap((pattern) => ["--exclude", pattern]),
   ];
 }

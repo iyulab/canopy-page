@@ -54,6 +54,16 @@ describe("parseSettings", () => {
     rejects(JSON.stringify({ icon: "/absolute.png" }), /must be relative/);
   });
 
+  it("reads a tokens path", () => {
+    expect(parseSettings(JSON.stringify({ tokens: "brand.css" }))).toEqual({
+      tokens: "brand.css",
+    });
+  });
+
+  it("refuses a tokens path that leaves the site", () => {
+    rejects(JSON.stringify({ tokens: "../shared/brand.css" }), /settings\.tokens/);
+  });
+
   it("normalizes a path written with backslashes or a trailing slash", () => {
     expect(parseSettings(JSON.stringify({ icon: "assets\\favicon.png" })).icon).toBe(
       "assets/favicon.png",

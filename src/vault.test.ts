@@ -108,6 +108,32 @@ describe("listSiteFiles", () => {
   });
 });
 
+describe("listSite configFiles", () => {
+  let root: string;
+
+  beforeAll(async () => {
+    root = await mkdtemp(path.join(tmpdir(), "canopy-page-vault-"));
+    const write = async (rel: string) => {
+      await mkdir(path.join(root, path.dirname(rel)), { recursive: true });
+      await writeFile(path.join(root, rel), "x");
+    };
+    await write("index.md");
+    await write("brand.css");
+  });
+
+  afterAll(async () => {
+    await rm(root, { recursive: true, force: true });
+  });
+
+  // Written into a temp dir the way the other tests in this file do — follow
+  // that file's existing fixture helper rather than inventing one.
+  it("keeps a configuration file out of the listing, like the settings file", async () => {
+    const listing = await listSite(root, [], ["brand.css"]);
+    expect(listing.files).not.toContain("brand.css");
+    expect(listing.unusedExclusions).toEqual([]);
+  });
+});
+
 describe("unusedExclusions", () => {
   async function unused(files: string[], patterns: string[]): Promise<string[]> {
     const root = await mkdtemp(path.join(tmpdir(), "canopy-page-vault-"));

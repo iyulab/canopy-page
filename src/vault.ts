@@ -149,12 +149,15 @@ export interface SiteListing {
 export async function listSite(
   root: string,
   exclude: readonly string[] = [],
+  /** Files that configure the site rather than belong to it — never published. */
+  configFiles: readonly string[] = [],
 ): Promise<SiteListing> {
   const found: string[] = [];
   const use = new ExclusionUse(exclude.filter((pattern) => pattern.trim() !== ""));
   await walk(root, "", found, use);
+  const config = new Set([SETTINGS_FILENAME, ...configFiles]);
   return {
-    files: found.filter((file) => file !== SETTINGS_FILENAME).sort(),
+    files: found.filter((file) => !config.has(file)).sort(),
     unusedExclusions: use.unused(),
   };
 }

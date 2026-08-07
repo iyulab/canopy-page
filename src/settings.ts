@@ -73,6 +73,14 @@ export interface Settings {
   lang?: string;
   /** Favicon, relative to the settings file. Must be a published file. */
   icon?: string;
+  /**
+   * CSS of design-token overrides, relative to the settings file.
+   *
+   * Appended after canopy's own tokens, so a file naming one value keeps the
+   * rest. It is configuration rather than content: it is read at build time and
+   * left off the published site.
+   */
+  tokens?: string;
   /** Paths to leave unpublished: a directory, an extension (`*.tmp`), or one exact path. */
   exclude?: string[];
   /** Ordered regions of the site. Without them, navigation follows the folder tree. */
@@ -92,6 +100,7 @@ const SETTINGS_KEYS = new Set([
   "description",
   "lang",
   "icon",
+  "tokens",
   "exclude",
   "sections",
 ]);
@@ -255,7 +264,7 @@ export function parseSettings(json: string): Settings {
   const value = asObject(raw, "settings", "expected a JSON object");
   rejectUnknownKeys(value, SETTINGS_KEYS, "settings");
 
-  const { title, description, lang, icon, exclude, sections } = value;
+  const { title, description, lang, icon, tokens, exclude, sections } = value;
   if (title !== undefined) asString(title, "settings.title");
   if (description !== undefined) asString(description, "settings.description");
   if (lang !== undefined) {
@@ -275,6 +284,7 @@ export function parseSettings(json: string): Settings {
     ...(description === undefined ? {} : { description: description as string }),
     ...(lang === undefined ? {} : { lang: lang as string }),
     ...(icon === undefined ? {} : { icon: asRelativePath(icon, "settings.icon") }),
+    ...(tokens === undefined ? {} : { tokens: asRelativePath(tokens, "settings.tokens") }),
     ...(exclude === undefined
       ? {}
       : {

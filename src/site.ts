@@ -65,7 +65,11 @@ export async function loadSite(dir: string): Promise<LoadedSite> {
     throw error;
   }
 
-  const listing = await listSite(root, settings.exclude);
+  const listing = await listSite(
+    root,
+    settings.exclude,
+    settings.tokens === undefined ? [] : [settings.tokens],
+  );
   const index = indexSite(listing.files);
   return {
     root,

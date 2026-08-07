@@ -2,7 +2,11 @@ import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { buildSite } from "./build.js";
+import { buildSite, canopyArgs } from "./build.js";
+import type { Settings } from "./settings.js";
+import type { LoadedSite } from "./site.js";
+import { indexSite } from "./vault.js";
+import { translateNav } from "./nav.js";
 
 /**
  * These run the real canopy, on a real folder, and read the files that come out.
@@ -53,6 +57,33 @@ function sidebarOrder(html: string): string[] {
   const sidebar = html.slice(html.indexOf("canopy-sidebar"), html.indexOf("canopy-main"));
   return [...sidebar.matchAll(/href="([^"]+)"/g)].map((match) => match[1] as string);
 }
+
+describe("canopyArgs", () => {
+  // A translation test, not a build: it only needs a LoadedSite shape, not a
+  // real site on disk, so it runs without spawning a process.
+  const SITE_ROOT = path.join(tmpdir(), "canopy-page-build-args-site");
+
+  function siteWith(overrides: Partial<Settings>): LoadedSite {
+    const settings: Settings = { ...overrides };
+    const index = indexSite([]);
+    return {
+      root: SITE_ROOT,
+      settings,
+      index,
+      nav: translateNav(settings, index),
+      unusedExclusions: [],
+    };
+  }
+
+  it("passes a tokens file as an absolute path and keeps it off the site", () => {
+    const args = canopyArgs(siteWith({ tokens: "brand.css" }), "/out", undefined);
+    expect(args).toContain("--tokens-css");
+    // canopy resolves this flag against the working directory, not the vault.
+    expect(args[args.indexOf("--tokens-css") + 1]).toBe(path.join(SITE_ROOT, "brand.css"));
+    // Configuration, not content: canopy would otherwise also copy it as an asset.
+    expect(args.join(" ")).toContain("--exclude brand.css");
+  });
+});
 
 describe("buildSite", () => {
   let out: string;
