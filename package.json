@@ -49,6 +49,6 @@
     "vitest": "^4.1.9"
   },
   "dependencies": {
-    "@iyulab/canopy": "^0.1.2"
+    "@iyulab/canopy": "^0.2.0"
   }
 }
