@@ -163,7 +163,7 @@ export function targetPath(url: string): string {
  * undefined, and the reference is left alone — which is what the renderer does
  * with it, and the checker's job is to agree with the renderer.
  *
- * TODO(upstream: claudedocs/upstream-issues/ISSUE-canopy-20260807-link-target-resolution.md)
+ * TODO(upstream: claudedocs/issues/ISSUE-canopy-20260807-link-target-resolution.md)
  * — canopy applies this same rule when it rewrites links, and does not expose
  * it, so the rule is spelled out twice and can drift. It just did: canopy
  * learned to read this encoding one release before this file did.
