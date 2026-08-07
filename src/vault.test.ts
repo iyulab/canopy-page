@@ -2,7 +2,13 @@ import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { indexSite, listSiteFiles, matchesPattern, toPageKey } from "./vault.js";
+import {
+  indexSite,
+  listSiteFiles,
+  matchesPattern,
+  toPageKey,
+  unusedExclusions,
+} from "./vault.js";
 
 describe("matchesPattern", () => {
   it("matches a directory, written with or without the suffix", () => {
@@ -105,5 +111,29 @@ describe("listSiteFiles", () => {
       "guide/install.md",
       "index.md",
     ]);
+  });
+});
+
+describe("unusedExclusions", () => {
+  it("names a pattern that excluded nothing", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "canopy-page-vault-"));
+    await mkdir(path.join(root, "docs/_archive"), { recursive: true });
+    await writeFile(path.join(root, "docs/_archive/old.md"), "x");
+    await writeFile(path.join(root, "index.md"), "x");
+
+    // "_archive" reads like it names that folder, but patterns are relative to
+    // the site root, so it matches nothing and the folder ships.
+    expect(await unusedExclusions(root, ["_archive", "docs/_archive"])).toEqual(["_archive"]);
+    await rm(root, { recursive: true, force: true });
+  });
+
+  // An extension pattern is defensive: "*.tmp" in a site with no scratch files
+  // is a rule about what may never ship, not a claim that something is there.
+  it("says nothing about an extension pattern that matched nothing", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "canopy-page-vault-"));
+    await writeFile(path.join(root, "index.md"), "x");
+
+    expect(await unusedExclusions(root, ["*.tmp"])).toEqual([]);
+    await rm(root, { recursive: true, force: true });
   });
 });

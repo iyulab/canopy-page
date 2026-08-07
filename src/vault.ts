@@ -50,6 +50,37 @@ export function createExcluder(patterns: readonly string[] = []): (filePath: str
   return (filePath) => active.some((pattern) => matchesPattern(filePath, pattern));
 }
 
+/** Does this pattern name a place, rather than a kind of file? */
+function namesAPlace(pattern: string): boolean {
+  return !pattern.replace(/^\.\//, "").startsWith("*.");
+}
+
+/**
+ * Exclusion patterns that left the site exactly as they found it.
+ *
+ * A pattern that excludes nothing is usually a path written from the wrong
+ * place — `_archive` for what is really `docs/_archive` — and it fails the way
+ * a mistyped key would: the file looks right and the folder ships anyway. Saying
+ * so is the same promise strict validation makes about keys.
+ *
+ * An extension pattern is left alone, because it is a different kind of
+ * statement. `*.tmp` in a site with no scratch files is a rule about what may
+ * never ship, not a claim that something is there to remove.
+ */
+export async function unusedExclusions(
+  root: string,
+  patterns: readonly string[] = [],
+): Promise<string[]> {
+  const candidates = patterns.filter((pattern) => pattern.trim() !== "" && namesAPlace(pattern));
+  if (candidates.length === 0) return [];
+
+  // Everything the site holds, ignoring the settings, so a pattern can be asked
+  // what it would have matched rather than what survived it.
+  const all: string[] = [];
+  await walk(root, "", all, () => false);
+  return candidates.filter((pattern) => !all.some((file) => matchesPattern(file, pattern)));
+}
+
 async function walk(
   root: string,
   rel: string,

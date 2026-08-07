@@ -199,3 +199,24 @@ describe("translateNav", () => {
     expect(orphans).not.toContain("assets/logo.png");
   });
 });
+
+describe("a section's own index page", () => {
+  // The section heading already links its index page, so a glob skips it
+  // (`expandGlob` filters what is placed). An explicit mention is the same
+  // request written a different way, and used to come back as "placed more
+  // than once" — a contradiction, since the settings named it once.
+  it("is not placed twice when items name it explicitly", () => {
+    const nav = translate({
+      sections: [{ path: "guide", items: ["guide/index", "guide/install"] }],
+    });
+    expect(nav.duplicates).toEqual([]);
+    expect(nav.missing).toEqual([]);
+  });
+
+  it("still reports a page the settings really do list twice", () => {
+    const nav = translate({
+      sections: [{ path: "guide", items: ["guide/install", "guide/install"] }],
+    });
+    expect(nav.duplicates).toEqual(["guide/install.md"]);
+  });
+});

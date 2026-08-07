@@ -161,4 +161,21 @@ describe("parseSettings sections", () => {
       /sections\[0\]: unknown key "sort"/,
     );
   });
+
+  // The exclusion dialect is small on purpose: a directory, that directory and
+  // everything under it, an extension at any depth, or one exact path. A shape
+  // outside it matches nothing, and a pattern that silently excludes nothing is
+  // the same failure as a key that is silently dropped.
+  it("rejects a wildcard the exclusion dialect does not have", () => {
+    rejects(
+      JSON.stringify({ exclude: ["images/*.md"] }),
+      /settings\.exclude\[0\]/,
+    );
+  });
+
+  it("keeps the wildcard shapes the dialect does have", () => {
+    expect(
+      parseSettings(JSON.stringify({ exclude: ["*.tmp", "drafts/**", "notes/scratch.md"] })).exclude,
+    ).toEqual(["*.tmp", "drafts/**", "notes/scratch.md"]);
+  });
 });

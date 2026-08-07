@@ -88,12 +88,51 @@ describe("referenceFindings", () => {
         "index.md": [
           "[site](https://example.test)",
           "[mail](mailto:a@example.test)",
-          "[deployed](/help/other.html)",
           "[here](#section)",
           "[outside](../beyond.md)",
         ].join("\n\n"),
       }),
     ).toEqual([]);
+  });
+
+  // A root-absolute path resolves against wherever the site is mounted, which
+  // this cannot know — but it can say whether the site holds anything at that
+  // path at all, and a site served from the root is the common case.
+  it("says nothing about a root-absolute path the site can answer", async () => {
+    expect(
+      await findings({
+        "index.md": "[install](/guide/install) ![logo](/assets/logo.png)",
+        "guide/install.md": "# Install",
+        "assets/logo.png": "binary",
+      }),
+    ).toEqual([]);
+  });
+
+  it("warns about a root-absolute path nothing in the site answers", async () => {
+    const root = await site({
+      "settings.json": "{}",
+      "index.md": "![shot](/assets/orders.png)",
+      "public/assets/orders.png": "binary",
+    });
+    const [finding] = await referenceFindings(await loadSite(root));
+
+    // A warning, not an error: mounting the site under a prefix would make it
+    // right, and a checker has no standing to call that a mistake.
+    expect(finding?.level).toBe("warning");
+    expect(finding?.message).toContain('"/assets/orders.png"');
+    expect(finding?.message).toContain("assets/orders.png");
+  });
+
+  // The destination of an unbracketed link ends at the first space, so a path
+  // written with a raw space is cut short. That is what the renderer does too,
+  // which is why the message has to name the cause: the target reported is not
+  // the one the author wrote, and nothing else in the line says why.
+  it("says why a link destination stopped at a space", async () => {
+    const messages = await findings({
+      "guide/install.md": "[report](../reports 2026/summary.md)",
+      "reports 2026/summary.md": "# Summary",
+    });
+    expect(messages[0]).toContain("space");
   });
 
   it("ignores a fragment on a target that exists", async () => {
@@ -147,5 +186,30 @@ describe("checkSite", () => {
     const reported = errors.mock.calls.flat().join("\n");
     expect(reported).toContain('"guide/nope" matches no page');
     expect(reported).toContain("nope.md");
+  });
+});
+
+describe("a target that names a directory", () => {
+  // A directory is served by its index page, so a trailing slash is a working
+  // link — reading it as a missing file reports a sound site as broken.
+  it("resolves to the page the directory is entered by", async () => {
+    expect(
+      await findings({
+        "index.md": "[notes](/update-note/) [guide](guide/)",
+        "update-note/index.md": "# Notes",
+        "guide/index.md": "# Guide",
+      }),
+    ).toEqual([]);
+  });
+
+  it("still reports a directory with no index page", async () => {
+    const root = await site({
+      "settings.json": "{}",
+      "index.md": "[notes](/update-note/)",
+      "update-note/2026-04.md": "# April",
+    });
+    const [finding] = await referenceFindings(await loadSite(root));
+    expect(finding?.level).toBe("warning");
+    expect(finding?.message).toContain("update-note/");
   });
 });

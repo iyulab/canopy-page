@@ -12,6 +12,7 @@ import {
   loadSite,
   navFindings,
   reportFindings,
+  settingsFindings,
 } from "./site.js";
 import { toPageKey } from "./vault.js";
 
@@ -29,10 +30,34 @@ import { toPageKey } from "./vault.js";
  * would report failures on links that build perfectly well.
  */
 
-/** Does anything published sit at this exact path — a page or a copied file? */
+/**
+ * A path anchored to wherever the site is served from, rather than to the page.
+ *
+ * canopy leaves these exactly as written, because only the deployment knows what
+ * `/` is. That is a reason not to rewrite one — not a reason to say nothing
+ * about it. A site served from the root, which is the ordinary case, resolves
+ * these against its own root, and whether anything is there is a question this
+ * can answer.
+ */
+function isRootAbsolute(url: string): boolean {
+  return url.startsWith("/") && !url.startsWith("//");
+}
+
+/**
+ * Does anything published sit at this path — a page, a copied file, or the index
+ * page a directory is entered by?
+ *
+ * A target written with a trailing slash names a directory, and a directory is
+ * served by its index page. `/update-note/` is a correct link to a site holding
+ * `update-note/index.md`, so reading it as a missing file would report a working
+ * link as broken.
+ */
 function existsInSite(site: LoadedSite, sitePath: string): boolean {
-  if (site.index.resolve(sitePath) !== undefined) return true;
-  const key = sitePath.toLowerCase();
+  const directory = sitePath.endsWith("/");
+  const bare = directory ? sitePath.replace(/\/+$/, "") : sitePath;
+  if (directory) return site.index.resolve(`${bare}/index`) !== undefined;
+  if (site.index.resolve(bare) !== undefined) return true;
+  const key = bare.toLowerCase();
   return site.index.assets.some((asset) => asset.toLowerCase() === key);
 }
 
@@ -71,12 +96,40 @@ export async function referenceFindings(site: LoadedSite): Promise<Finding[]> {
       }
 
       const url = targetPath(reference.target);
+
+      if (isRootAbsolute(url)) {
+        const atRoot = url.replace(/^\/+/, "");
+        if (atRoot === "" || existsInSite(site, atRoot)) continue;
+        findings.push({
+          level: "warning",
+          message:
+            `${where}: ${reference.kind} "${reference.target}" — ` +
+            `nothing is published at "${atRoot}". A root-absolute path resolves ` +
+            "against wherever the site is served from, so this is right only if " +
+            "something else answers it there",
+        });
+        continue;
+      }
+
       if (isExternalUrl(url)) continue;
       const resolved = resolveFrom(page, url);
       // A target that walks above the site root addresses something outside it,
       // which the renderer leaves alone and this has no standing to judge.
       if (resolved === undefined || resolved === "") continue;
-      if (existsInSite(site, resolved)) continue;
+      // Resolution drops a trailing slash along with the empty segment it makes,
+      // and with it the fact that the target named a directory.
+      if (existsInSite(site, url.endsWith("/") ? `${resolved}/` : resolved)) continue;
+
+      if (reference.cutAtSpace) {
+        findings.push({
+          level: "error",
+          message:
+            `${where}: ${reference.kind} destination stops at a space, so it addresses ` +
+            `"${reference.target}" and the rest of the line is left as text. ` +
+            "Wrap the path in <> or write the space as %20",
+        });
+        continue;
+      }
 
       findings.push({
         level: "error",
@@ -96,7 +149,11 @@ export async function referenceFindings(site: LoadedSite): Promise<Finding[]> {
  * the settings got wrong first, then what the pages point at.
  */
 export async function siteFindings(site: LoadedSite): Promise<Finding[]> {
-  return [...navFindings(site.nav), ...(await referenceFindings(site))];
+  return [
+    ...settingsFindings(site),
+    ...navFindings(site.nav),
+    ...(await referenceFindings(site)),
+  ];
 }
 
 /** Check the site in `dir`, returning the exit code to leave with. */
@@ -105,8 +162,12 @@ export async function checkSite(dir: string): Promise<number> {
   const findings = await siteFindings(site);
   const failed = reportFindings(findings);
   if (!failed) {
+    // "nothing broken" after a screen of warnings reads as a contradiction, so
+    // the closing line says which of the two happened.
+    const warnings = findings.length;
     console.log(
-      `canopy-page: ${site.index.pages.length} page(s) checked, nothing broken`,
+      `canopy-page: ${site.index.pages.length} page(s) checked, ` +
+        (warnings === 0 ? "nothing broken" : `nothing broken, ${warnings} warning(s)`),
     );
   }
   return failed ? 1 : 0;

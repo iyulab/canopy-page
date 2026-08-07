@@ -85,7 +85,7 @@ unpublished.
 | `description` | Fills `<meta name="description">`, which is what link previews show |
 | `lang` | BCP 47 tag for `<html lang>`. Worth setting for any non-English site: assistive technology reads pronunciation from it |
 | `icon` | Favicon, relative to the settings file. Must be a published file |
-| `exclude` | Paths to leave unpublished: a directory (`_drafts`), an extension at any depth (`*.tmp`), or one exact path |
+| `exclude` | Paths to leave unpublished: a directory (`_drafts` or `_drafts/**`), an extension at any depth (`*.tmp`), or one exact path. Patterns are relative to the settings file, and a shape outside that list — `images/*.md` — is refused rather than left to match nothing |
 | `sections` | Ordered regions of the site — see below |
 
 The settings file itself is never published, and neither is anything `exclude` names. A file
@@ -132,6 +132,9 @@ otherwise its filename. `label` overrides that for a page listed in `items`, so 
 filename reads badly can be named without touching the document — worth knowing for a site whose
 files are named in one language and written in another.
 
+A section's heading already links its own index page, so naming that page in `items` asks for what
+is there rather than for a second copy of it, and is not counted as placing it twice.
+
 ## What `check` reports
 
 Errors — these stop a build:
@@ -142,15 +145,28 @@ Errors — these stop a build:
 - A wikilink that matches no page. It renders as plain text rather than as a broken link, so the
   message says so — otherwise nobody knows what they are looking for
 
+A link whose destination stops at a space is reported as that, rather than as the truncated path
+it becomes. An unbracketed destination ends at the first space — `[x](../a b/c.md)` links `../a`
+and leaves the rest as text — so the target the message would otherwise name is one nobody wrote.
+
 Warnings — reported, and the build continues:
 
 - Pages no section covers
+- A root-absolute reference (`/assets/logo.png`) with nothing published at that path. Where such a
+  path resolves depends on what the site is served from, which is not a checker's to know — but a
+  site served from its own root is the ordinary case, and a `public/`-style folder that other
+  generators map onto the root does not exist here, so these silently 404. A warning rather than
+  an error, because mounting the site elsewhere would make it right
+- An `exclude` pattern that matched nothing, which usually means a path written from the wrong
+  place. Extension patterns are left alone: `*.tmp` in a site with no scratch files is a rule
+  about what may never ship, not a claim that something is there
 
 Checking reads the settings and each page. It never renders, so it is fast enough to sit at the
-front of a pipeline. References inside fenced or inline code are ignored: a fenced example of a
-broken link is documentation, not a broken link. What canopy states it leaves alone is left alone
-here too — absolute URLs, protocol-relative URLs, root-absolute deployment paths, bare fragments,
-and paths above the site root.
+front of a pipeline — a site of 255 pages checks in under half a second. References inside fenced
+or inline code are ignored: a fenced example of a broken link is documentation, not a broken link.
+What canopy states it leaves alone is left alone here too — absolute URLs, protocol-relative URLs,
+bare fragments, and paths above the site root. A target ending in `/` names a directory, and is
+answered by the index page that directory is entered by.
 
 ## What belongs where
 

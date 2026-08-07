@@ -154,6 +154,33 @@ function asRelativePath(value: unknown, where: string): string {
   return normalized;
 }
 
+/**
+ * Check an exclusion pattern against the dialect that is actually implemented.
+ *
+ * Four shapes, and nothing else: `drafts`, `drafts/**`, `*.tmp`, and one exact
+ * path. A wildcard anywhere else — `images/*.md`, `guide/*` — matches nothing,
+ * and a pattern that quietly excludes nothing is the failure strict validation
+ * exists to prevent: the file reads as if it said something, and the folder
+ * ships anyway. Refusing it here is the same answer an unknown key gets.
+ */
+function asExclusionPattern(value: unknown, where: string): string {
+  const pattern = asString(value, where);
+  const normalized = pattern.replace(/\\/g, "/").replace(/^\.\//, "");
+  // `*.tmp` is the extension form; `drafts/**` is the whole-tree form. Strip
+  // whichever applies and nothing else may hold a wildcard.
+  const rest = normalized.startsWith("*.")
+    ? normalized.slice(2)
+    : normalized.replace(/\/\*\*$/, "");
+  if (rest.includes("*")) {
+    fail(
+      `${where}: "${pattern}" is not a pattern canopy-page understands. ` +
+        'Use a directory ("drafts"), a whole tree ("drafts/**"), ' +
+        'an extension ("*.tmp"), or one exact path ("notes/scratch.md")',
+    );
+  }
+  return pattern;
+}
+
 function parseNavItem(value: unknown, where: string): SettingsNavItem {
   // A bare string is the common case — a page in the order it should appear.
   if (typeof value === "string") {
@@ -255,7 +282,7 @@ export function parseSettings(json: string): Settings {
           // valid to canopy, so they are passed through rather than normalized
           // into a path shape they do not have.
           exclude: (exclude as unknown[]).map((pattern, i) =>
-            asString(pattern, `settings.exclude[${i}]`),
+            asExclusionPattern(pattern, `settings.exclude[${i}]`),
           ),
         }),
     ...(sections === undefined

@@ -143,6 +143,12 @@ interface NavReport {
   missing: string[];
   place: (page: string) => void;
   isPlaced: (page: string) => boolean;
+  /**
+   * The index page of the section being expanded, which its heading already
+   * links. Naming it in `items` asks for what is there, so it is not a second
+   * placement — the same conclusion `expandGlob` reaches by filtering.
+   */
+  sectionIndex?: string;
 }
 
 /** Expand one settings entry, which may be a page, a glob, or a group. */
@@ -170,6 +176,15 @@ function expandItem(
     if (matched.length === 0) report.missing.push(item.path);
     for (const page of matched) report.place(page);
     return matched.map((page) => ({ path: page }));
+  }
+
+  // The section heading is already a link to its index page, so listing it again
+  // would show one page twice under two names. A glob reaches this by filtering
+  // what is placed; an explicit mention is the same request spelled out, and
+  // used to come back as "placed more than once" — a contradiction to an author
+  // who named it once.
+  if (report.sectionIndex !== undefined && index.resolve(item.path) === report.sectionIndex) {
+    return children === undefined ? [] : children;
   }
 
   const resolved = index.resolve(item.path);
@@ -220,7 +235,9 @@ function translateSection(
   const items =
     section.items === undefined
       ? deriveItems(section.path, index, section.order ?? "asc", report.place)
-      : section.items.flatMap((item) => expandItem(item, index, report));
+      : section.items.flatMap((item) =>
+          expandItem(item, index, { ...report, sectionIndex }),
+        );
 
   if (sectionIndex === undefined && items.length === 0) {
     report.missing.push(section.path);

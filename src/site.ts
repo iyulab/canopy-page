@@ -2,7 +2,13 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { type NavTranslation, translateNav } from "./nav.js";
 import { parseSettings, SettingsError, type Settings } from "./settings.js";
-import { indexSite, listSiteFiles, type PageIndex, SETTINGS_FILENAME } from "./vault.js";
+import {
+  indexSite,
+  listSiteFiles,
+  type PageIndex,
+  SETTINGS_FILENAME,
+  unusedExclusions,
+} from "./vault.js";
 
 /**
  * Loading a site: settings, the files they describe, and the navigation that
@@ -24,6 +30,8 @@ export interface LoadedSite {
   settings: Settings;
   index: PageIndex;
   nav: NavTranslation;
+  /** Exclusion patterns that left the site exactly as they found it. */
+  unusedExclusions: string[];
 }
 
 /** Something worth telling the author about their site. */
@@ -64,7 +72,30 @@ export async function loadSite(dir: string): Promise<LoadedSite> {
   }
 
   const index = indexSite(await listSiteFiles(root, settings.exclude));
-  return { root, settings, index, nav: translateNav(settings, index) };
+  return {
+    root,
+    settings,
+    index,
+    nav: translateNav(settings, index),
+    unusedExclusions: await unusedExclusions(root, settings.exclude),
+  };
+}
+
+/**
+ * What the settings themselves got wrong, beyond what they say about navigation.
+ *
+ * An exclusion that excluded nothing is a warning rather than an error: the site
+ * is publishable and every page in it is sound. What is wrong is that the file
+ * claims to hold something back and does not, which the author can only find out
+ * by being told.
+ */
+export function settingsFindings(site: LoadedSite): Finding[] {
+  return site.unusedExclusions.map((pattern) => ({
+    level: "warning" as const,
+    message:
+      `settings: exclude "${pattern}" matched nothing, so everything it names is published. ` +
+      "Patterns are relative to the settings file",
+  }));
 }
 
 /**
@@ -85,11 +116,14 @@ export function navFindings(nav: NavTranslation): Finding[] {
     findings.push({ level: "error", message: `settings: "${page}" is placed more than once` });
   }
   if (nav.orphans.length > 0) {
+    // One page per line. A real site's uncovered pages run to dozens, and a list
+    // joined onto one line is a wall nobody reads to the end of — which loses
+    // the whole point of naming them.
     findings.push({
       level: "warning",
       message:
-        `${nav.orphans.length} page(s) no section covers, placed at the end of their section: ` +
-        nav.orphans.join(", "),
+        `${nav.orphans.length} page(s) no section covers, placed at the end of their section:\n` +
+        nav.orphans.map((page) => `  ${page}`).join("\n"),
     });
   }
   return findings;

@@ -24,6 +24,13 @@ export interface Reference {
   kind: "link" | "image" | "wikilink";
   /** 1-based line in the document, so a finding can name where to look. */
   line: number;
+  /**
+   * The destination ran into a space and stopped there, leaving the rest of the
+   * line outside the link. `target` is what the renderer will use, which is not
+   * what the author wrote — the one case where reporting the target alone
+   * describes something nobody typed.
+   */
+  cutAtSpace?: true;
 }
 
 const FENCE = /^\s{0,3}(`{3,}|~{3,})/;
@@ -38,6 +45,22 @@ const HTML_IMG = /<img\b[^>]*\bsrc\s*=\s*["']([^"']*)["']/gi;
 
 function unwrap(url: string): string {
   return url.startsWith("<") && url.endsWith(">") ? url.slice(1, -1) : url;
+}
+
+/**
+ * Did this destination stop at a space that was meant to be part of it?
+ *
+ * An unbracketed destination ends at the first space, so `(../a b/c.md)` links
+ * `../a` and leaves ` b/c.md` as text. What follows a real destination is
+ * optional whitespace, an optional quoted title, and `)`. Anything else means
+ * the path was cut, which is worth saying — the alternative is a message about
+ * a target the author never wrote.
+ */
+function cutAtSpace(raw: string, after: string): boolean {
+  if (raw.startsWith("<")) return false;
+  const remainder = after.slice(0, after.indexOf(")") === -1 ? undefined : after.indexOf(")"));
+  const title = remainder.trim();
+  return title !== "" && !/^["'(]/.test(title);
 }
 
 /**
@@ -83,9 +106,15 @@ export function extractReferences(markdown: string): Reference[] {
     }
 
     for (const match of text.matchAll(INLINE_LINK)) {
-      const target = unwrap(match[2] ?? "");
+      const raw = match[2] ?? "";
+      const target = unwrap(raw);
       if (target === "") continue;
-      references.push({ target, kind: match[1] === "!" ? "image" : "link", line });
+      references.push({
+        target,
+        kind: match[1] === "!" ? "image" : "link",
+        line,
+        ...(cutAtSpace(raw, text.slice(match.index + match[0].length)) ? { cutAtSpace: true } : {}),
+      });
     }
     for (const match of text.matchAll(HTML_IMG)) {
       const target = match[1] ?? "";
