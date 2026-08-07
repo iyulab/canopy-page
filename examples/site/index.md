@@ -8,9 +8,9 @@ except the documents themselves.
 npx canopy-page build examples/site -o dist/demo
 ```
 
-The [settings file](reference/settings.md) beside these documents is fifteen lines long. The
-sidebar, the contents list on each long page, the backlinks at the foot of this one, and the
-links between pages are all derived.
+The [settings file](reference/settings.md) beside these documents is short enough to read in one
+sitting. The sidebar, the contents list on each long page, the backlinks at the foot of this one,
+and the links between pages are all derived.
 
 ## What this demo is showing
 
