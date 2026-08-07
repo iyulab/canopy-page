@@ -1,0 +1,5 @@
+/* Only what differs from canopy's defaults; everything else is inherited. */
+:root { --accent: #0a7c5a; --accent-hover: #096a4d; }
+@media (prefers-color-scheme: dark) {
+  :root { --accent: #4ecfa2; --accent-hover: #6fdcb5; }
+}

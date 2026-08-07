@@ -3,6 +3,10 @@
   "description": "A documentation site built from this folder by canopy-page, published on every push.",
   "lang": "en",
   "icon": "assets/logo.svg",
+  "logo": "assets/logo.svg",
+  "tokens": "brand.css",
+  "home": { "url": "https://github.com/iyulab/canopy-page", "label": "canopy-page on GitHub" },
+  "siteUrl": "https://iyulab.github.io/canopy-page",
   "exclude": ["_drafts"],
   "sections": [
     {

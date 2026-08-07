@@ -11,6 +11,10 @@ This is the file that produced the site you are reading:
   "description": "A documentation site built from this folder by canopy-page, published on every push.",
   "lang": "en",
   "icon": "assets/logo.svg",
+  "logo": "assets/logo.svg",
+  "tokens": "brand.css",
+  "home": { "url": "https://github.com/iyulab/canopy-page", "label": "canopy-page on GitHub" },
+  "siteUrl": "https://iyulab.github.io/canopy-page",
   "exclude": ["_drafts"],
   "sections": [
     {
@@ -34,6 +38,10 @@ This is the file that produced the site you are reading:
 | `description` | Fills `<meta name="description">`, which is what a link preview shows |
 | `lang` | BCP 47 tag for `<html lang>`. Assistive technology reads pronunciation from it |
 | `icon` | Favicon, relative to the settings file. Must be a published file |
+| `tokens` | CSS of design-token overrides, relative to the settings file |
+| `logo` | Image shown beside the site title in the sidebar header, relative to the settings file. Must be a published file |
+| `home` | A link back to the site this documentation sits beside: `{ url, label }` |
+| `siteUrl` | Where the built site will stand, as an absolute URL |
 | `exclude` | Paths to leave unpublished |
 | `sections` | Ordered regions of the site |
 
@@ -78,6 +86,41 @@ rule about what may never ship rather than a claim that something is there.
 
 This site excludes `_drafts`, and the page inside it is not in the sidebar, not in the output,
 and not reachable.
+
+## Branding
+
+| Field | Not set |
+|---|---|
+| `tokens` | Only canopy's own colours and spacing apply |
+| `logo` | The sidebar header shows the title text alone |
+| `home` | No link back to a surrounding site is rendered |
+
+`tokens` names a CSS file appended *after* canopy's own tokens, so a file naming one custom
+property — `--accent`, say — keeps every other default rather than replacing the whole sheet. It
+is read at build time and left out of the published site: it configures the build, it is not a
+page of it. This site's own `brand.css` is the proof — open the built output and it is not there.
+
+`brand.css` is two blocks rather than one line for a reason worth stating: canopy's own defaults
+end with a `prefers-color-scheme: dark` block, and a media query adds no specificity over a bare
+selector. A bare `:root` appended after that block wins in *both* schemes, which is exactly why
+this file repeats itself — a light accent for the default block, a lighter one for dark, so the
+colour that reads well on a white sidebar is not the one forced onto a dark one.
+
+`logo` is separate from `icon`: `icon` is the favicon a browser tab shows, `logo` is the image
+beside the title in the sidebar itself, and the two are free to differ. This site happens to use
+the same file for both.
+
+`home` takes both `url` and `label` or neither — never one alone, and a settings file with only one
+is rejected rather than built with a guess at the other. There is no default label: link text has
+to be written in the site's own language, and canopy has no way to know what that is.
+
+## Where the site stands
+
+`siteUrl` exists for nothing except what a relative-link site cannot say about itself: `sitemap.xml`
+and the `robots.txt` that points at it both need one absolute address for the whole site, and
+without `siteUrl` neither is written. Set it and both files appear, with every entry an absolute
+URL rather than a path relative to nothing — this site's own `sitemap.xml` is built from
+`https://iyulab.github.io/canopy-page`, the address it is actually published at.
 
 ## One settings file is one site
 
