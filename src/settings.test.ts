@@ -104,6 +104,18 @@ describe("parseSettings", () => {
     rejects(JSON.stringify({ home: { url: "/", label: "홈" } }), /settings\.home\.url/);
   });
 
+  it("rejects an unknown key inside home", () => {
+    rejects(
+      JSON.stringify({ home: { url: "https://example.test/", label: "홈", typo: true } }),
+      /settings\.home: unknown key "typo"/,
+    );
+  });
+
+  it("rejects a non-object home", () => {
+    rejects(JSON.stringify({ home: "https://example.test/" }), /settings\.home/);
+    rejects(JSON.stringify({ home: ["https://example.test/", "홈"] }), /settings\.home/);
+  });
+
   it("reads a site URL", () => {
     expect(parseSettings(JSON.stringify({ siteUrl: "https://example.test/help" }))).toEqual({
       siteUrl: "https://example.test/help",

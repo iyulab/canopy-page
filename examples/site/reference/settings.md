@@ -108,7 +108,8 @@ colour that reads well on a white sidebar is not the one forced onto a dark one.
 
 `logo` is separate from `icon`: `icon` is the favicon a browser tab shows, `logo` is the image
 beside the title in the sidebar itself, and the two are free to differ. This site happens to use
-the same file for both.
+the same file for both. It renders with an empty `alt`, deliberately: the site title right beside
+it already names the site, so there is no separate text for a screen reader to add.
 
 `home` takes both `url` and `label` or neither — never one alone, and a settings file with only one
 is rejected rather than built with a guess at the other. There is no default label: link text has
