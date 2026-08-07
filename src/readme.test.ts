@@ -17,9 +17,16 @@ import { parseSettings } from "./settings.js";
 
 const README = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "README.md");
 
-/** The fenced JSON blocks of a markdown document, in order. */
+/**
+ * The fenced JSON blocks of a markdown document, in order.
+ *
+ * `\r?` tolerates a CRLF checkout — the committed file is LF, but a Windows
+ * clone with `core.autocrlf=true` (a common git-for-windows default) rewrites
+ * it to CRLF on checkout, which a bare `\n` here would fail to match even
+ * though the file content is otherwise unchanged.
+ */
 function jsonBlocks(markdown: string): string[] {
-  return [...markdown.matchAll(/```json\n([\s\S]*?)```/g)].map((match) => match[1] as string);
+  return [...markdown.matchAll(/```json\r?\n([\s\S]*?)```/g)].map((match) => match[1] as string);
 }
 
 describe("README", () => {
