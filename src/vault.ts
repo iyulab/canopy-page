@@ -55,51 +55,89 @@ function namesAPlace(pattern: string): boolean {
   return !pattern.replace(/^\.\//, "").startsWith("*.");
 }
 
-/**
- * Exclusion patterns that left the site exactly as they found it.
- *
- * A pattern that excludes nothing is usually a path written from the wrong
- * place — `_archive` for what is really `docs/_archive` — and it fails the way
- * a mistyped key would: the file looks right and the folder ships anyway. Saying
- * so is the same promise strict validation makes about keys.
- *
- * An extension pattern is left alone, because it is a different kind of
- * statement. `*.tmp` in a site with no scratch files is a rule about what may
- * never ship, not a claim that something is there to remove.
- */
-export async function unusedExclusions(
-  root: string,
-  patterns: readonly string[] = [],
-): Promise<string[]> {
-  const candidates = patterns.filter((pattern) => pattern.trim() !== "" && namesAPlace(pattern));
-  if (candidates.length === 0) return [];
-
-  // Everything the site holds, ignoring the settings, so a pattern can be asked
-  // what it would have matched rather than what survived it.
-  const all: string[] = [];
-  await walk(root, "", all, () => false);
-  return candidates.filter((pattern) => !all.some((file) => matchesPattern(file, pattern)));
+function normalizePattern(pattern: string): string {
+  return pattern
+    .replace(/\\/g, "/")
+    .replace(/^\.\//, "")
+    .replace(/\/\*\*$/, "")
+    .replace(/\/+$/, "")
+    .toLowerCase();
 }
 
-async function walk(
-  root: string,
-  rel: string,
-  found: string[],
-  excluded: (filePath: string) => boolean,
-): Promise<void> {
+/**
+ * Which exclusion patterns did any work, recorded as the site is walked.
+ *
+ * Asking this afterwards would mean a second walk of the tree with pruning
+ * turned off — the one thing pruning exists to avoid, paid on every check. The
+ * walk already tests each pattern against each path, so it can say which of them
+ * ever answered yes without doing the work twice.
+ */
+class ExclusionUse {
+  private readonly used = new Set<string>();
+
+  constructor(private readonly patterns: readonly string[]) {}
+
+  /** Note every pattern that claims this path. */
+  record(filePath: string): boolean {
+    let excluded = false;
+    for (const pattern of this.patterns) {
+      if (!matchesPattern(filePath, pattern)) continue;
+      this.used.add(pattern);
+      excluded = true;
+    }
+    return excluded;
+  }
+
+  /**
+   * A pruned directory is never walked, so a pattern naming something inside it
+   * cannot be said to have matched nothing — the tree it spoke about was
+   * excluded by a broader rule, which is redundancy rather than a mistake.
+   */
+  shadow(dirPath: string): void {
+    const prefix = `${dirPath.toLowerCase()}/`;
+    for (const pattern of this.patterns) {
+      if (normalizePattern(pattern).startsWith(prefix)) this.used.add(pattern);
+    }
+  }
+
+  /**
+   * Patterns that left the site exactly as they found it.
+   *
+   * One that excludes nothing is usually a path written from the wrong place —
+   * `_archive` for what is really `docs/_archive` — and it fails the way a
+   * mistyped key would: the file looks right and the folder ships anyway.
+   *
+   * An extension pattern is left out, because it is a different kind of
+   * statement. `*.tmp` in a site with no scratch files is a rule about what may
+   * never ship, not a claim that something is there to remove.
+   */
+  unused(): string[] {
+    return this.patterns.filter((pattern) => !this.used.has(pattern) && namesAPlace(pattern));
+  }
+}
+
+async function walk(root: string, rel: string, found: string[], use: ExclusionUse): Promise<void> {
   const entries = await readdir(path.join(root, rel), { withFileTypes: true });
   for (const entry of entries) {
     const childRel = rel ? `${rel}/${entry.name}` : entry.name;
     if (entry.isDirectory()) {
+      if (isSkippedDir(entry.name)) continue;
       // Pruning at the directory keeps an excluded tree from being walked at
       // all, so a large archive costs nothing to skip.
-      if (!isSkippedDir(entry.name) && !excluded(childRel)) {
-        await walk(root, childRel, found, excluded);
-      }
-    } else if (entry.isFile() && !excluded(childRel)) {
+      if (use.record(childRel)) use.shadow(childRel);
+      else await walk(root, childRel, found, use);
+    } else if (entry.isFile() && !use.record(childRel)) {
       found.push(childRel);
     }
   }
+}
+
+/** The files a site publishes, and what its exclusions did to get there. */
+export interface SiteListing {
+  /** Published files, as POSIX paths relative to the site root, sorted. */
+  files: string[];
+  /** Place-naming exclusions that matched nothing and shadowed nothing. */
+  unusedExclusions: string[];
 }
 
 /**
@@ -108,13 +146,25 @@ async function walk(
  * The settings file itself is not content and never ships: it is configuration
  * that happens to live next to what it configures.
  */
+export async function listSite(
+  root: string,
+  exclude: readonly string[] = [],
+): Promise<SiteListing> {
+  const found: string[] = [];
+  const use = new ExclusionUse(exclude.filter((pattern) => pattern.trim() !== ""));
+  await walk(root, "", found, use);
+  return {
+    files: found.filter((file) => file !== SETTINGS_FILENAME).sort(),
+    unusedExclusions: use.unused(),
+  };
+}
+
+/** The published files alone, for callers with nothing to say about exclusions. */
 export async function listSiteFiles(
   root: string,
   exclude: readonly string[] = [],
 ): Promise<string[]> {
-  const found: string[] = [];
-  await walk(root, "", found, createExcluder(exclude));
-  return found.filter((file) => file !== SETTINGS_FILENAME).sort();
+  return (await listSite(root, exclude)).files;
 }
 
 /** The settings file a site is configured by, found at the root of the site. */

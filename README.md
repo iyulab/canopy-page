@@ -162,7 +162,7 @@ Warnings — reported, and the build continues:
   about what may never ship, not a claim that something is there
 
 Checking reads the settings and each page. It never renders, so it is fast enough to sit at the
-front of a pipeline — a site of 255 pages checks in under half a second. References inside fenced
+front of a pipeline, at the scale a product manual reaches. References inside fenced
 or inline code are ignored: a fenced example of a broken link is documentation, not a broken link.
 What canopy states it leaves alone is left alone here too — absolute URLs, protocol-relative URLs,
 bare fragments, and paths above the site root. A target ending in `/` names a directory, and is

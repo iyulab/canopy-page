@@ -213,6 +213,19 @@ describe("a section's own index page", () => {
     expect(nav.missing).toEqual([]);
   });
 
+  // A label on that entry is dropped with it. The section heading is what links
+  // the page, and it carries the section's own label, so honouring both would
+  // mean one page under two names — which is the outcome skipping it prevents.
+  it("drops a label given to it, since the section heading names it", () => {
+    const nav = translate({
+      sections: [
+        { path: "guide", label: "Guide", items: [{ label: "Overview", path: "guide/index" }] },
+      ],
+    });
+    expect(nav.duplicates).toEqual([]);
+    expect(JSON.stringify(nav.spec)).not.toContain("Overview");
+  });
+
   it("still reports a page the settings really do list twice", () => {
     const nav = translate({
       sections: [{ path: "guide", items: ["guide/install", "guide/install"] }],

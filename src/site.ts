@@ -2,13 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { type NavTranslation, translateNav } from "./nav.js";
 import { parseSettings, SettingsError, type Settings } from "./settings.js";
-import {
-  indexSite,
-  listSiteFiles,
-  type PageIndex,
-  SETTINGS_FILENAME,
-  unusedExclusions,
-} from "./vault.js";
+import { indexSite, listSite, type PageIndex, SETTINGS_FILENAME } from "./vault.js";
 
 /**
  * Loading a site: settings, the files they describe, and the navigation that
@@ -71,13 +65,14 @@ export async function loadSite(dir: string): Promise<LoadedSite> {
     throw error;
   }
 
-  const index = indexSite(await listSiteFiles(root, settings.exclude));
+  const listing = await listSite(root, settings.exclude);
+  const index = indexSite(listing.files);
   return {
     root,
     settings,
     index,
     nav: translateNav(settings, index),
-    unusedExclusions: await unusedExclusions(root, settings.exclude),
+    unusedExclusions: listing.unusedExclusions,
   };
 }
 

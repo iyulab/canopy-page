@@ -2,13 +2,7 @@ import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import {
-  indexSite,
-  listSiteFiles,
-  matchesPattern,
-  toPageKey,
-  unusedExclusions,
-} from "./vault.js";
+import { indexSite, listSite, listSiteFiles, matchesPattern, toPageKey } from "./vault.js";
 
 describe("matchesPattern", () => {
   it("matches a directory, written with or without the suffix", () => {
@@ -115,25 +109,36 @@ describe("listSiteFiles", () => {
 });
 
 describe("unusedExclusions", () => {
-  it("names a pattern that excluded nothing", async () => {
+  async function unused(files: string[], patterns: string[]): Promise<string[]> {
     const root = await mkdtemp(path.join(tmpdir(), "canopy-page-vault-"));
-    await mkdir(path.join(root, "docs/_archive"), { recursive: true });
-    await writeFile(path.join(root, "docs/_archive/old.md"), "x");
-    await writeFile(path.join(root, "index.md"), "x");
-
-    // "_archive" reads like it names that folder, but patterns are relative to
-    // the site root, so it matches nothing and the folder ships.
-    expect(await unusedExclusions(root, ["_archive", "docs/_archive"])).toEqual(["_archive"]);
+    for (const rel of files) {
+      await mkdir(path.join(root, path.dirname(rel)), { recursive: true });
+      await writeFile(path.join(root, rel), "x");
+    }
+    const listing = await listSite(root, patterns);
     await rm(root, { recursive: true, force: true });
+    return listing.unusedExclusions;
+  }
+
+  // "_archive" reads like it names that folder, but patterns are relative to
+  // the site root, so it matches nothing and the folder ships.
+  it("names a pattern that excluded nothing", async () => {
+    expect(
+      await unused(["index.md", "docs/_archive/old.md"], ["_archive", "docs/_archive"]),
+    ).toEqual(["_archive"]);
   });
 
   // An extension pattern is defensive: "*.tmp" in a site with no scratch files
   // is a rule about what may never ship, not a claim that something is there.
   it("says nothing about an extension pattern that matched nothing", async () => {
-    const root = await mkdtemp(path.join(tmpdir(), "canopy-page-vault-"));
-    await writeFile(path.join(root, "index.md"), "x");
+    expect(await unused(["index.md"], ["*.tmp"])).toEqual([]);
+  });
 
-    expect(await unusedExclusions(root, ["*.tmp"])).toEqual([]);
-    await rm(root, { recursive: true, force: true });
+  // The broader pattern prunes the tree, so the narrower one is never reached.
+  // It is redundant, not wrong, and calling it unmatched would be a false alarm.
+  it("says nothing about a pattern shadowed by a broader one", async () => {
+    expect(
+      await unused(["index.md", "docs/_archive/old.md"], ["docs/_archive", "docs/_archive/old.md"]),
+    ).toEqual([]);
   });
 });
