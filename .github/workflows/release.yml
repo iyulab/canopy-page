@@ -1,0 +1,45 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  # The publish workflow builds but does not test, and CI only triggers on
+  # branches — so without this job a tag could publish code no gate ever ran
+  # against. Verifying here keeps the release path from being the one route
+  # into npm that skips the checks.
+  verify:
+    runs-on: ubuntu-latest
+    # Matches ci.yml: well past a healthy run, so a stuck one cannot hold a
+    # runner for the 6h default.
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          # Matches the `engines` floor in package.json and ci.yml.
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      # The example site is built by the very package being released, so a
+      # release that cannot build it is a release that does not work. Cheap
+      # here, and the failure names the page and line.
+      - run: node dist/cli.js build examples/site -o dist-demo
+
+  publish:
+    needs: verify
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/v'))
+    # Pinned to a commit rather than a branch: a shared workflow that can change
+    # under you is a supply-chain surface, and this one holds the npm token.
+    uses: iyulab/shared/.github/workflows/publish-npm.yml@9c28de3c9082cae628c576e743e5246c998e53ed
+    with:
+      node_version: "22"
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
