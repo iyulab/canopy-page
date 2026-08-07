@@ -6,3 +6,5 @@ coverage/
 # Development tracking documents — not part of the published repo.
 claudedocs/
 CLAUDE.md
+dist-demo/
+*.tgz

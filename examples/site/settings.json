@@ -1,0 +1,18 @@
+{
+  "title": "canopy-page demo",
+  "description": "A documentation site built from this folder by canopy-page, published on every push.",
+  "lang": "en",
+  "icon": "assets/logo.svg",
+  "exclude": ["_drafts"],
+  "sections": [
+    {
+      "path": "guide",
+      "items": [
+        "guide/install",
+        { "path": "guide/writing/index", "items": ["guide/writing/code-and-math"] }
+      ]
+    },
+    { "path": "reference", "label": "Reference" },
+    { "path": "release-notes", "order": "desc" }
+  ]
+}

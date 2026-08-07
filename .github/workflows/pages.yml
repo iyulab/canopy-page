@@ -1,0 +1,71 @@
+name: Demo site
+
+# The example site under examples/ is built with this package and published to
+# GitHub Pages. It is the demo, and it is also the widest end-to-end test there
+# is: settings parsing, reference checks, navigation, and rendering all have to
+# agree for the deploy to happen at all.
+on:
+  push:
+    branches: [main]
+    # Nothing else changes what the site contains. A README edit should not
+    # spend a deploy.
+    paths:
+      - "examples/**"
+      - "src/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  # Deploys queue rather than cancel: a half-replaced site is worse than a
+  # slightly stale one, and the run that would be cancelled may be the one
+  # holding the deployment lock.
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+      # Run the checker on its own first. It never renders, so when a demo page
+      # points at nothing this fails in seconds and says which line — rather
+      # than failing inside the build with the same message buried in output.
+      - name: Check the demo site
+        run: node dist/cli.js check examples/site
+
+      - name: Build the demo site
+        run: node dist/cli.js build examples/site -o dist-demo
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist-demo
+          # The deploy step consumes this immediately; keeping it a day is
+          # enough to inspect a failed run and no longer.
+          retention-days: 1
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
