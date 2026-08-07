@@ -127,10 +127,10 @@ oversight rather than a decision to hide it.
 Where no ordering is asked for at all, no navigation spec is produced and canopy derives the
 navigation itself. Ordering derived here follows file names rather than page titles.
 
-A page is shown under the name canopy gives it: its frontmatter `title` if it has one, and
-otherwise its filename. `label` overrides that for a page listed in `items`, so a page whose
-filename reads badly can be named without touching the document — worth knowing for a site whose
-files are named in one language and written in another.
+A page is shown under the name canopy gives it: its frontmatter `title`, else the heading it opens
+with, else its filename. That usually means a section needs no `label` at all — `label` is for the
+cases the documents cannot answer, and it still overrides them when written. A section whose
+directory holds an `index` page is named by that page for the same reason.
 
 A section's heading already links its own index page, so naming that page in `items` asks for what
 is there rather than for a second copy of it, and is not counted as placing it twice.

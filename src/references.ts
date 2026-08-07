@@ -150,6 +150,40 @@ export function targetPath(url: string): string {
 }
 
 /**
+ * Turn a URL path into the site path it addresses, undoing percent-encoding.
+ *
+ * A reference is a URL and the site is files, so the two spellings of one path —
+ * `a%20b/note.md` and `a b/note.md` — have to meet before anything is compared.
+ * Editors write the encoded form on their own for any path containing a space,
+ * and this checker's own advice for a destination that stops at a space is to
+ * "write the space as %20", so without this it rejects what it just recommended.
+ *
+ * Decoded per segment, never across the whole path: `%2F` is a slash inside one
+ * name rather than a directory boundary. A malformed escape comes back
+ * undefined, and the reference is left alone — which is what the renderer does
+ * with it, and the checker's job is to agree with the renderer.
+ *
+ * TODO(upstream: claudedocs/upstream-issues/ISSUE-canopy-20260807-link-target-resolution.md)
+ * — canopy applies this same rule when it rewrites links, and does not expose
+ * it, so the rule is spelled out twice and can drift. It just did: canopy
+ * learned to read this encoding one release before this file did.
+ */
+export function decodeTarget(path: string): string | undefined {
+  const segments: string[] = [];
+  for (const segment of path.split("/")) {
+    let decoded: string;
+    try {
+      decoded = decodeURIComponent(segment);
+    } catch {
+      return undefined;
+    }
+    if (decoded.includes("/")) return undefined;
+    segments.push(decoded);
+  }
+  return segments.join("/");
+}
+
+/**
  * Resolve a site-relative target against the document holding it.
  *
  * `..` is honoured so a page can point at a sibling folder. A target that walks

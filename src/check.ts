@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import {
+  decodeTarget,
   extractReferences,
   isExternalUrl,
   resolveFrom,
@@ -98,7 +99,7 @@ export async function referenceFindings(site: LoadedSite): Promise<Finding[]> {
       const url = targetPath(reference.target);
 
       if (isRootAbsolute(url)) {
-        const atRoot = url.replace(/^\/+/, "");
+        const atRoot = decodeTarget(url.replace(/^\/+/, "")) ?? url.replace(/^\/+/, "");
         if (atRoot === "" || existsInSite(site, atRoot)) continue;
         findings.push({
           level: "warning",
@@ -112,13 +113,20 @@ export async function referenceFindings(site: LoadedSite): Promise<Finding[]> {
       }
 
       if (isExternalUrl(url)) continue;
-      const resolved = resolveFrom(page, url);
+      // Classified as a URL above, resolved as a path from here — so the
+      // encoding an editor wrote is undone only after the cases that are about
+      // URL syntax have been answered.
+      const decoded = decodeTarget(url);
+      // An escape the renderer cannot read either: it leaves the link as
+      // written, so there is no published target to hold the page to.
+      if (decoded === undefined) continue;
+      const resolved = resolveFrom(page, decoded);
       // A target that walks above the site root addresses something outside it,
       // which the renderer leaves alone and this has no standing to judge.
       if (resolved === undefined || resolved === "") continue;
       // Resolution drops a trailing slash along with the empty segment it makes,
       // and with it the fact that the target named a directory.
-      if (existsInSite(site, url.endsWith("/") ? `${resolved}/` : resolved)) continue;
+      if (existsInSite(site, decoded.endsWith("/") ? `${resolved}/` : resolved)) continue;
 
       if (reference.cutAtSpace) {
         findings.push({

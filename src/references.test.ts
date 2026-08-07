@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { extractReferences, isExternalUrl, resolveFrom, targetPath } from "./references.js";
+import {
+  decodeTarget,
+  extractReferences,
+  isExternalUrl,
+  resolveFrom,
+  targetPath,
+} from "./references.js";
 
 /** Targets in document order, dropping the positions. */
 function targets(markdown: string): string[] {
@@ -90,6 +96,32 @@ describe("targetPath", () => {
   it("drops the part that addresses a place within the target", () => {
     expect(targetPath("guide/install.md#requirements")).toBe("guide/install.md");
     expect(targetPath("guide/install.md?v=2")).toBe("guide/install.md");
+  });
+});
+
+describe("decodeTarget", () => {
+  it("reads the encoding an editor writes for a space", () => {
+    expect(decodeTarget("reference/error%20messages.md")).toBe("reference/error messages.md");
+  });
+
+  it("reads a non-ASCII directory back", () => {
+    expect(decodeTarget("%ED%98%84%ED%99%A9/daily.md")).toBe("현황/daily.md");
+  });
+
+  it("leaves an unencoded path exactly as it is", () => {
+    expect(decodeTarget("guide/install.md")).toBe("guide/install.md");
+  });
+
+  it("gives up on a malformed escape rather than guessing", () => {
+    expect(decodeTarget("a%zzb/note.md")).toBeUndefined();
+  });
+
+  it("does not let an encoded slash become a directory boundary", () => {
+    expect(decodeTarget("a%2Fb/note.md")).toBeUndefined();
+  });
+
+  it("keeps a trailing slash, which names a directory", () => {
+    expect(decodeTarget("release%20notes/")).toBe("release notes/");
   });
 });
 

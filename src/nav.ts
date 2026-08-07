@@ -122,8 +122,11 @@ function deriveItems(
     const childIndex = indexOf(childDir, index);
     if (childIndex !== undefined) place(childIndex);
     items.push({
-      label: name,
-      ...(childIndex === undefined ? {} : { path: childIndex }),
+      // A directory with an index page is named by that page — canopy asks the
+      // document first and falls back to this same directory name when it has
+      // no name of its own. Writing the label here would win over the document
+      // every time, which is this file answering a question it already delegates.
+      ...(childIndex === undefined ? { label: name } : { path: childIndex }),
       items: deriveItems(childDir, index, order, place),
     });
   }
@@ -243,8 +246,14 @@ function translateSection(
     report.missing.push(section.path);
   }
 
+  // Same rule as a derived directory: the page fronting a section names it, and
+  // only a section with no index page needs a name written for it here. A label
+  // in the settings file still wins — that is what writing one is for.
+  const label =
+    section.label ?? (sectionIndex === undefined ? lastSegment(section.path) : undefined);
+
   return {
-    label: section.label ?? lastSegment(section.path),
+    ...(label === undefined ? {} : { label }),
     ...(sectionIndex === undefined ? {} : { path: sectionIndex }),
     items,
   };

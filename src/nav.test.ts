@@ -46,9 +46,51 @@ describe("translateNav", () => {
     ]);
   });
 
-  it("labels a section by its directory when settings do not", () => {
-    const { spec } = translate({ sections: [{ path: "guide" }] });
-    expect(spec?.items.some((item) => item.label === "guide")).toBe(true);
+  it("labels a section by its directory when nothing else can name it", () => {
+    // `release-notes` has no index page, so there is no document to ask.
+    const { spec } = translate({ sections: [{ path: "release-notes" }] });
+    expect(spec?.items.some((item) => item.label === "release-notes")).toBe(true);
+  });
+
+  // Canopy names a page from its frontmatter title, then its opening heading,
+  // then its filename — and falls back to the directory for an index page, which
+  // is the same answer this would have written. Emitting a label anyway would
+  // override the document's own name with a directory name, every time.
+  describe("leaves naming to the page that fronts a directory", () => {
+    it("omits a section label when the section has an index page", () => {
+      const { spec } = translate({ sections: [{ path: "guide" }] });
+      const guide = spec?.items.find((item) => item.path === "guide/index.md");
+      expect(guide).toBeDefined();
+      expect(guide?.label).toBeUndefined();
+    });
+
+    it("omits a derived subdirectory label when it has an index page", () => {
+      const site = indexSite([
+        "guide/index.md",
+        "guide/settings/index.md",
+        "guide/settings/api-keys.md",
+      ]);
+      const { spec } = translate({ sections: [{ path: "guide" }] }, site);
+      const settings = spec?.items
+        .find((item) => item.path === "guide/index.md")
+        ?.items?.find((item) => item.path === "guide/settings/index.md");
+      expect(settings).toBeDefined();
+      expect(settings?.label).toBeUndefined();
+    });
+
+    it("keeps a derived subdirectory label when it has no index page", () => {
+      const { spec } = translate({ sections: [{ path: "guide" }] });
+      const settings = spec?.items
+        .find((item) => item.path === "guide/index.md")
+        ?.items?.find((item) => item.label === "settings");
+      expect(settings).toBeDefined();
+      expect(settings?.path).toBeUndefined();
+    });
+
+    it("still honors a label the settings file wrote", () => {
+      const { spec } = translate({ sections: [{ path: "guide", label: "Guide" }] });
+      expect(spec?.items.some((item) => item.label === "Guide")).toBe(true);
+    });
   });
 
   it("links a section's label to its index page", () => {

@@ -49,6 +49,17 @@ versions that never shipped.
 
 ### Notes
 
+- A page is shown under the name canopy gives it — its frontmatter `title`, else the heading it
+  opens with, else its filename — and a section whose directory holds an index page is named by
+  that page. No `label` is written for those, because writing one would override the document's
+  own name with a directory name every time. `label` remains for the cases the documents cannot
+  answer, and still wins when written
+- A reference target is percent-decoded before it is resolved, so `a%20b/note.md` and
+  `<a b/note.md>` are checked as the one document they address. Editors write the first form on
+  their own for any path containing a space — and this checker's own advice for a destination
+  that stops at a space is to write the space as `%20`, which it would otherwise have rejected.
+  Decoding is per segment, so `%2F` stays a character inside a name; a malformed escape leaves
+  the reference alone, which is what the renderer does with it
 - Canopy is driven through its command line rather than its library API: it is the same door
   every other consumer uses, and a door only stays wide enough if the people who could have gone
   around it do not
