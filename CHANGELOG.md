@@ -7,6 +7,18 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [0.4.0] — 2026-08-08
+
+### Changed
+
+- **Upgraded to canopy 0.4.0.** A site's on-page outline now stays pinned to the viewport while
+  scrolling, matching the sidebar, and every page fits a narrow screen without scrolling
+  horizontally — both fixes apply automatically on the next build, no `settings.json` field
+  changed. Canopy also gained `--search-index`, which canopy-page does not call yet — a site
+  built with this version carries no search index or search UI. See
+  [canopy's changelog](https://github.com/iyulab/canopy/blob/main/CHANGELOG.md#040--2026-08-08)
+  for the full set of changes.
+
 ## [0.3.0] — 2026-08-08
 
 ### Changed
