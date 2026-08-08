@@ -8,3 +8,7 @@ claudedocs/
 CLAUDE.md
 dist-demo/
 *.tgz
+
+# Left behind by browser-automation tool sessions (Playwright MCP), not
+# project content.
+.playwright-mcp/

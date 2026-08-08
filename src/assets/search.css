@@ -1,0 +1,53 @@
+/* Search UI — pairs with assets/search.js and the `.canopy-search` form
+   canopy's shell emits. Loaded only when a build carries both, so a site
+   with no search never pays for this either. Reuses canopy's own tokens
+   (--sp-*, --border, --radius-m, --bg-primary, --text-*) rather than
+   introducing new ones. */
+
+.canopy-search {
+  position: relative;
+}
+
+.canopy-search-results {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 10;
+  margin: var(--sp-2) 0 0;
+  padding: var(--sp-2) 0;
+  width: min(24rem, 90vw);
+  max-height: 60vh;
+  overflow-y: auto;
+  list-style: none;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.canopy-search-results li {
+  padding: var(--sp-2) var(--sp-3);
+}
+
+.canopy-search-results li.is-active,
+.canopy-search-results li:hover {
+  background: var(--bg-secondary);
+}
+
+.canopy-search-results a {
+  display: block;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-normal);
+  text-decoration: none;
+}
+
+.canopy-search-snippet {
+  margin: var(--sp-1, 4px) 0 0;
+  font-size: 0.85em;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
