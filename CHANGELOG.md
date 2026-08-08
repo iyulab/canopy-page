@@ -7,6 +7,17 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [0.3.0] — 2026-08-08
+
+### Changed
+
+- **Upgraded to canopy 0.3.0.** A site that sets `title`, `logo`, or `home` now gets a full-width
+  top bar above the sidebar/main layout on its next build, rather than that content living in the
+  sidebar's own header — no `settings.json` field changed, the new layout applies automatically.
+  See [canopy's changelog](https://github.com/iyulab/canopy/blob/main/CHANGELOG.md#030--2026-08-08)
+  for the underlying markup and CSS selector changes, relevant to a site with custom CSS layered
+  over the default stylesheet.
+
 ## [0.2.0] — 2026-08-07
 
 ### Added
