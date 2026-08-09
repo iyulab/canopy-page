@@ -29,6 +29,15 @@ jobs:
       # Build before test — see ci.yml for why (packaging.test.ts needs dist/).
       - run: npm run build
       - run: npm test
+      # The demo site names rehype-mermaid in settings.json — see pages.yml
+      # for why this needs a real browser rather than only Node.
+      - name: Cache Playwright's browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - name: Install Playwright's Chromium
+        run: npx playwright install --with-deps chromium
       # The example site is built by the very package being released, so a
       # release that cannot build it is a release that does not work. Cheap
       # here, and the failure names the page and line.

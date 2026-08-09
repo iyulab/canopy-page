@@ -16,7 +16,7 @@ This is the file that produced the site you are reading:
   "home": { "url": "https://github.com/iyulab/canopy-page", "label": "canopy-page on GitHub" },
   "siteUrl": "https://iyulab.github.io/canopy-page",
   "exclude": ["_drafts"],
-  "rehypePlugins": ["rehype-declart"],
+  "rehypePlugins": ["rehype-declart", "rehype-mermaid"],
   "sections": [
     {
       "path": "guide",

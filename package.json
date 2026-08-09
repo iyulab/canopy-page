@@ -46,7 +46,9 @@
     "@biomejs/biome": "^2.5.0",
     "@iyulab/declart": "^0.20.0",
     "@types/node": "^25.9.3",
+    "playwright": "^1.62.1",
     "rehype-declart": "^0.20.0",
+    "rehype-mermaid": "^3.0.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.9"
   },

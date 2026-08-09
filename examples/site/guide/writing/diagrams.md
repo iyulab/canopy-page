@@ -6,7 +6,7 @@ after canopy sanitizes the page's HTML and before Shiki highlights its code. A s
 plugin's package in its settings file; the plugin does the rest.
 
 ```json
-{ "rehypePlugins": ["rehype-declart"] }
+{ "rehypePlugins": ["rehype-declart", "rehype-mermaid"] }
 ```
 
 ## declart, rendered at build time
@@ -40,27 +40,23 @@ ever sees it. Nothing about reading this page depends on a script — the SVG ab
 the paragraph around it, the same guarantee [the front page](../../index.md) makes for the rest of
 the site.
 
-## mermaid, and why this site does not render it
+## mermaid, rendered the same way
 
 [Mermaid](https://mermaid.js.org/) is diagrammed in plain text too, and `rehype-mermaid` plugs
-into the same extension point the same way declart's plugin does:
-
-```json
-{ "rehypePlugins": ["rehype-mermaid"] }
-```
+into the same extension point the same way declart's plugin does — no canopy code cares which
+plugin a site names, or how many:
 
 ```mermaid
 flowchart LR
     write[Write markdown] --> check[canopy-page checks it] --> render[canopy renders it] --> deploy[Deploy]
 ```
 
-That fence is not rendered here — this site's own settings do not name `rehype-mermaid`, so it
-gets exactly what any other fence gets: syntax highlighting, and nothing more. `rehype-mermaid`
-renders through a real browser (it depends on
-[Playwright](https://playwright.dev/)) rather than a small WebAssembly binding, which means a site
-that enables it needs a headless Chromium installed wherever it builds. That is a reasonable cost
-for a site that wants mermaid specifically, and this site's own settings file could name it the
-same way it names `rehype-declart`. It does not, because carrying a browser download through this
-site's own build for a second diagram renderer is not a cost this documentation needs to pay to
-demonstrate that the extension point works — declart already shows that end to end, with nothing
-extra to install.
+That diagram is as real as declart's: `rehype-mermaid` claims the fence, renders it, and replaces
+it before Shiki ever sees a `language-mermaid` block to highlight. The difference is what does the
+rendering. declart renders through a WebAssembly binding — no browser involved. `rehype-mermaid`
+renders through a real one: it depends on [Playwright](https://playwright.dev/), and a site that
+enables it needs a headless Chromium installed wherever it builds. This site's own build now
+carries that cost — installing a browser adds real time and disk to every build, which is worth
+naming plainly rather than leaving implicit. What it buys back is exactly what the paragraph above
+this one claims for the rest of the site: the SVG is generated once, at build time, and reading
+this page still depends on nothing but HTML.

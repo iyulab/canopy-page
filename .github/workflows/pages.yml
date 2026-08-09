@@ -42,6 +42,17 @@ jobs:
       - run: npm ci
       - run: npm run build
 
+      # The demo site names rehype-mermaid in settings.json, which renders
+      # through a real headless browser rather than in-process — cached on the
+      # lockfile hash so an unrelated dependency bump does not force a redownload.
+      - name: Cache Playwright's browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - name: Install Playwright's Chromium
+        run: npx playwright install --with-deps chromium
+
       # Run the checker on its own first. It never renders, so when a demo page
       # points at nothing this fails in seconds and says which line — rather
       # than failing inside the build with the same message buried in output.
