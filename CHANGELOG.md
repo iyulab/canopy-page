@@ -7,22 +7,27 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
-## [Unreleased]
+## [0.5.0] — 2026-08-09
 
 ### Added
 
 - **Search, wired up.** Every build now carries a search box in the top bar, a `Ctrl+K` /
   `Cmd+K` shortcut to jump to it, and an on-page outline that highlights the section currently
   in view while scrolling — all with no `settings.json` field to turn on, and all inert if a
-  reader's browser has scripts disabled. Requires canopy `^0.5.0`.
+  reader's browser has scripts disabled.
 - **A dark/light toggle**, riding in the same script bundle. Remembers a reader's choice across
-  visits; without a stored choice, follows the system preference exactly as before. Requires
-  canopy `^0.6.0` (unreleased — the toggle is written and tested against canopy's local build,
-  but canopy-page's own dependency stays on `^0.5.0` until canopy 0.6.0 is actually published).
+  visits; without a stored choice, follows the system preference exactly as before.
 
 ### Changed
 
-- **Upgraded to canopy 0.5.0.**
+- **Upgraded to canopy 0.6.0.** The current page's sidebar entry is now highlighted, a reader
+  landing partway down a page can flip `data-theme` by hand, mobile navigation opens as a
+  full-screen panel instead of pushing the page down, an unlabeled or unrecognized code fence
+  highlights as plain text instead of falling back unstyled, and every page gains previous/next
+  links to its neighbors in the sidebar order — all on the next build, no `settings.json` field
+  changed. See
+  [canopy's changelog](https://github.com/iyulab/canopy/blob/main/CHANGELOG.md#060--2026-08-09)
+  for the underlying markup and CSS selector changes.
 
 ## [0.4.0] — 2026-08-08
 
