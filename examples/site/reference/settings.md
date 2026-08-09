@@ -16,12 +16,16 @@ This is the file that produced the site you are reading:
   "home": { "url": "https://github.com/iyulab/canopy-page", "label": "canopy-page on GitHub" },
   "siteUrl": "https://iyulab.github.io/canopy-page",
   "exclude": ["_drafts"],
+  "rehypePlugins": ["rehype-declart"],
   "sections": [
     {
       "path": "guide",
       "items": [
         "guide/install",
-        { "path": "guide/writing/index", "items": ["guide/writing/code-and-math"] },
+        {
+          "path": "guide/writing/index",
+          "items": ["guide/writing/code-and-math", "guide/writing/diagrams"]
+        },
         "guide/reading"
       ]
     },
@@ -45,6 +49,7 @@ This is the file that produced the site you are reading:
 | `siteUrl` | Where the built site will stand, as an absolute URL |
 | `exclude` | Paths to leave unpublished |
 | `sections` | Ordered regions of the site |
+| `rehypePlugins` | Package names of rehype plugins to run on every page, such as a diagram renderer |
 
 Validation is strict: an unknown key is rejected rather than ignored. A mistyped key that is
 quietly dropped looks like a tool disobeying its configuration, and every message names the
@@ -123,6 +128,25 @@ and the `robots.txt` that points at it both need one absolute address for the wh
 without `siteUrl` neither is written. Set it and both files appear, with every entry an absolute
 URL rather than a path relative to nothing — this site's own `sitemap.xml` is built from
 `https://iyulab.github.io/canopy-page`, the address it is actually published at.
+
+## Extending what a page can render
+
+`rehypePlugins` names installed packages, not files:
+
+```json
+{ "rehypePlugins": ["rehype-declart"] }
+```
+
+Each one runs on every page, after canopy's own HTML sanitizing and before syntax highlighting —
+a fixed position, so a plugin claiming a fenced code block by its language always sees it before
+Shiki would otherwise render that fence as plain highlighted text. A site names the package it
+depends on; the plugin itself is an ordinary dependency, installed the same way any other one is.
+See [Diagrams](../guide/writing/diagrams.md) for what this looks like end to end.
+
+A relative path (`./plugins/mine.js`) is refused here for the same reason a relative `tokens` path
+is resolved against the settings file rather than left to the shell that happened to start the
+build: a plugin loaded by canopy's own process would otherwise resolve against whatever directory
+the build was run from, not this file's directory, and get it right by accident or not at all.
 
 ## One settings file is one site
 

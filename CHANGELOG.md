@@ -7,6 +7,23 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [0.6.0] — 2026-08-09
+
+### Added
+
+- **A `rehypePlugins` field**, naming installed rehype plugin packages to run on every page —
+  canopy's fixed extension point (after sanitize, before syntax highlighting) for markdown that
+  needs more than CommonMark and GFM, a diagram fence rendered to SVG being the case this exists
+  for. This site's own [guide to diagrams](https://iyulab.github.io/canopy-page/guide/writing/diagrams.html)
+  demonstrates it end to end, with [declart](https://github.com/iyulab/declart) rendered at build
+  time through `rehype-declart`.
+
+### Changed
+
+- **Upgraded to canopy 0.7.0**, the release `rehypePlugins` builds on. See
+  [canopy's changelog](https://github.com/iyulab/canopy/blob/main/CHANGELOG.md#070--2026-08-09)
+  for the plugin's fixed position and how it interacts with sanitizing and highlighting.
+
 ## [0.5.0] — 2026-08-09
 
 ### Added

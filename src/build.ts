@@ -81,6 +81,7 @@ export function canopyArgs(
     // assembleTokensCss, once copied as a plain asset.
     ...(settings.tokens === undefined ? [] : ["--exclude", settings.tokens]),
     ...(settings.exclude ?? []).flatMap((pattern) => ["--exclude", pattern]),
+    ...(settings.rehypePlugins ?? []).flatMap((specifier) => ["--rehype-plugin", specifier]),
   ];
 }
 

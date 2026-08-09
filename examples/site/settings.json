@@ -8,12 +8,16 @@
   "home": { "url": "https://github.com/iyulab/canopy-page", "label": "canopy-page on GitHub" },
   "siteUrl": "https://iyulab.github.io/canopy-page",
   "exclude": ["_drafts"],
+  "rehypePlugins": ["rehype-declart"],
   "sections": [
     {
       "path": "guide",
       "items": [
         "guide/install",
-        { "path": "guide/writing/index", "items": ["guide/writing/code-and-math"] },
+        {
+          "path": "guide/writing/index",
+          "items": ["guide/writing/code-and-math", "guide/writing/diagrams"]
+        },
         "guide/reading"
       ]
     },

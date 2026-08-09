@@ -92,6 +92,7 @@ unpublished.
   "lang": "en-GB",
   "icon": "assets/favicon.png",
   "exclude": ["_drafts", "*.tmp"],
+  "rehypePlugins": ["rehype-declart"],
   "sections": [
     { "path": "guide", "label": "Guide", "items": [
       { "label": "Orders", "items": ["guide/orders/list", "guide/orders/detail"] },
@@ -113,6 +114,7 @@ unpublished.
 | `home` | A link back to the site this documentation sits beside: `{ url, label }`. Both are required together — naming half of it is not a valid setting. `url` must be an absolute http(s) URL; there is no default `label`, because link text has to be written in the site's own language. Absent: no link back to a surrounding site is rendered |
 | `siteUrl` | Absolute URL naming where the built site will stand. Every link canopy writes is relative, which is what lets a site be served from any sub-path — and exactly why a sitemap, whose entries must be absolute, needs this separately. **Only** when it is set does `build` write `sitemap.xml` and a `robots.txt` pointing at it. Absent: neither file is written |
 | `exclude` | Paths to leave unpublished: a directory (`_drafts` or `_drafts/**`), an extension at any depth (`*.tmp`), or one exact path. Patterns are relative to the settings file, and a shape outside that list — `images/*.md` — is refused rather than left to match nothing |
+| `rehypePlugins` | Package names of rehype plugins to run on every page, after canopy's own sanitize step and before syntax highlighting — canopy's fixed extension point for markdown that needs more than CommonMark and GFM, a diagram fence rendered to SVG being the case this exists for. Each entry is an installed package name (`"rehype-declart"`), never a filesystem path — a relative-looking entry is refused, since the directory it would resolve against is wherever the build happens to run from, not this file |
 | `sections` | Ordered regions of the site — see below |
 
 `tokens` is two blocks in practice, not one — a bare `:root` and a `prefers-color-scheme: dark`

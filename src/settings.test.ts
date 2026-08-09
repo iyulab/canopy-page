@@ -125,6 +125,24 @@ describe("parseSettings", () => {
   it("refuses a site URL that is not absolute", () => {
     rejects(JSON.stringify({ siteUrl: "/help" }), /settings\.siteUrl/);
   });
+
+  it("reads rehype plugin package names", () => {
+    expect(
+      parseSettings(JSON.stringify({ rehypePlugins: ["rehype-declart", "@scope/rehype-thing"] })),
+    ).toEqual({
+      rehypePlugins: ["rehype-declart", "@scope/rehype-thing"],
+    });
+  });
+
+  it("refuses a rehype plugin entry that looks like a file path", () => {
+    rejects(
+      JSON.stringify({ rehypePlugins: ["./plugins/mine.js"] }),
+      /settings\.rehypePlugins\[0\]: "\.\/plugins\/mine\.js" looks like a file path/,
+    );
+    rejects(JSON.stringify({ rehypePlugins: ["../mine.js"] }), /looks like a file path/);
+    rejects(JSON.stringify({ rehypePlugins: ["/abs/mine.js"] }), /looks like a file path/);
+    rejects(JSON.stringify({ rehypePlugins: ["C:\\mine.js"] }), /looks like a file path/);
+  });
 });
 
 describe("parseSettings sections", () => {

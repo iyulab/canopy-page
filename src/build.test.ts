@@ -103,6 +103,21 @@ describe("canopyArgs", () => {
     expect(args[args.indexOf("--script") + 1]).toBe(SEARCH_ASSETS.scriptPath);
     expect(args.join(" ")).toContain("--search-index search-index.json");
   });
+
+  it("passes each rehype plugin through as its own --rehype-plugin flag", () => {
+    const args = canopyArgs(
+      siteWith({ rehypePlugins: ["rehype-declart", "rehype-mermaid"] }),
+      "/out",
+      undefined,
+      SEARCH_ASSETS,
+    );
+    expect(args.join(" ")).toContain("--rehype-plugin rehype-declart --rehype-plugin rehype-mermaid");
+  });
+
+  it("has no --rehype-plugin flag when a site names none", () => {
+    const args = canopyArgs(siteWith({}), "/out", undefined, SEARCH_ASSETS);
+    expect(args).not.toContain("--rehype-plugin");
+  });
 });
 
 describe("buildSite", () => {

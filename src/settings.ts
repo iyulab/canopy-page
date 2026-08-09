@@ -103,6 +103,18 @@ export interface Settings {
    * points at it. Absent, neither is written.
    */
   siteUrl?: string;
+  /**
+   * Rehype plugins to run on every page, after canopy's own sanitize step and
+   * before syntax highlighting — canopy's fixed extension point for markdown
+   * that needs more than CommonMark and GFM, a diagram fence rendered to SVG
+   * being the case this exists for.
+   *
+   * Each entry is an installed package name (`"rehype-declart"`), never a
+   * filesystem path: this is a JSON settings file naming a dependency the site
+   * author already declared, not a script with a place of its own to resolve a
+   * relative path against.
+   */
+  rehypePlugins?: string[];
 }
 
 /**
@@ -124,6 +136,7 @@ const SETTINGS_KEYS = new Set([
   "logo",
   "home",
   "siteUrl",
+  "rehypePlugins",
 ]);
 
 const SECTION_KEYS = new Set(["path", "label", "order", "items"]);
@@ -213,6 +226,35 @@ function asExclusionPattern(value: unknown, where: string): string {
   return pattern;
 }
 
+/**
+ * Check a `rehypePlugins` entry names a package rather than a file.
+ *
+ * canopy itself accepts either shape on `--rehype-plugin`, resolving a
+ * filesystem-looking specifier against its own process's working directory.
+ * That directory is canopy-page's spawning process, not the settings file —
+ * the same ambiguity every other path setting here avoids by resolving
+ * relative to the settings file instead. Rather than resolve it a second way
+ * here, a path-looking entry is refused with a message saying why, matching
+ * every other setting whose value must stay inside a stated shape.
+ */
+function asModuleSpecifier(value: unknown, where: string): string {
+  const specifier = asString(value, where);
+  const looksLikeAPath =
+    specifier.startsWith("./") ||
+    specifier.startsWith("../") ||
+    specifier.startsWith("/") ||
+    specifier.includes("\\") ||
+    /^[A-Za-z]:/.test(specifier);
+  if (looksLikeAPath) {
+    fail(
+      `${where}: "${specifier}" looks like a file path, not a package name. ` +
+        "Install the plugin as a dependency and name it here the way its package.json does " +
+        '(e.g. "rehype-declart"), so resolution does not depend on the directory the build runs from.',
+    );
+  }
+  return specifier;
+}
+
 function parseNavItem(value: unknown, where: string): SettingsNavItem {
   // A bare string is the common case — a page in the order it should appear.
   if (typeof value === "string") {
@@ -287,7 +329,8 @@ export function parseSettings(json: string): Settings {
   const value = asObject(raw, "settings", "expected a JSON object");
   rejectUnknownKeys(value, SETTINGS_KEYS, "settings");
 
-  const { title, description, lang, icon, tokens, exclude, sections, logo, home, siteUrl } = value;
+  const { title, description, lang, icon, tokens, exclude, sections, logo, home, siteUrl, rehypePlugins } =
+    value;
   if (title !== undefined) asString(title, "settings.title");
   if (description !== undefined) asString(description, "settings.description");
   if (lang !== undefined) {
@@ -301,6 +344,9 @@ export function parseSettings(json: string): Settings {
   }
   if (exclude !== undefined && !Array.isArray(exclude)) fail("settings.exclude: must be an array");
   if (sections !== undefined && !Array.isArray(sections)) fail("settings.sections: must be an array");
+  if (rehypePlugins !== undefined && !Array.isArray(rehypePlugins)) {
+    fail("settings.rehypePlugins: must be an array");
+  }
 
   let parsedHome: { url: string; label: string } | undefined;
   if (home !== undefined) {
@@ -350,5 +396,12 @@ export function parseSettings(json: string): Settings {
     ...(logo === undefined ? {} : { logo: asRelativePath(logo, "settings.logo") }),
     ...(parsedHome === undefined ? {} : { home: parsedHome }),
     ...(siteUrl === undefined ? {} : { siteUrl: siteUrl as string }),
+    ...(rehypePlugins === undefined
+      ? {}
+      : {
+          rehypePlugins: (rehypePlugins as unknown[]).map((specifier, i) =>
+            asModuleSpecifier(specifier, `settings.rehypePlugins[${i}]`),
+          ),
+        }),
   };
 }
