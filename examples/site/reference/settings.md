@@ -7,8 +7,8 @@ This is the file that produced the site you are reading:
 
 ```json
 {
-  "title": "canopy-page demo",
-  "description": "A documentation site built from this folder by canopy-page, published on every push.",
+  "title": "canopy-page",
+  "description": "Documentation for canopy-page: one settings file, integrity checks, and a build — built with canopy-page itself, published on every push.",
   "lang": "en",
   "icon": "assets/logo.svg",
   "logo": "assets/logo.svg",
@@ -21,7 +21,8 @@ This is the file that produced the site you are reading:
       "path": "guide",
       "items": [
         "guide/install",
-        { "path": "guide/writing/index", "items": ["guide/writing/code-and-math"] }
+        { "path": "guide/writing/index", "items": ["guide/writing/code-and-math"] },
+        "guide/reading"
       ]
     },
     { "path": "reference", "label": "Reference" },
@@ -64,7 +65,7 @@ called. `Reference` is labelled because this section has no index page of its ow
 
 ### Ordering
 
-`release-notes` uses `"order": "desc"`, which is why 2026-08 comes before 2026-04. Ordering
+`release-notes` uses `"order": "desc"`, which is why August 8 comes before August 7. Ordering
 derived this way follows filenames, not headings — filenames are what you see in the folder you
 are ordering, and a log of dated files is exactly the case it serves.
 

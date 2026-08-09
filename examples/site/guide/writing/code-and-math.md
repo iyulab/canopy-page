@@ -1,6 +1,7 @@
 # Code and math
 
-Everything on this page renders at build time. No script runs in the reader's browser.
+Everything on this page renders at build time — no script is needed to show the highlighting,
+math, or callouts below.
 
 ## Syntax highlighting
 
@@ -27,7 +28,8 @@ def pages(tree: dict) -> list[str]:
 { "title": "Product Help", "sections": [{ "path": "guide" }] }
 ```
 
-A fence naming a language nothing can resolve renders as a plain block rather than failing:
+A fence naming a language nothing can resolve renders as plain text — the same background as
+every other code block, just without coloring — rather than failing:
 
 ```notalanguage
 this still renders

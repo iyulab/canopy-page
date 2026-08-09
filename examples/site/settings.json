@@ -1,6 +1,6 @@
 {
-  "title": "canopy-page demo",
-  "description": "A documentation site built from this folder by canopy-page, published on every push.",
+  "title": "canopy-page",
+  "description": "Documentation for canopy-page: one settings file, integrity checks, and a build — built with canopy-page itself, published on every push.",
   "lang": "en",
   "icon": "assets/logo.svg",
   "logo": "assets/logo.svg",
@@ -13,7 +13,8 @@
       "path": "guide",
       "items": [
         "guide/install",
-        { "path": "guide/writing/index", "items": ["guide/writing/code-and-math"] }
+        { "path": "guide/writing/index", "items": ["guide/writing/code-and-math"] },
+        "guide/reading"
       ]
     },
     { "path": "reference", "label": "Reference" },
