@@ -7,6 +7,28 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [0.7.0] — 2026-08-09
+
+### Added
+
+- **A `strings` field** overriding the reader chrome's own built-in text — search, the theme
+  toggle, and the navigation landmarks. `lang` only ever changed what `<html lang>` declares;
+  this text is canopy's own UI, not vault content, so it stayed English regardless. No built-in
+  translation table, the same reasoning `home.label` already follows. Threaded to canopy as a
+  JSON `--strings` flag.
+- **`check` warns about a root-absolute reference that resolves today but would only be correct
+  if the site is served from the domain root**, whenever `siteUrl` already declares a non-root
+  mount path — reusing the one signal a settings file already carries about where the site is
+  served from, rather than requiring a new field.
+
+### Changed
+
+- **`home.url` no longer requires an absolute http(s) URL.** A relative one (a sibling of the
+  published site, at the same origin) is now resolved against each page's depth, the same as
+  every other internal link canopy writes — useful when the site is mounted at a sub-path whose
+  absolute origin differs between environments.
+- **Upgraded to canopy 0.8.0**, the release the relative `home.url` and `strings` support build on.
+
 ## [0.6.0] — 2026-08-09
 
 ### Added
