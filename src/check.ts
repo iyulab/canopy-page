@@ -45,6 +45,21 @@ function isRootAbsolute(url: string): boolean {
 }
 
 /**
+ * The mount path `siteUrl` declares, when it says the site stands under a
+ * sub-path rather than a domain root.
+ *
+ * `siteUrl` is the one place settings already say where the site is served
+ * from — set today only to address a sitemap, but its path component answers
+ * exactly the question a root-absolute reference otherwise leaves open.
+ */
+function siteBasePath(site: LoadedSite): string | undefined {
+  const { siteUrl } = site.settings;
+  if (siteUrl === undefined) return undefined;
+  const { pathname } = new URL(siteUrl);
+  return pathname === "/" ? undefined : pathname;
+}
+
+/**
  * Does anything published sit at this path — a page, a copied file, or the index
  * page a directory is entered by?
  *
@@ -100,14 +115,19 @@ export async function referenceFindings(site: LoadedSite): Promise<Finding[]> {
 
       if (isRootAbsolute(url)) {
         const atRoot = decodeTarget(url.replace(/^\/+/, "")) ?? url.replace(/^\/+/, "");
-        if (atRoot === "" || existsInSite(site, atRoot)) continue;
+        const resolves = atRoot === "" || existsInSite(site, atRoot);
+        const basePath = siteBasePath(site);
+        if (resolves && basePath === undefined) continue;
         findings.push({
           level: "warning",
-          message:
-            `${where}: ${reference.kind} "${reference.target}" — ` +
-            `nothing is published at "${atRoot}". A root-absolute path resolves ` +
-            "against wherever the site is served from, so this is right only if " +
-            "something else answers it there",
+          message: resolves
+            ? `${where}: ${reference.kind} "${reference.target}" resolves only when the ` +
+              `site is served from the domain root, but settings.siteUrl declares it is ` +
+              `mounted under "${basePath}"`
+            : `${where}: ${reference.kind} "${reference.target}" — ` +
+              `nothing is published at "${atRoot}". A root-absolute path resolves ` +
+              "against wherever the site is served from, so this is right only if " +
+              "something else answers it there",
         });
         continue;
       }

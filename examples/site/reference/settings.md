@@ -42,6 +42,7 @@ This is the file that produced the site you are reading:
 | `title` | Site name. Defaults to the folder's name |
 | `description` | Fills `<meta name="description">`, which is what a link preview shows |
 | `lang` | BCP 47 tag for `<html lang>`. Assistive technology reads pronunciation from it |
+| `strings` | Overrides for the reader chrome's own text (`search`, `toggleTheme`, `siteNav`, `pageNav`, `onThisPage`) — `lang` alone does not translate it, since it is canopy's UI rather than vault content |
 | `icon` | Favicon, relative to the settings file. Must be a published file |
 | `tokens` | CSS of design-token overrides, relative to the settings file |
 | `logo` | Image shown beside the site title in the sidebar header, relative to the settings file. Must be a published file |

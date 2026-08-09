@@ -118,6 +118,22 @@ describe("canopyArgs", () => {
     const args = canopyArgs(siteWith({}), "/out", undefined, SEARCH_ASSETS);
     expect(args).not.toContain("--rehype-plugin");
   });
+
+  it("passes reader chrome string overrides as a JSON --strings flag", () => {
+    const args = canopyArgs(
+      siteWith({ strings: { search: "검색", toggleTheme: "테마 전환" } }),
+      "/out",
+      undefined,
+      SEARCH_ASSETS,
+    );
+    const value = args[args.indexOf("--strings") + 1] as string;
+    expect(JSON.parse(value)).toEqual({ search: "검색", toggleTheme: "테마 전환" });
+  });
+
+  it("has no --strings flag when a site overrides none", () => {
+    const args = canopyArgs(siteWith({}), "/out", undefined, SEARCH_ASSETS);
+    expect(args).not.toContain("--strings");
+  });
 });
 
 describe("buildSite", () => {

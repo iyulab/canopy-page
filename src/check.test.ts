@@ -108,6 +108,32 @@ describe("referenceFindings", () => {
     ).toEqual([]);
   });
 
+  // siteUrl carrying a path is the one place settings already say where the
+  // site is mounted — a root-absolute reference that resolves today would
+  // still break there, so silence would be wrong precisely because it looks
+  // safe.
+  it("warns about a resolvable root-absolute path when siteUrl declares a sub-path mount", async () => {
+    const root = await site({
+      "settings.json": JSON.stringify({ siteUrl: "https://example.test/help/" }),
+      "index.md": "[install](/guide/install)",
+      "guide/install.md": "# Install",
+    });
+    const [finding] = await referenceFindings(await loadSite(root));
+
+    expect(finding?.level).toBe("warning");
+    expect(finding?.message).toContain('"/guide/install"');
+    expect(finding?.message).toContain("/help/");
+  });
+
+  it("says nothing about a resolvable root-absolute path when siteUrl mounts at the domain root", async () => {
+    const root = await site({
+      "settings.json": JSON.stringify({ siteUrl: "https://example.test/" }),
+      "index.md": "[install](/guide/install)",
+      "guide/install.md": "# Install",
+    });
+    expect(await referenceFindings(await loadSite(root))).toEqual([]);
+  });
+
   it("warns about a root-absolute path nothing in the site answers", async () => {
     const root = await site({
       "settings.json": "{}",

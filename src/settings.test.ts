@@ -100,8 +100,17 @@ describe("parseSettings", () => {
     rejects(JSON.stringify({ home: { label: "제품 홈" } }), /settings\.home\.url/);
   });
 
-  it("refuses a home URL that is not absolute", () => {
-    rejects(JSON.stringify({ home: { url: "/", label: "홈" } }), /settings\.home\.url/);
+  // The target is normally a sibling product at the same origin, which a
+  // relative path reaches without hardcoding an origin that differs between
+  // dev and production — the site's own internal links already work this way.
+  it("accepts a relative home URL", () => {
+    expect(parseSettings(JSON.stringify({ home: { url: "../", label: "홈" } }))).toEqual({
+      home: { url: "../", label: "홈" },
+    });
+  });
+
+  it("rejects an empty home URL", () => {
+    rejects(JSON.stringify({ home: { url: "", label: "홈" } }), /settings\.home\.url/);
   });
 
   it("rejects an unknown key inside home", () => {
@@ -114,6 +123,32 @@ describe("parseSettings", () => {
   it("rejects a non-object home", () => {
     rejects(JSON.stringify({ home: "https://example.test/" }), /settings\.home/);
     rejects(JSON.stringify({ home: ["https://example.test/", "홈"] }), /settings\.home/);
+  });
+
+  // `lang` only changes what <html lang> declares; the reader chrome's own
+  // text (search, theme toggle, nav landmarks) needs a translation supplied
+  // separately, the same way `home.label` has no built-in translation either.
+  it("reads reader chrome string overrides", () => {
+    expect(
+      parseSettings(
+        JSON.stringify({ strings: { search: "검색", toggleTheme: "테마 전환" } }),
+      ),
+    ).toEqual({ strings: { search: "검색", toggleTheme: "테마 전환" } });
+  });
+
+  it("rejects an unknown key inside strings", () => {
+    rejects(
+      JSON.stringify({ strings: { search: "검색", typo: "x" } }),
+      /settings\.strings: unknown key "typo"/,
+    );
+  });
+
+  it("rejects a non-string value inside strings", () => {
+    rejects(JSON.stringify({ strings: { search: 1 } }), /settings\.strings\.search/);
+  });
+
+  it("rejects a non-object strings", () => {
+    rejects(JSON.stringify({ strings: "검색" }), /settings\.strings/);
   });
 
   it("reads a site URL", () => {

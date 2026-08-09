@@ -65,6 +65,7 @@ export function canopyArgs(
     ...(settings.home === undefined
       ? []
       : ["--home-url", settings.home.url, "--home-label", settings.home.label]),
+    ...(settings.strings === undefined ? [] : ["--strings", JSON.stringify(settings.strings)]),
     ...(navPath === undefined ? [] : ["--nav", navPath]),
     // Always on, same reasoning as --tokens-css above: a search index and the
     // script that searches it are canopy-page's own contribution, not a site

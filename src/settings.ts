@@ -115,6 +115,23 @@ export interface Settings {
    * relative path against.
    */
   rehypePlugins?: string[];
+  /**
+   * Overrides for the reader chrome's own text — search, the theme toggle,
+   * and the navigation landmarks.
+   *
+   * `lang` changes what `<html lang>` declares, but that text is canopy's own
+   * UI, not vault content, so `lang` alone leaves it English. There is no
+   * built-in translation table: like `home.label`, link text has to be
+   * written in the site's own language, and canopy cannot know what that
+   * language calls "Search". Keys left out keep their English default.
+   */
+  strings?: {
+    search?: string;
+    toggleTheme?: string;
+    siteNav?: string;
+    pageNav?: string;
+    onThisPage?: string;
+  };
 }
 
 /**
@@ -137,11 +154,14 @@ const SETTINGS_KEYS = new Set([
   "home",
   "siteUrl",
   "rehypePlugins",
+  "strings",
 ]);
 
 const SECTION_KEYS = new Set(["path", "label", "order", "items"]);
 
 const HOME_KEYS = new Set(["url", "label"]);
+
+const STRINGS_KEYS = new Set(["search", "toggleTheme", "siteNav", "pageNav", "onThisPage"]);
 
 const NAV_ITEM_KEYS = new Set(["label", "path", "items"]);
 
@@ -329,8 +349,20 @@ export function parseSettings(json: string): Settings {
   const value = asObject(raw, "settings", "expected a JSON object");
   rejectUnknownKeys(value, SETTINGS_KEYS, "settings");
 
-  const { title, description, lang, icon, tokens, exclude, sections, logo, home, siteUrl, rehypePlugins } =
-    value;
+  const {
+    title,
+    description,
+    lang,
+    icon,
+    tokens,
+    exclude,
+    sections,
+    logo,
+    home,
+    siteUrl,
+    rehypePlugins,
+    strings,
+  } = value;
   if (title !== undefined) asString(title, "settings.title");
   if (description !== undefined) asString(description, "settings.description");
   if (lang !== undefined) {
@@ -354,12 +386,11 @@ export function parseSettings(json: string): Settings {
     rejectUnknownKeys(object, HOME_KEYS, "settings.home");
     if (object.url === undefined) fail('settings.home.url: needed alongside "label"');
     if (object.label === undefined) fail('settings.home.label: needed alongside "url"');
+    // Absolute when the target is a different origin, relative when it is a
+    // sibling of the published site (a product this documentation is mounted
+    // beside) — canopy resolves a relative one against each page's depth, the
+    // same way it resolves every other internal link.
     const url = asString(object.url, "settings.home.url");
-    // The target is normally outside the published site, so a relative path has
-    // nothing here to resolve against.
-    if (!/^https?:\/\//i.test(url)) {
-      fail(`settings.home.url: "${url}" must be an absolute http(s) URL`);
-    }
     parsedHome = { url, label: asString(object.label, "settings.home.label") };
   }
 
@@ -367,6 +398,19 @@ export function parseSettings(json: string): Settings {
     const url = asString(siteUrl, "settings.siteUrl");
     if (!/^https?:\/\//i.test(url)) {
       fail(`settings.siteUrl: "${url}" must be an absolute http(s) URL`);
+    }
+  }
+
+  let parsedStrings: Settings["strings"];
+  if (strings !== undefined) {
+    const object = asObject(strings, "settings.strings", "expected an object");
+    rejectUnknownKeys(object, STRINGS_KEYS, "settings.strings");
+    parsedStrings = {};
+    for (const key of Object.keys(object)) {
+      parsedStrings[key as keyof NonNullable<Settings["strings"]>] = asString(
+        object[key],
+        `settings.strings.${key}`,
+      );
     }
   }
 
@@ -396,6 +440,7 @@ export function parseSettings(json: string): Settings {
     ...(logo === undefined ? {} : { logo: asRelativePath(logo, "settings.logo") }),
     ...(parsedHome === undefined ? {} : { home: parsedHome }),
     ...(siteUrl === undefined ? {} : { siteUrl: siteUrl as string }),
+    ...(parsedStrings === undefined ? {} : { strings: parsedStrings }),
     ...(rehypePlugins === undefined
       ? {}
       : {
