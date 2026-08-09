@@ -26,8 +26,12 @@ async function readAsset(name: string): Promise<string> {
 
 /** The single script every canopy-page site carries via canopy's `--script`. */
 export async function assembleScript(): Promise<string> {
-  const [search, scrollspy] = await Promise.all([readAsset("search.js"), readAsset("scrollspy.js")]);
-  return `${search}\n${scrollspy}`;
+  const [search, scrollspy, themeToggle] = await Promise.all([
+    readAsset("search.js"),
+    readAsset("scrollspy.js"),
+    readAsset("theme-toggle.js"),
+  ]);
+  return `${search}\n${scrollspy}\n${themeToggle}`;
 }
 
 /**

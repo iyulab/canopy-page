@@ -15,6 +15,10 @@ to it — its fields, its validation, and what the checks reject — are what th
   `Cmd+K` shortcut to jump to it, and an on-page outline that highlights the section currently
   in view while scrolling — all with no `settings.json` field to turn on, and all inert if a
   reader's browser has scripts disabled. Requires canopy `^0.5.0`.
+- **A dark/light toggle**, riding in the same script bundle. Remembers a reader's choice across
+  visits; without a stored choice, follows the system preference exactly as before. Requires
+  canopy `^0.6.0` (unreleased — the toggle is written and tested against canopy's local build,
+  but canopy-page's own dependency stays on `^0.5.0` until canopy 0.6.0 is actually published).
 
 ### Changed
 
