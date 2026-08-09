@@ -7,6 +7,9 @@ authoring pipeline around the rendering: the settings a site is configured by, t
 keep broken references from shipping, and the build that ties them together. The rendering
 itself is [canopy](https://github.com/iyulab/canopy)'s job, and canopy-page drives it.
 
+**Live docs**: <https://iyulab.github.io/canopy-page> — built with canopy-page itself, from the
+[`examples/site`](examples/site) in this repository, republished on every push to `main`.
+
 ---
 
 ## Why
@@ -22,6 +25,26 @@ the ones this package holds.
   to find after deployment, where it presents as a reader hitting a 404.
 - **One site, built in one pass.** Links and backlinks resolve across the whole of it, so a guide
   and the release notes it refers to stay connected.
+
+## What ships in every site
+
+No `settings.json` field turns these on — they are just there, on the next build. Reading a
+page never depends on any of the scripted ones: block scripts, or print the page, and only they
+go away.
+
+- **Search**, matching a query against every page's title, headings, and body — `Ctrl+K` /
+  `Cmd+K` jumps to it from anywhere
+- **The current page and section, marked** in the sidebar and the on-page outline, updating as
+  you scroll
+- **A dark/light toggle** that remembers a reader's choice; without one, pages follow the
+  system setting
+- **Prev/next cards** linking to a page's neighbors in the sidebar's own order, and **backlinks**
+  listing every page that points to it
+- **A full-screen menu on narrow screens**, rather than one that pushes the page's content down
+- **Sitemap and `robots.txt`**, once `siteUrl` is set
+
+See it live at <https://iyulab.github.io/canopy-page>, or read
+[What a reader gets](examples/site/guide/reading.md) for how each one behaves.
 
 ## Install
 
@@ -214,6 +237,11 @@ canopy is driven through its command line rather than its library API, on purpos
 door every other consumer uses, and a door only stays wide enough if the people who could have
 gone around it do not. Where the command line cannot express something, that is worth raising
 with canopy rather than working around here.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md), including what a release has to update besides the
+version number.
 
 ## License
 
