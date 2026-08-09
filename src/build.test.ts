@@ -62,6 +62,7 @@ describe("canopyArgs", () => {
   // A translation test, not a build: it only needs a LoadedSite shape, not a
   // real site on disk, so it runs without spawning a process.
   const SITE_ROOT = path.join(tmpdir(), "canopy-page-build-args-site");
+  const SEARCH_ASSETS = { tokensCssPath: "/work/tokens.css", scriptPath: "/work/script.js" };
 
   function siteWith(overrides: Partial<Settings>): LoadedSite {
     const settings: Settings = { ...overrides };
@@ -75,12 +76,11 @@ describe("canopyArgs", () => {
     };
   }
 
-  it("passes a tokens file as an absolute path and keeps it off the site", () => {
-    const args = canopyArgs(siteWith({ tokens: "brand.css" }), "/out", undefined);
-    expect(args).toContain("--tokens-css");
-    // canopy resolves this flag against the working directory, not the vault.
-    expect(args[args.indexOf("--tokens-css") + 1]).toBe(path.join(SITE_ROOT, "brand.css"));
+  it("excludes a site's own tokens file from the published site", () => {
+    const args = canopyArgs(siteWith({ tokens: "brand.css" }), "/out", undefined, SEARCH_ASSETS);
     // Configuration, not content: canopy would otherwise also copy it as an asset.
+    // The file's content itself is folded into the assembled tokens CSS
+    // upstream of canopyArgs (assembleTokensCss), not passed here directly.
     expect(args.join(" ")).toContain("--exclude brand.css");
   });
 
@@ -89,10 +89,19 @@ describe("canopyArgs", () => {
       siteWith({ logo: "assets/logo.svg", home: { url: "https://example.test/", label: "제품 홈" } }),
       "/out",
       undefined,
+      SEARCH_ASSETS,
     );
     expect(args.join(" ")).toContain("--site-logo assets/logo.svg");
     expect(args.join(" ")).toContain("--home-url https://example.test/");
     expect(args).toContain("제품 홈");
+  });
+
+  it("always wires the assembled tokens CSS and script, with no settings field", () => {
+    // No `tokens` in settings — the point is that these ride unconditionally.
+    const args = canopyArgs(siteWith({}), "/out", undefined, SEARCH_ASSETS);
+    expect(args[args.indexOf("--tokens-css") + 1]).toBe(SEARCH_ASSETS.tokensCssPath);
+    expect(args[args.indexOf("--script") + 1]).toBe(SEARCH_ASSETS.scriptPath);
+    expect(args.join(" ")).toContain("--search-index search-index.json");
   });
 });
 
@@ -139,6 +148,25 @@ describe("buildSite", () => {
   it("builds the site and leaves with a success code", () => {
     expect(exitCode).toBe(0);
     expect(published).toContain("index.html");
+  });
+
+  // Wave 2's search wiring is unconditional (no settings field), so every
+  // build carries it — this fixture names no search-related setting at all.
+  it("wires search unconditionally, with no settings field asking for it", async () => {
+    expect(published).toContain("search-index.json");
+    expect(home).toContain('class="canopy-search"');
+    expect(home).toMatch(/<script[^>]*src="assets\/script\.js"/);
+    const assets = await readdir(path.join(out, "assets"));
+    expect(assets).toContain("script.js");
+  });
+
+  // The site names no `tokens` field, which is exactly the case the Wave 2
+  // fix targets: canopy-page's own CSS (search, scrollspy) must still ride
+  // via --tokens-css even though there is no user tokens file to append it to.
+  it("ships its own CSS even when the site has no tokens file of its own", async () => {
+    const tokensCss = await readFile(path.join(out, "tokens.css"), "utf8");
+    expect(tokensCss).toContain(".canopy-search");
+    expect(tokensCss).toContain(".canopy-outline");
   });
 
   it("passes the site's own settings through to the published page", () => {

@@ -1,0 +1,10 @@
+/* Scrollspy — pairs with assets/scrollspy.js. Styles the `.canopy-outline`
+   link whose section is currently in view. Reuses canopy's own tokens
+   (--accent, --font-weight-semibold) rather than introducing new ones, and
+   targets the standard `aria-current` attribute rather than a new class so
+   the same rule serves any script that sets it, not just this one. */
+
+.canopy-outline a[aria-current="location"] {
+  color: var(--accent);
+  font-weight: var(--font-weight-semibold);
+}

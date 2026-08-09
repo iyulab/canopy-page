@@ -34,5 +34,8 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run lint
-      - run: npm test
+      # Build before test: the packaging regression test (packaging.test.ts)
+      # inspects the real `npm pack` output, which does not exist until dist/
+      # is built.
       - run: npm run build
+      - run: npm test

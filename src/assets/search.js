@@ -195,6 +195,19 @@ var CanopySearch = (function () {
       if (!form.contains(event.target)) list.hidden = true;
     });
 
+    // Ctrl+K / Cmd+K jumps to search from anywhere on the page — the
+    // convention readers already know from editors and other doc sites.
+    // Global rather than scoped to the form, since the point is not having
+    // to click the form first.
+    document.addEventListener("keydown", function (event) {
+      var key = (event.key || "").toLowerCase();
+      if ((event.ctrlKey || event.metaKey) && key === "k") {
+        event.preventDefault();
+        input.focus();
+        input.select();
+      }
+    });
+
     // A script that ran this far is a script that can wire the form up —
     // reveal it now, and not before, so a build with no script attached
     // (or one that throws before this point) never shows a dead control.

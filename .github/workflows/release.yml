@@ -26,8 +26,9 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run lint
-      - run: npm test
+      # Build before test — see ci.yml for why (packaging.test.ts needs dist/).
       - run: npm run build
+      - run: npm test
       # The example site is built by the very package being released, so a
       # release that cannot build it is a release that does not work. Cheap
       # here, and the failure names the page and line.

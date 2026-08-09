@@ -7,6 +7,19 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [Unreleased]
+
+### Added
+
+- **Search, wired up.** Every build now carries a search box in the top bar, a `Ctrl+K` /
+  `Cmd+K` shortcut to jump to it, and an on-page outline that highlights the section currently
+  in view while scrolling — all with no `settings.json` field to turn on, and all inert if a
+  reader's browser has scripts disabled. Requires canopy `^0.5.0`.
+
+### Changed
+
+- **Upgraded to canopy 0.5.0.**
+
 ## [0.4.0] — 2026-08-08
 
 ### Changed
