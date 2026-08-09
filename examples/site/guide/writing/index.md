@@ -58,8 +58,8 @@ when a sidebar is maintained by hand.
 - An image that is not a published file
 - A page the settings file places twice
 
-And what it warns about without stopping: pages no section covers, a root-absolute reference with
-nothing at that path, and an `exclude` pattern that matched nothing.
+And what it warns about without stopping: pages no section covers, a root-absolute reference that
+would break under a sub-path mount, and an `exclude` pattern that matched nothing.
 
 References inside code fences are left alone. An example of a broken link is documentation, not a
 broken link:

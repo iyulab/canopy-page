@@ -209,7 +209,9 @@ Warnings — reported, and the build continues:
   path resolves depends on what the site is served from, which is not a checker's to know — but a
   site served from its own root is the ordinary case, and a `public/`-style folder that other
   generators map onto the root does not exist here, so these silently 404. A warning rather than
-  an error, because mounting the site elsewhere would make it right
+  an error, because mounting the site elsewhere would make it right. When `siteUrl` already
+  declares a sub-path mount, a root-absolute reference warns even if it resolves today, since that
+  is the one case the checker can actually judge
 - An `exclude` pattern that matched nothing, which usually means a path written from the wrong
   place. Extension patterns are left alone: `*.tmp` in a site with no scratch files is a rule
   about what may never ship, not a claim that something is there

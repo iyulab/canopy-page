@@ -125,6 +125,18 @@ describe("referenceFindings", () => {
     expect(finding?.message).toContain("/help/");
   });
 
+  // settings.ts only checks that siteUrl starts with "http(s)://" — "http://"
+  // itself passes that check but has no host, so `new URL` throws on it. The
+  // checker has to survive a value this malformed rather than crash the run.
+  it("does not crash on a siteUrl that passes settings validation but has no host", async () => {
+    const root = await site({
+      "settings.json": JSON.stringify({ siteUrl: "http://" }),
+      "index.md": "[install](/guide/install)",
+      "guide/install.md": "# Install",
+    });
+    await expect(referenceFindings(await loadSite(root))).resolves.toEqual([]);
+  });
+
   it("says nothing about a resolvable root-absolute path when siteUrl mounts at the domain root", async () => {
     const root = await site({
       "settings.json": JSON.stringify({ siteUrl: "https://example.test/" }),

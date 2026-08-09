@@ -55,7 +55,16 @@ function isRootAbsolute(url: string): boolean {
 function siteBasePath(site: LoadedSite): string | undefined {
   const { siteUrl } = site.settings;
   if (siteUrl === undefined) return undefined;
-  const { pathname } = new URL(siteUrl);
+  // settings.ts only checks the "http(s)://" prefix, which "http://" itself
+  // satisfies without naming a host — malformed enough that `new URL` throws.
+  // That is a settings mistake for `sitemapXml` to report, not a reason for
+  // this unrelated check to crash the whole run.
+  let pathname: string;
+  try {
+    ({ pathname } = new URL(siteUrl));
+  } catch {
+    return undefined;
+  }
   return pathname === "/" ? undefined : pathname;
 }
 

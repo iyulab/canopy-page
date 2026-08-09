@@ -24,10 +24,12 @@ See [Error messages](<error messages.md>) for what each one says and how to read
 
 ## Warnings do not
 
-A warning is something that depends on context the checker does not have. A root-absolute
+A warning is something that depends on context the checker does not always have. A root-absolute
 reference like `/assets/logo.png` is right if the site is mounted at the root of a domain and
-wrong if it is served from a sub-path — and where a site will be served from is not a checker's to
-know. It reports and continues.
+wrong if it is served from a sub-path. Ordinarily the checker cannot tell which — but when
+`siteUrl` already declares a sub-path mount, it warns about a root-absolute reference even if the
+reference resolves today, since that is the one case it can actually judge. It reports and
+continues either way.
 
 ## In a pipeline
 
