@@ -7,7 +7,7 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
-## [Unreleased]
+## [0.8.0] — 2026-08-11
 
 ### Added
 
@@ -17,12 +17,14 @@ to it — its fields, its validation, and what the checks reject — are what th
   contents page's title/heading (`indexTitle`), a page's "Linked references" section heading
   (`backlinks`), and the client search's failure message (`searchFailed`). All three follow the
   same pattern as the existing five keys — optional override, English default when unset.
-  `indexTitle`/`backlinks` need the next canopy release (see canopy's own `[Unreleased]`);
-  `searchFailed` is canopy-page's own client script and needs no canopy change.
 - **`$schema` support.** A settings file can now name
   [`settings.schema.json`](https://iyulab.github.io/canopy-page/settings.schema.json), hosted
   at that fixed URL, so an editor offers completion and inline validation for every field —
   canopy-page itself already read and ignored this key, unvalidated.
+
+### Changed
+
+- **Upgraded to canopy 0.9.0**, the release `indexTitle` and `backlinks` build on.
 
 ## [0.7.0] — 2026-08-09
 
