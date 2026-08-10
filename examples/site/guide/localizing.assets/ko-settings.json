@@ -1,0 +1,13 @@
+{
+  "lang": "ko-KR",
+  "strings": {
+    "search": "검색",
+    "toggleTheme": "테마 전환",
+    "siteNav": "사이트 탐색",
+    "pageNav": "페이지 탐색",
+    "onThisPage": "이 페이지에서",
+    "indexTitle": "목차",
+    "backlinks": "관련 문서",
+    "searchFailed": "검색을 불러오지 못했습니다."
+  }
+}
