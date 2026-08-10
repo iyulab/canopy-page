@@ -151,6 +151,7 @@ describe("buildSite", () => {
         lang: "en-GB",
         exclude: ["_drafts"],
         sections: [{ path: "release-notes", label: "Release notes", order: "desc" }],
+        strings: { searchFailed: "Could not load search." },
       }),
       "index.md": "# Home\n\nSee [[guide/install]].\n",
       "guide/install.md": "# Install\n",
@@ -233,6 +234,16 @@ describe("buildSite", () => {
   it("publishes a page no section covers, and says that it did", () => {
     expect(published).toContain("about.html");
     expect(warnings).toContain("about.md");
+  });
+
+  // assets/script.js is canopy-page's own asset (assembleScript), not
+  // something canopy renders, so this is the one settings.strings key not
+  // provable from canopy's HTML output — it has to be read back from the
+  // published script itself.
+  it("carries a settings.strings.searchFailed override into the published script", async () => {
+    const script = await readFile(path.join(out, "assets", "script.js"), "utf8");
+    expect(script).toContain('"Could not load search."');
+    expect(script).not.toContain("Search failed to load.");
   });
 });
 

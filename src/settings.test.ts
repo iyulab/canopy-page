@@ -136,6 +136,18 @@ describe("parseSettings", () => {
     ).toEqual({ strings: { search: "검색", toggleTheme: "테마 전환" } });
   });
 
+  it("reads the index-title, backlinks-heading, and search-failed overrides", () => {
+    expect(
+      parseSettings(
+        JSON.stringify({
+          strings: { indexTitle: "목차", backlinks: "관련 문서", searchFailed: "검색 실패" },
+        }),
+      ),
+    ).toEqual({
+      strings: { indexTitle: "목차", backlinks: "관련 문서", searchFailed: "검색 실패" },
+    });
+  });
+
   it("rejects an unknown key inside strings", () => {
     rejects(
       JSON.stringify({ strings: { search: "검색", typo: "x" } }),

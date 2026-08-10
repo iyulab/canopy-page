@@ -115,7 +115,7 @@ export async function buildSite({ dir, out }: BuildOptions): Promise<number> {
     await writeFile(tokensCssPath, await assembleTokensCss(userTokensCss), "utf8");
 
     const scriptPath = path.join(workDir, "script.js");
-    await writeFile(scriptPath, await assembleScript(), "utf8");
+    await writeFile(scriptPath, await assembleScript(site.settings.strings?.searchFailed), "utf8");
 
     const code = await runCanopy(
       canopyArgs(site, path.resolve(out), navPath, { tokensCssPath, scriptPath }),

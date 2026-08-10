@@ -7,6 +7,19 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [Unreleased]
+
+### Added
+
+- **`strings` gains `indexTitle`, `backlinks`, and `searchFailed`.** The `strings` field
+  covered the reader chrome's search/theme-toggle/navigation text, but three more reader-facing
+  literals stayed hardcoded English regardless of `lang` and `strings`: the auto-generated
+  contents page's title/heading (`indexTitle`), a page's "Linked references" section heading
+  (`backlinks`), and the client search's failure message (`searchFailed`). All three follow the
+  same pattern as the existing five keys — optional override, English default when unset.
+  `indexTitle`/`backlinks` need the next canopy release (see canopy's own `[Unreleased]`);
+  `searchFailed` is canopy-page's own client script and needs no canopy change.
+
 ## [0.7.0] — 2026-08-09
 
 ### Added
@@ -28,6 +41,13 @@ to it — its fields, its validation, and what the checks reject — are what th
   every other internal link canopy writes — useful when the site is mounted at a sub-path whose
   absolute origin differs between environments.
 - **Upgraded to canopy 0.8.0**, the release the relative `home.url` and `strings` support build on.
+
+### Fixed
+
+- **A `siteUrl` missing its host (`"http://"` alone, for instance) no longer crashes `check`.**
+  Only the scheme was validated, so `new URL()` threw on the rest and took the whole check run
+  down with it; a `siteUrl` that fails to parse is now treated as absent for the sub-path warning,
+  leaving `sitemapXml` to report the malformed value on its own terms.
 
 ## [0.6.0] — 2026-08-09
 

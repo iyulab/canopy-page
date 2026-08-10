@@ -131,6 +131,19 @@ export interface Settings {
     siteNav?: string;
     pageNav?: string;
     onThisPage?: string;
+    /** Title and heading of the auto-generated contents page at the site root. */
+    indexTitle?: string;
+    /** Heading over a page's list of pages that link to it. */
+    backlinks?: string;
+    /**
+     * Message shown in place of results when the client search index fails to
+     * load. This key rides the same JSON `--strings` flag as every other one
+     * here (canopy just never reads it), but it is consumed by canopy-page's
+     * own script assembly (`assembleScript`), not by canopy — every other key
+     * styles canopy's own shell markup, this one styles canopy-page's own
+     * search UI (see `assets/search.js`).
+     */
+    searchFailed?: string;
   };
 }
 
@@ -161,7 +174,16 @@ const SECTION_KEYS = new Set(["path", "label", "order", "items"]);
 
 const HOME_KEYS = new Set(["url", "label"]);
 
-const STRINGS_KEYS = new Set(["search", "toggleTheme", "siteNav", "pageNav", "onThisPage"]);
+const STRINGS_KEYS = new Set([
+  "search",
+  "toggleTheme",
+  "siteNav",
+  "pageNav",
+  "onThisPage",
+  "indexTitle",
+  "backlinks",
+  "searchFailed",
+]);
 
 const NAV_ITEM_KEYS = new Set(["label", "path", "items"]);
 

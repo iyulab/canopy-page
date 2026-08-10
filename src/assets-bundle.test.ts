@@ -8,6 +8,25 @@ describe("assembleScript", () => {
     expect(script).toContain("CanopyScrollspy");
     expect(script).toContain("CanopyThemeToggle");
   });
+
+  it("keeps the default search-failed message when no override is given", async () => {
+    const script = await assembleScript();
+    expect(script).toContain('"Search failed to load."');
+  });
+
+  it("substitutes a caller-supplied search-failed message", async () => {
+    const script = await assembleScript("검색을 불러오지 못했습니다.");
+    expect(script).toContain('"검색을 불러오지 못했습니다."');
+    expect(script).not.toContain("Search failed to load.");
+  });
+
+  // String.replace treats "$&"/"$$"/etc. in a *replacement string* as patterns
+  // — a naive `search.replace(target, JSON.stringify(searchFailed))` would
+  // corrupt any message containing a literal "$". A function replacer sidesteps it.
+  it("carries a literal $ in the override through unmangled", async () => {
+    const script = await assembleScript("$& costs $$5");
+    expect(script).toContain('"$& costs $$5"');
+  });
 });
 
 describe("assembleTokensCss", () => {
