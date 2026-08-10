@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://iyulab.github.io/canopy-page/settings.schema.json",
+  "title": "canopy-page settings.json",
+  "description": "The one configuration file a canopy-page site reads. Every field is optional — an empty {} builds, with navigation derived from the folder tree.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "This file's own URL, so an editor offers completion and inline validation. Read and ignored by canopy-page itself."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Site name, shown in the top bar and document title. Defaults to the directory name."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Fills <meta name=\"description\">, which is what link previews show."
+    },
+    "lang": {
+      "type": "string",
+      "minLength": 1,
+      "description": "BCP 47 language tag for <html lang> (e.g. \"en\", \"ko-KR\"). Worth setting for any non-English site — it changes only what <html lang> declares; the reader chrome's own text needs `strings` as well."
+    },
+    "icon": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Favicon, relative to this file. Must be a published file."
+    },
+    "tokens": {
+      "type": "string",
+      "minLength": 1,
+      "description": "CSS of design-token overrides, relative to this file. Appended after canopy's own tokens. Configuration, not content — excluded from the published site automatically."
+    },
+    "exclude": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Paths to leave unpublished, relative to this file: a directory (\"_drafts\" or \"_drafts/**\"), an extension at any depth (\"*.tmp\"), or one exact path."
+    },
+    "sections": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/section" },
+      "description": "Ordered regions of the site. Without them, navigation follows the folder tree."
+    },
+    "logo": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Image shown beside the site title, relative to this file. Must be a published file."
+    },
+    "home": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url", "label"],
+      "description": "A link back to the site this documentation sits beside. Both halves or neither.",
+      "properties": {
+        "url": {
+          "type": "string",
+          "minLength": 1,
+          "description": "An absolute http(s) URL, or a relative one naming a path from the site's own root (e.g. \"../\")."
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Link text, in the site's own language — canopy-page has no built-in translation table."
+        }
+      }
+    },
+    "siteUrl": {
+      "type": "string",
+      "pattern": "^https?://",
+      "description": "Where the built site will stand, as an absolute http(s) URL. Only when set does `build` write sitemap.xml and a robots.txt pointing at it."
+    },
+    "rehypePlugins": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Installed rehype plugin package names to run on every page, after canopy's sanitize step and before syntax highlighting."
+    },
+    "strings": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Overrides for the reader chrome's own text. `lang` alone does not translate it, since it is canopy's UI (or canopy-page's own search script), not vault content. Keys left out keep their English default.",
+      "properties": {
+        "search": { "type": "string", "minLength": 1, "description": "Default: \"Search\"" },
+        "toggleTheme": { "type": "string", "minLength": 1, "description": "Default: \"Toggle color theme\"" },
+        "siteNav": { "type": "string", "minLength": 1, "description": "Default: \"Site navigation\"" },
+        "pageNav": { "type": "string", "minLength": 1, "description": "Default: \"Page navigation\"" },
+        "onThisPage": { "type": "string", "minLength": 1, "description": "Default: \"On this page\"" },
+        "indexTitle": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Title and heading of the auto-generated contents page at the site root. Default: \"Contents\""
+        },
+        "backlinks": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Heading over a page's list of pages that link to it. Default: \"Linked references\""
+        },
+        "searchFailed": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Message shown when the client search index fails to load. Default: \"Search failed to load.\""
+        }
+      }
+    }
+  },
+  "$defs": {
+    "section": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path"],
+      "description": "One ordered region of the site: a guide, a release log, a reference section.",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Directory this section covers, relative to this file."
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Heading shown for the section. Defaults to the directory name."
+        },
+        "order": {
+          "enum": ["asc", "desc"],
+          "description": "Order for the pages inside, when they are not listed one by one. \"desc\" is what a release log wants: newest first."
+        },
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/navItem" },
+          "description": "Explicit contents, in display order. Overrides `order`."
+        }
+      }
+    },
+    "navItem": {
+      "description": "One entry in a section's contents: a page (a bare string is shorthand for { path }), or a group of entries.",
+      "oneOf": [
+        { "type": "string", "minLength": 1 },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Display text. Defaults to the page's title, then its filename."
+            },
+            "path": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Path of the page, relative to this file, with or without .md."
+            },
+            "items": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/navItem" },
+              "description": "Nested entries, in display order."
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -87,6 +87,7 @@ unpublished.
 
 ```json
 {
+  "$schema": "https://iyulab.github.io/canopy-page/settings.schema.json",
   "title": "Product Help",
   "description": "How to use it",
   "lang": "en-GB",
@@ -105,6 +106,7 @@ unpublished.
 
 | Field | Meaning |
 |---|---|
+| `$schema` | Optional. Points an editor (VS Code, JetBrains) at [`settings.schema.json`](https://iyulab.github.io/canopy-page/settings.schema.json) for completion and inline validation. Read and ignored by canopy-page itself |
 | `title` | Site name. Defaults to the folder's name |
 | `description` | Fills `<meta name="description">`, which is what link previews show |
 | `lang` | BCP 47 tag for `<html lang>`. Worth setting for any non-English site: assistive technology reads pronunciation from it |

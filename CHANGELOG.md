@@ -19,6 +19,10 @@ to it — its fields, its validation, and what the checks reject — are what th
   same pattern as the existing five keys — optional override, English default when unset.
   `indexTitle`/`backlinks` need the next canopy release (see canopy's own `[Unreleased]`);
   `searchFailed` is canopy-page's own client script and needs no canopy change.
+- **`$schema` support.** A settings file can now name
+  [`settings.schema.json`](https://iyulab.github.io/canopy-page/settings.schema.json), hosted
+  at that fixed URL, so an editor offers completion and inline validation for every field —
+  canopy-page itself already read and ignored this key, unvalidated.
 
 ## [0.7.0] — 2026-08-09
 

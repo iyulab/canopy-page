@@ -155,7 +155,12 @@ export interface Settings {
  */
 const IGNORED_KEYS = new Set(["$schema"]);
 
-const SETTINGS_KEYS = new Set([
+/**
+ * Exported so `settings.schema.json` (`examples/site/`) can be tested against
+ * the parser's own allowlists rather than a hand-copied duplicate — the two
+ * are otherwise free to drift silently apart as fields are added.
+ */
+export const SETTINGS_KEYS = new Set([
   "title",
   "description",
   "lang",
@@ -170,11 +175,11 @@ const SETTINGS_KEYS = new Set([
   "strings",
 ]);
 
-const SECTION_KEYS = new Set(["path", "label", "order", "items"]);
+export const SECTION_KEYS = new Set(["path", "label", "order", "items"]);
 
-const HOME_KEYS = new Set(["url", "label"]);
+export const HOME_KEYS = new Set(["url", "label"]);
 
-const STRINGS_KEYS = new Set([
+export const STRINGS_KEYS = new Set([
   "search",
   "toggleTheme",
   "siteNav",
@@ -185,7 +190,7 @@ const STRINGS_KEYS = new Set([
   "searchFailed",
 ]);
 
-const NAV_ITEM_KEYS = new Set(["label", "path", "items"]);
+export const NAV_ITEM_KEYS = new Set(["label", "path", "items"]);
 
 /**
  * Unknown keys are rejected rather than ignored.

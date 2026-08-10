@@ -7,6 +7,7 @@ This is the file that produced the site you are reading:
 
 ```json
 {
+  "$schema": "https://iyulab.github.io/canopy-page/settings.schema.json",
   "title": "canopy-page",
   "description": "Documentation for canopy-page: one settings file, integrity checks, and a build — built with canopy-page itself, published on every push.",
   "lang": "en",
@@ -39,6 +40,7 @@ This is the file that produced the site you are reading:
 
 | Field | Meaning |
 |---|---|
+| `$schema` | Optional. Points an editor at [`settings.schema.json`](../settings.schema.json) for completion and inline validation — canopy-page itself reads and ignores it |
 | `title` | Site name. Defaults to the folder's name |
 | `description` | Fills `<meta name="description">`, which is what a link preview shows |
 | `lang` | BCP 47 tag for `<html lang>`. Assistive technology reads pronunciation from it |

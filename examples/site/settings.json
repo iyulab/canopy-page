@@ -1,4 +1,5 @@
 {
+  "$schema": "https://iyulab.github.io/canopy-page/settings.schema.json",
   "title": "canopy-page",
   "description": "Documentation for canopy-page: one settings file, integrity checks, and a build — built with canopy-page itself, published on every push.",
   "lang": "en",
