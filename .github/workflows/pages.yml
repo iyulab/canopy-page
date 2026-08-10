@@ -50,6 +50,8 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            playwright-chromium-${{ runner.os }}-
       - name: Install Playwright's Chromium
         run: npx playwright install --with-deps chromium
 
