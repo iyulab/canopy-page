@@ -7,7 +7,7 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
-## [Unreleased]
+## [0.9.0] — 2026-08-11
 
 ### Added
 
@@ -17,6 +17,11 @@ to it — its fields, its validation, and what the checks reject — are what th
   not a name an author chose, and there was previously no way to find out a sidebar's top-level
   heading was about to read that way instead. `check`/`build` now report it as a warning (the
   build still succeeds) naming the section and the label it fell back to.
+
+### Changed
+
+- **Upgraded to canopy 0.10.0**, the release the heading custom-id syntax, the sidebar
+  active-page tint, and page-content typography build on.
 
 ## [0.8.0] — 2026-08-11
 
