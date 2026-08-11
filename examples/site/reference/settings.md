@@ -27,7 +27,8 @@ This is the file that produced the site you are reading:
           "path": "guide/writing/index",
           "items": ["guide/writing/code-and-math", "guide/writing/diagrams"]
         },
-        "guide/reading"
+        "guide/reading",
+        { "path": "guide/localizing", "items": ["guide/한국어-예시/index"] }
       ]
     },
     { "path": "reference", "label": "Reference" },

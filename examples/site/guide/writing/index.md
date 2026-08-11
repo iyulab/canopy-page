@@ -34,6 +34,17 @@ site. Either way the published link points at the built page — you write `.md`
 
 A link into a section of another page keeps its anchor: [the exit code table](../../reference/exit-codes.md#the-codes).
 
+A heading's anchor is derived from its own wording by default, so it moves if the wording later
+does. Give it a stable one instead with a trailing `{#id}`:
+
+```markdown
+## What the checker refuses {#what-check-refuses}
+```
+
+— useful for a heading you expect to reword but still want other pages (or a bookmark) to keep
+pointing at. See [## What the checker refuses](#what-check-refuses) below, and its heading's own
+source in this page: it carries exactly that marker.
+
 A path containing a space works whichever way an editor writes it. These two links address the
 same document and both resolve:
 
@@ -52,7 +63,7 @@ Nothing on this page declares who links to it. The list at the foot is built by 
 link in the site, so a page always knows what refers to it — which is the thing that rots first
 when a sidebar is maintained by hand.
 
-## What the checker refuses
+## What the checker refuses {#what-check-refuses}
 
 - A link or wikilink pointing at nothing published
 - An image that is not a published file
