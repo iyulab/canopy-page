@@ -71,4 +71,57 @@ describe("parseArgs", () => {
       error: expect.stringContaining('Unknown command "publish"'),
     });
   });
+
+  it("parses watch with its defaults", () => {
+    expect(parseArgs(["watch"])).toEqual({
+      ok: true,
+      command: "watch",
+      dir: ".",
+      out: "site",
+      port: 8080,
+    });
+  });
+
+  it("takes the output directory for watch too", () => {
+    expect(parseArgs(["watch", "-o", "dist/help"])).toMatchObject({ out: "dist/help" });
+  });
+
+  it("takes --port for watch", () => {
+    expect(parseArgs(["watch", "--port", "3000"])).toMatchObject({ port: 3000 });
+  });
+
+  it("rejects a non-numeric port", () => {
+    expect(parseArgs(["watch", "--port", "abc"])).toMatchObject({
+      ok: false,
+      error: expect.stringContaining("--port needs a port number"),
+    });
+  });
+
+  it("rejects a port outside 1-65535", () => {
+    expect(parseArgs(["watch", "--port", "70000"])).toMatchObject({ ok: false });
+    expect(parseArgs(["watch", "--port", "0"])).toMatchObject({ ok: false });
+  });
+
+  it("reports --port with no value", () => {
+    expect(parseArgs(["watch", "--port"])).toEqual({
+      ok: false,
+      error: "--port needs a port number.",
+    });
+  });
+
+  // --port only means something to the command that opens a port.
+  it("refuses --port for commands that don't serve", () => {
+    expect(parseArgs(["build", "--port", "3000"])).toMatchObject({
+      ok: false,
+      error: expect.stringContaining("build does not"),
+    });
+    expect(parseArgs(["check", "--port", "3000"])).toMatchObject({ ok: false });
+    expect(parseArgs(["init", "--port", "3000"])).toMatchObject({ ok: false });
+  });
+
+  it("shows watch in usage", () => {
+    expect(parseArgs([])).toMatchObject({
+      error: expect.stringContaining("watch [site-dir]"),
+    });
+  });
 });
