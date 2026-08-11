@@ -1,8 +1,8 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { serveStatic, WatchError } from "./watch.js";
+import { serveStatic, watchSite, WatchError } from "./watch.js";
 
 const temporary: string[] = [];
 
@@ -115,4 +115,107 @@ describe("serveStatic", () => {
       await server.close();
     }
   });
+});
+
+/**
+ * A real canopy build, like build.test.ts — the same reasoning applies: only
+ * evidence about published files is worth trusting, and a build is seconds
+ * rather than milliseconds. Kept to a ceiling wide enough for a busy machine,
+ * not for a healthy one.
+ */
+const SPAWNS_A_PROCESS = 300_000;
+
+async function watchFixture(files: Record<string, string>): Promise<string> {
+  const root = await mkdtemp(path.join(tmpdir(), "canopy-page-watchsite-"));
+  temporary.push(root);
+  for (const [rel, content] of Object.entries(files)) {
+    await mkdir(path.join(root, path.dirname(rel)), { recursive: true });
+    await writeFile(path.join(root, rel), content, "utf8");
+  }
+  return root;
+}
+
+describe("watchSite", () => {
+  it(
+    "builds once, then rebuilds when a source file changes",
+    async () => {
+      const dir = await watchFixture({ "settings.json": "{}", "index.md": "# One" });
+      const out = path.join(dir, "site");
+      const rebuilds: number[] = [];
+      let notifyRebuild: (() => void) | undefined;
+      const handle = await watchSite({
+        dir,
+        out,
+        port: 0,
+        onRebuild: (code) => {
+          rebuilds.push(code);
+          notifyRebuild?.();
+        },
+      });
+      expect(handle).toBeDefined();
+      try {
+        const before = await readFile(path.join(out, "index.html"), "utf8");
+        expect(before).toContain("One");
+
+        const rebuilt = new Promise<void>((res) => {
+          notifyRebuild = res;
+        });
+        await writeFile(path.join(dir, "index.md"), "# Two", "utf8");
+        await rebuilt;
+
+        expect(rebuilds).toEqual([0]);
+        const after = await readFile(path.join(out, "index.html"), "utf8");
+        expect(after).toContain("Two");
+      } finally {
+        await handle?.close();
+      }
+    },
+    SPAWNS_A_PROCESS * 2,
+  );
+
+  it(
+    "returns undefined and starts nothing when the initial build fails",
+    async () => {
+      const dir = await watchFixture({
+        "settings.json": "{}",
+        "index.md": "[[nowhere]]",
+      });
+      const out = path.join(dir, "site");
+      const handle = await watchSite({ dir, out, port: 0 });
+      expect(handle).toBeUndefined();
+    },
+    SPAWNS_A_PROCESS,
+  );
+
+  it(
+    "keeps serving the last successful build when a rebuild fails",
+    async () => {
+      const dir = await watchFixture({ "settings.json": "{}", "index.md": "# One" });
+      const out = path.join(dir, "site");
+      let notifyRebuild: ((code: number) => void) | undefined;
+      const handle = await watchSite({
+        dir,
+        out,
+        port: 0,
+        onRebuild: (code) => notifyRebuild?.(code),
+      });
+      expect(handle).toBeDefined();
+      try {
+        const rebuilt = new Promise<number>((res) => {
+          notifyRebuild = res;
+        });
+        // A wikilink to nothing is a check error, so the rebuild fails without
+        // touching `out` — see check.test.ts for the same rule exercised directly.
+        await writeFile(path.join(dir, "index.md"), "[[nowhere]]", "utf8");
+        const code = await rebuilt;
+        expect(code).not.toBe(0);
+
+        const stillServed = await readFile(path.join(out, "index.html"), "utf8");
+        expect(stillServed).toContain("One");
+      } finally {
+        await handle?.close();
+      }
+    },
+    SPAWNS_A_PROCESS * 2,
+  );
 });

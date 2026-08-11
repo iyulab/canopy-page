@@ -1,6 +1,8 @@
 import { readFile, stat } from "node:fs/promises";
 import http from "node:http";
-import { extname, resolve, sep } from "node:path";
+import { basename, extname, resolve, sep } from "node:path";
+import { watch as watchFiles } from "chokidar";
+import { buildSite } from "./build.js";
 
 /**
  * Serving a build's output locally during authoring.
@@ -151,4 +153,123 @@ export function serveStatic(root: string, port: number): Promise<StaticServer> {
       });
     });
   });
+}
+
+const DEBOUNCE_MS = 300;
+
+/** What a watch run needs to know. */
+export interface WatchOptions {
+  /** Directory holding the settings file. */
+  dir: string;
+  /** Directory to write the site into, and to serve. */
+  out: string;
+  /** Port to serve on. */
+  port: number;
+  /** Called after every rebuild attempt (not the initial build) with its exit code. */
+  onRebuild?: (code: number) => void;
+}
+
+/** A running watch session, and how to stop it. */
+export interface WatchHandle {
+  /** The port actually bound. */
+  readonly port: number;
+  close(): Promise<void>;
+}
+
+/**
+ * Build once, then rebuild on every source change and serve the result.
+ *
+ * The server binds before the first build runs: a port already in use is an
+ * environment problem that has nothing to do with the site, and failing on
+ * it immediately — via `WatchError`, which propagates uncaught to `cli.ts` —
+ * costs nothing. Binding after a multi-second build would waste that build
+ * on a run that was always going to fail.
+ *
+ * A failed *rebuild* (as opposed to this first build) is reported and
+ * nothing else: `buildSite`'s existing contract (an error means nothing is
+ * written) means the previous, working output just keeps being served. The
+ * process only ever stops on the initial build failing — there is nothing to
+ * serve yet, so the server is closed again — or on the caller closing it.
+ */
+export async function watchSite(options: WatchOptions): Promise<WatchHandle | undefined> {
+  const { dir, out, port, onRebuild } = options;
+  const server = await serveStatic(out, port);
+  const initialCode = await buildSite({ dir, out });
+  if (initialCode !== 0) {
+    await server.close();
+    return undefined;
+  }
+
+  const absoluteDir = resolve(dir);
+  const resolvedOut = resolve(out);
+  const outWithSep = resolvedOut.endsWith(sep) ? resolvedOut : resolvedOut + sep;
+
+  let rebuildTimer: NodeJS.Timeout | undefined;
+  let rebuilding = false;
+  let rebuildQueued = false;
+
+  function runRebuild(): void {
+    if (rebuilding) {
+      rebuildQueued = true;
+      return;
+    }
+    rebuilding = true;
+    void buildSite({ dir, out })
+      .then((code) => {
+        console.log(
+          code === 0
+            ? "canopy-page: rebuilt"
+            : "canopy-page: rebuild failed — serving the last successful build",
+        );
+        onRebuild?.(code);
+      })
+      .finally(() => {
+        rebuilding = false;
+        if (rebuildQueued) {
+          rebuildQueued = false;
+          runRebuild();
+        }
+      });
+  }
+
+  function scheduleRebuild(): void {
+    if (rebuildTimer !== undefined) clearTimeout(rebuildTimer);
+    rebuildTimer = setTimeout(runRebuild, DEBOUNCE_MS);
+  }
+
+  // Ignoring is structural only — dot-directories, node_modules, and the
+  // resolved output directory itself (unignored, a build watching its own
+  // output would rebuild forever). Content-level exclusions (settings.exclude)
+  // are deliberately not repeated here: vault.ts already restates canopy's
+  // exclusion rules once as a tracked debt, and a watch trigger that fires on
+  // an excluded file costs one redundant rebuild, not a wrong answer.
+  const watcher = watchFiles(absoluteDir, {
+    ignoreInitial: true,
+    ignored: (watchedPath: string) => {
+      const resolved = resolve(watchedPath);
+      if (resolved === absoluteDir) return false;
+      if (resolved === resolvedOut || resolved.startsWith(outWithSep)) return true;
+      const name = basename(resolved);
+      return name === "node_modules" || name.startsWith(".");
+    },
+  });
+  // chokidar.watch() returns before its initial directory scan finishes
+  // arming the underlying OS watches — a file saved in that window can go
+  // unnoticed. Waiting for "ready" here means the promise this function
+  // returns is only kept once a change is guaranteed to be caught, which is
+  // what lets a caller (a test, or a human saving a file right after start)
+  // trust that watch mode is actually watching.
+  await new Promise<void>((res) => watcher.once("ready", res));
+  watcher.on("all", scheduleRebuild);
+
+  console.log(`canopy-page: watching ${dir}, serving http://localhost:${server.port}/`);
+
+  return {
+    port: server.port,
+    close: async () => {
+      if (rebuildTimer !== undefined) clearTimeout(rebuildTimer);
+      await watcher.close();
+      await server.close();
+    },
+  };
 }

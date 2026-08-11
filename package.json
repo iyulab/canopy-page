@@ -53,6 +53,7 @@
     "vitest": "^4.1.9"
   },
   "dependencies": {
-    "@iyulab/canopy": "^0.10.0"
+    "@iyulab/canopy": "^0.10.0",
+    "chokidar": "^5.0.0"
   }
 }
