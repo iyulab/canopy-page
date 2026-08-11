@@ -88,4 +88,31 @@ describe("serveStatic", () => {
       await first.close();
     }
   });
+
+  it("handles malformed percent-encoding without hanging", async () => {
+    const out = await fixtureOut({ "index.html": "<h1>Home</h1>" });
+    const server = await serveStatic(out, 0);
+    try {
+      // %zz is not valid percent-encoding, decodeURIComponent throws URIError
+      const response = await fetch(`http://localhost:${server.port}/%zz`);
+      expect(response.status).toBe(404);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("refuses a path with a dot-prefixed intermediate directory", async () => {
+    // Create a fixture with a file inside a .git directory
+    const out = await fixtureOut({
+      "index.html": "<h1>Home</h1>",
+      ".git/config": "secret",
+    });
+    const server = await serveStatic(out, 0);
+    try {
+      const response = await fetch(`http://localhost:${server.port}/.git/config`);
+      expect(response.status).toBe(404);
+    } finally {
+      await server.close();
+    }
+  });
 });
