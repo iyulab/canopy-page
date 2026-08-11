@@ -46,6 +46,13 @@ export interface NavTranslation {
   orphans: string[];
   /** Pages the settings place more than once. */
   duplicates: string[];
+  /**
+   * Top-level section paths labeled by their own directory name because the
+   * settings file wrote no `label` and the section has no index page to name
+   * it instead — see `NavReport.rawSlugLabels` for why this is scoped to
+   * sections rather than every subdirectory that falls back the same way.
+   */
+  rawSlugLabels: string[];
 }
 
 /** The page a directory is entered by, if it has one. */
@@ -152,6 +159,18 @@ interface NavReport {
    * placement — the same conclusion `expandGlob` reaches by filtering.
    */
   sectionIndex?: string;
+  /**
+   * Top-level section paths whose label is the section's own directory name,
+   * because the settings file wrote no `label` and the section has no index
+   * page to name it instead — `translateSection`'s only source for the
+   * fallback. Reported so an author sees it rather than a raw path segment
+   * silently becoming a sidebar's top-level heading (see `navFindings`).
+   * Scoped to sections, not every derived subdirectory `deriveItems` also
+   * falls back this way: a subdirectory with no index page is an ordinary,
+   * expected grouping (nav.test.ts pins it as kept behavior), while a raw
+   * slug at the section level sits at a far more visible spot in the sidebar.
+   */
+  rawSlugLabels: string[];
 }
 
 /** Expand one settings entry, which may be a page, a glob, or a group. */
@@ -249,8 +268,9 @@ function translateSection(
   // Same rule as a derived directory: the page fronting a section names it, and
   // only a section with no index page needs a name written for it here. A label
   // in the settings file still wins — that is what writing one is for.
-  const label =
-    section.label ?? (sectionIndex === undefined ? lastSegment(section.path) : undefined);
+  const usesRawSlugLabel = section.label === undefined && sectionIndex === undefined;
+  if (usesRawSlugLabel) report.rawSlugLabels.push(section.path);
+  const label = section.label ?? (usesRawSlugLabel ? lastSegment(section.path) : undefined);
 
   return {
     ...(label === undefined ? {} : { label }),
@@ -282,15 +302,21 @@ function narrowTo(pages: readonly string[], index: PageIndex): PageIndex {
 export function translateNav(settings: Settings, index: PageIndex): NavTranslation {
   const sections = settings.sections ?? [];
   if (sections.length === 0) {
-    return { missing: [], orphans: [], duplicates: [] };
+    return { missing: [], orphans: [], duplicates: [], rawSlugLabels: [] };
   }
 
   const placements = new Map<string, number>();
   const missing: string[] = [];
+  const rawSlugLabels: string[] = [];
   const place = (page: string): void => {
     placements.set(page, (placements.get(page) ?? 0) + 1);
   };
-  const report: NavReport = { missing, place, isPlaced: (page) => placements.has(page) };
+  const report: NavReport = {
+    missing,
+    place,
+    isPlaced: (page) => placements.has(page),
+    rawSlugLabels,
+  };
 
   const items = sections.map((section) => translateSection(section, index, report));
 
@@ -327,5 +353,5 @@ export function translateNav(settings: Settings, index: PageIndex): NavTranslati
     .map(([page]) => page)
     .sort();
 
-  return { spec: { items }, missing, orphans, duplicates };
+  return { spec: { items }, missing, orphans, duplicates, rawSlugLabels };
 }

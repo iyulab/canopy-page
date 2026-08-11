@@ -217,6 +217,9 @@ Warnings — reported, and the build continues:
 - An `exclude` pattern that matched nothing, which usually means a path written from the wrong
   place. Extension patterns are left alone: `*.tmp` in a site with no scratch files is a rule
   about what may never ship, not a claim that something is there
+- A section with no `label` and no index page, whose sidebar heading falls back to its own
+  directory name — a filesystem detail, not a name anyone chose. Add a `label`, or an index page
+  for the section to name itself
 
 Checking reads the settings and each page. It never renders, so it is fast enough to sit at the
 front of a pipeline, at the scale a product manual reaches. References inside fenced

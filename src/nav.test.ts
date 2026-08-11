@@ -52,6 +52,16 @@ describe("translateNav", () => {
     expect(spec?.items.some((item) => item.label === "release-notes")).toBe(true);
   });
 
+  it("reports a section that fell back to a raw directory-name label", () => {
+    const { rawSlugLabels } = translate({ sections: [{ path: "release-notes" }] });
+    expect(rawSlugLabels).toEqual(["release-notes"]);
+  });
+
+  it("does not report a section that has its own label or an index page", () => {
+    expect(translate({ sections: [{ path: "release-notes", label: "Release notes" }] }).rawSlugLabels).toEqual([]);
+    expect(translate({ sections: [{ path: "guide" }] }).rawSlugLabels).toEqual([]);
+  });
+
   // Canopy names a page from its frontmatter title, then its opening heading,
   // then its filename — and falls back to the directory for an index page, which
   // is the same answer this would have written. Emitting a label anyway would

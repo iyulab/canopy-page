@@ -125,6 +125,21 @@ export function navFindings(nav: NavTranslation): Finding[] {
         nav.orphans.map((page) => `  ${page}`).join("\n"),
     });
   }
+  for (const path of nav.rawSlugLabels) {
+    // Publishable either way — canopy-page's own fallback is sound, and the
+    // build is not wrong to use it. What is wrong is doing so silently: the
+    // directory name it falls back to is written for a filesystem, not a
+    // reader, and the author has no other way to find out their sidebar's
+    // top-level heading is about to read that way instead of a name they chose.
+    const slug = path.split("/").pop() ?? path;
+    findings.push({
+      level: "warning",
+      message:
+        `settings: section "${path}" has no "label" and no index page, ` +
+        `so its sidebar heading falls back to the directory name "${slug}". ` +
+        'Add a "label", or an index page for the section to name itself',
+    });
+  }
   return findings;
 }
 

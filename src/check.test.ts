@@ -225,6 +225,36 @@ describe("checkSite", () => {
     expect(reported).toContain('"guide/nope" matches no page');
     expect(reported).toContain("nope.md");
   });
+
+  it("warns, but still succeeds, when a section's sidebar heading falls back to a raw directory name", async () => {
+    // No "label" and no guide/index.md — nothing left to name the section but
+    // its own directory, which is a filesystem detail rather than a name an
+    // author chose. Publishable either way (warning, not error): the build is
+    // not wrong to fall back, only silent about having done so.
+    const warnings = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const root = await site({
+      "settings.json": JSON.stringify({ sections: [{ path: "guide" }] }),
+      "index.md": "# Home",
+      "guide/install.md": "# Install",
+    });
+
+    expect(await checkSite(root)).toBe(0);
+    const reported = warnings.mock.calls.flat().join("\n");
+    expect(reported).toContain('section "guide" has no "label" and no index page');
+    expect(reported).toContain('falls back to the directory name "guide"');
+  });
+
+  it("does not warn about a raw slug label when the section has its own label or index page", async () => {
+    const warnings = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const root = await site({
+      "settings.json": JSON.stringify({ sections: [{ path: "guide", label: "Guide" }] }),
+      "index.md": "# Home",
+      "guide/install.md": "# Install",
+    });
+
+    expect(await checkSite(root)).toBe(0);
+    expect(warnings.mock.calls.flat().join("\n")).not.toContain("falls back to the directory name");
+  });
 });
 
 describe("a target that names a directory", () => {
