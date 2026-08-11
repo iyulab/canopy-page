@@ -218,4 +218,85 @@ describe("watchSite", () => {
     },
     SPAWNS_A_PROCESS * 2,
   );
+
+  it(
+    "returns undefined, not a rejection, when the initial build throws",
+    async () => {
+      // Malformed JSON makes loadSite() throw SiteError rather than buildSite()
+      // resolving with a nonzero code — a distinct failure shape from the
+      // "[[nowhere]]" case above, and one buildSite has no try/catch around.
+      const dir = await watchFixture({ "settings.json": "not json", "index.md": "# One" });
+      const out = path.join(dir, "site");
+      await expect(watchSite({ dir, out, port: 0 })).resolves.toBeUndefined();
+    },
+    SPAWNS_A_PROCESS,
+  );
+
+  it(
+    "keeps serving the last successful build when a rebuild throws",
+    async () => {
+      const dir = await watchFixture({ "settings.json": "{}", "index.md": "# One" });
+      const out = path.join(dir, "site");
+      let notifyRebuild: ((code: number) => void) | undefined;
+      const handle = await watchSite({
+        dir,
+        out,
+        port: 0,
+        onRebuild: (code) => notifyRebuild?.(code),
+      });
+      expect(handle).toBeDefined();
+      try {
+        const rebuilt = new Promise<number>((res) => {
+          notifyRebuild = res;
+        });
+        // Corrupting settings.json makes the rebuild's buildSite() call throw
+        // SiteError instead of resolving with a nonzero code — the case that
+        // used to become an unhandled rejection and crash the whole watch
+        // process. onRebuild still firing, with the test process still alive
+        // to see it, is the proof that it no longer does.
+        await writeFile(path.join(dir, "settings.json"), "not json", "utf8");
+        const code = await rebuilt;
+        expect(code).not.toBe(0);
+
+        const stillServed = await readFile(path.join(out, "index.html"), "utf8");
+        expect(stillServed).toContain("One");
+      } finally {
+        await handle?.close();
+      }
+    },
+    SPAWNS_A_PROCESS * 2,
+  );
+
+  it(
+    "close() waits for an in-flight rebuild to finish before resolving",
+    async () => {
+      const dir = await watchFixture({ "settings.json": "{}", "index.md": "# One" });
+      const out = path.join(dir, "site");
+      const events: string[] = [];
+      const handle = await watchSite({
+        dir,
+        out,
+        port: 0,
+        onRebuild: () => {
+          events.push("rebuilt");
+        },
+      });
+      expect(handle).toBeDefined();
+      await writeFile(path.join(dir, "index.md"), "# Two", "utf8");
+      // Long enough for the 300ms debounce to elapse and the rebuild's real
+      // canopy subprocess to actually start, short enough that the build is
+      // still running — a real build takes much longer than this margin, so
+      // close() below races a genuinely in-flight rebuild rather than one
+      // that already finished.
+      await new Promise((res) => setTimeout(res, 350));
+      await handle?.close();
+      events.push("closed");
+      // If close() didn't wait for the rebuild, "closed" would land first —
+      // close() only does cheap synchronous-ish teardown (clear a timer,
+      // close a watcher and a socket), while the rebuild is a multi-hundred-
+      // millisecond subprocess.
+      expect(events).toEqual(["rebuilt", "closed"]);
+    },
+    SPAWNS_A_PROCESS * 2,
+  );
 });

@@ -176,6 +176,11 @@ export interface WatchHandle {
   close(): Promise<void>;
 }
 
+/** `Error#message` if it's one, else a `String()` fallback for whatever else a rejection carries. */
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 /**
  * Build once, then rebuild on every source change and serve the result.
  *
@@ -190,11 +195,26 @@ export interface WatchHandle {
  * written) means the previous, working output just keeps being served. The
  * process only ever stops on the initial build failing — there is nothing to
  * serve yet, so the server is closed again — or on the caller closing it.
+ *
+ * `buildSite` is not guaranteed to only resolve with an exit code: a
+ * malformed `settings.json` (edited mid-session) or a transient fs error
+ * (e.g. a lock held by an editor's save, more likely here since the watcher
+ * below has no `awaitWriteFinish`) surfaces as a thrown `SiteError` instead.
+ * Both the initial build and every rebuild treat a throw exactly like a
+ * nonzero exit code — the alternative, letting a rebuild's rejection go
+ * uncaught, would take down the whole watch process over one bad save.
  */
 export async function watchSite(options: WatchOptions): Promise<WatchHandle | undefined> {
   const { dir, out, port, onRebuild } = options;
   const server = await serveStatic(out, port);
-  const initialCode = await buildSite({ dir, out });
+  let initialCode: number;
+  try {
+    initialCode = await buildSite({ dir, out });
+  } catch (error) {
+    console.error(`canopy-page: build failed — ${errorMessage(error)}`);
+    await server.close();
+    return undefined;
+  }
   if (initialCode !== 0) {
     await server.close();
     return undefined;
@@ -207,6 +227,10 @@ export async function watchSite(options: WatchOptions): Promise<WatchHandle | un
   let rebuildTimer: NodeJS.Timeout | undefined;
   let rebuilding = false;
   let rebuildQueued = false;
+  // Tracks the rebuild currently running (if any) so close() can drain it
+  // instead of resolving while it's still writing to `out` in the
+  // background — see close() below.
+  let currentRebuild: Promise<void> | undefined;
 
   function runRebuild(): void {
     if (rebuilding) {
@@ -214,17 +238,30 @@ export async function watchSite(options: WatchOptions): Promise<WatchHandle | un
       return;
     }
     rebuilding = true;
-    void buildSite({ dir, out })
-      .then((code) => {
-        console.log(
-          code === 0
-            ? "canopy-page: rebuilt"
-            : "canopy-page: rebuild failed — serving the last successful build",
-        );
-        onRebuild?.(code);
-      })
+    currentRebuild = buildSite({ dir, out })
+      .then(
+        (code) => {
+          console.log(
+            code === 0
+              ? "canopy-page: rebuilt"
+              : "canopy-page: rebuild failed — serving the last successful build",
+          );
+          onRebuild?.(code);
+        },
+        (error: unknown) => {
+          // Same outcome as a nonzero exit code — the last successful build
+          // keeps being served — reported distinctly since it's a different
+          // failure shape. onRebuild still fires so a caller waiting on it
+          // (a test, or a future CLI status line) doesn't hang forever.
+          console.error(
+            `canopy-page: rebuild failed — serving the last successful build (${errorMessage(error)})`,
+          );
+          onRebuild?.(1);
+        },
+      )
       .finally(() => {
         rebuilding = false;
+        currentRebuild = undefined;
         if (rebuildQueued) {
           rebuildQueued = false;
           runRebuild();
@@ -268,7 +305,20 @@ export async function watchSite(options: WatchOptions): Promise<WatchHandle | un
     port: server.port,
     close: async () => {
       if (rebuildTimer !== undefined) clearTimeout(rebuildTimer);
+      // Closing the watcher first means no further change can schedule a new
+      // rebuild while we drain below — only what's already running (and
+      // whatever it chains into via rebuildQueued) is left to wait out.
       await watcher.close();
+      // A rebuild already in flight keeps writing to `out` and calling
+      // onRebuild after this close() would otherwise have returned, which
+      // breaks the "everything this started has stopped" contract close()
+      // is supposed to have. The loop (rather than a single await) exists
+      // because finishing one rebuild can immediately chain into another —
+      // runRebuild reassigns currentRebuild synchronously from inside the
+      // previous one's `finally` when a change arrived mid-build.
+      while (currentRebuild !== undefined) {
+        await currentRebuild;
+      }
       await server.close();
     },
   };
