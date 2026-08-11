@@ -298,6 +298,16 @@ export async function watchSite(options: WatchOptions): Promise<WatchHandle | un
   // trust that watch mode is actually watching.
   await new Promise<void>((res) => watcher.once("ready", res));
   watcher.on("all", scheduleRebuild);
+  // chokidar emits "error" for real, plausible triggers — a watched folder
+  // renamed or deleted mid-session, EPERM on Windows, ENOSPC from an inotify
+  // watch limit on Linux, EACCES on an unreadable subdirectory. An
+  // EventEmitter's "error" event with no listener throws uncaught, which
+  // would take down the whole watch process — exactly what this file's other
+  // error handling (buildSite failures never killing the process) exists to
+  // avoid. Reporting and continuing is the same "keep running" contract.
+  watcher.on("error", (error: unknown) => {
+    console.error(`canopy-page: watch error — ${errorMessage(error)}`);
+  });
 
   console.log(`canopy-page: watching ${dir}, serving http://localhost:${server.port}/`);
 
@@ -305,17 +315,23 @@ export async function watchSite(options: WatchOptions): Promise<WatchHandle | un
     port: server.port,
     close: async () => {
       if (rebuildTimer !== undefined) clearTimeout(rebuildTimer);
+      // A rebuild queued behind one already in flight (see runRebuild) hasn't
+      // started yet — cancelling it here means close() doesn't leave a fresh,
+      // unsignaled canopy build spawning after it returns, same as clearing
+      // rebuildTimer above does for one that was merely scheduled.
+      rebuildQueued = false;
       // Closing the watcher first means no further change can schedule a new
-      // rebuild while we drain below — only what's already running (and
-      // whatever it chains into via rebuildQueued) is left to wait out.
+      // rebuild while we drain below — only what's already running is left
+      // to wait out, since rebuildQueued was just cleared above.
       await watcher.close();
       // A rebuild already in flight keeps writing to `out` and calling
       // onRebuild after this close() would otherwise have returned, which
       // breaks the "everything this started has stopped" contract close()
-      // is supposed to have. The loop (rather than a single await) exists
-      // because finishing one rebuild can immediately chain into another —
-      // runRebuild reassigns currentRebuild synchronously from inside the
-      // previous one's `finally` when a change arrived mid-build.
+      // is supposed to have. The loop (rather than a single await) guards
+      // against runRebuild reassigning currentRebuild synchronously from
+      // inside the previous one's `finally` — which can no longer chain into
+      // an actual rebuild now that rebuildQueued is cleared, but leaves the
+      // loop here as the correct shape regardless.
       while (currentRebuild !== undefined) {
         await currentRebuild;
       }

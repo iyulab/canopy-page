@@ -34,7 +34,14 @@ async function main(): Promise<void> {
     const shutdown = (): void => {
       if (closing) return;
       closing = true;
-      void handle.close().then(() => process.exit(0));
+      void handle
+        .close()
+        .then(() => process.exit(0))
+        .catch((error: unknown) => {
+          const message = error instanceof Error ? error.message : String(error);
+          console.error(`canopy-page: error while shutting down — ${message}`);
+          process.exit(1);
+        });
     };
     process.on("SIGINT", shutdown);
     process.on("SIGTERM", shutdown);

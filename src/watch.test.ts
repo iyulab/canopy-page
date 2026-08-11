@@ -283,12 +283,15 @@ describe("watchSite", () => {
       });
       expect(handle).toBeDefined();
       await writeFile(path.join(dir, "index.md"), "# Two", "utf8");
-      // Long enough for the 300ms debounce to elapse and the rebuild's real
-      // canopy subprocess to actually start, short enough that the build is
-      // still running — a real build takes much longer than this margin, so
-      // close() below races a genuinely in-flight rebuild rather than one
-      // that already finished.
-      await new Promise((res) => setTimeout(res, 350));
+      // close()'s first action is clearing the pending debounce timer, so the
+      // real margin this sleep needs is between "chokidar detects the change"
+      // and "the 300ms debounce fires" — not between the write and the sleep
+      // ending. 1200ms leaves ~900ms of that margin for filesystem-event
+      // detection latency on a loaded machine, while still comfortably
+      // shorter than a real canopy build would need to spuriously finish and
+      // make this test meaningless (builds elsewhere in this file take
+      // multiple-hundred-milliseconds-plus).
+      await new Promise((res) => setTimeout(res, 1200));
       await handle?.close();
       events.push("closed");
       // If close() didn't wait for the rebuild, "closed" would land first —
