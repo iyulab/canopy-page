@@ -32,7 +32,7 @@ jobs:
       # The demo site names rehype-mermaid in settings.json — see pages.yml
       # for why this needs a real browser rather than only Node.
       - name: Cache Playwright's browser
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
