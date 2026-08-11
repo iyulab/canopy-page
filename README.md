@@ -60,6 +60,7 @@ Node 22 or newer.
 npx canopy-page init docs/site     # write a settings file (and a home page, if needed)
 npx canopy-page check docs/site    # report anything broken, without building
 npx canopy-page build docs/site -o dist/help
+npx canopy-page watch docs/site       # rebuild on change, serve it locally
 ```
 
 `init` never replaces a settings file that is already there, and writes no page into a folder
@@ -75,6 +76,7 @@ fail. Both leave with a non-zero exit code when they do, which is all a pipeline
 | `canopy-page init [site-dir]` | Write a settings file naming the site after its folder |
 | `canopy-page check [site-dir]` | Check settings and references; build nothing |
 | `canopy-page build [site-dir] [-o out]` | Check, then publish to `out` (default `./site`) |
+| `canopy-page watch [site-dir] [-o out] [--port n]` | Build, then rebuild on change and serve it locally (default port `8080`) |
 
 `[site-dir]` is the folder holding `settings.json`, and defaults to the current one.
 

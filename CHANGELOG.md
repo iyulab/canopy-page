@@ -7,6 +7,16 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [0.10.0] — 2026-08-11
+
+### Added
+
+- **New `watch` command.** `canopy-page watch [site-dir] [-o out] [--port n]` builds once, then
+  rebuilds on every source change and serves the result on `http://localhost:<port>/` (default
+  `8080`, refused if already taken rather than silently moved). A failed rebuild is reported on
+  the console and leaves the last successful build being served — the process itself never exits
+  on a broken save.
+
 ## [0.9.0] — 2026-08-11
 
 ### Added
