@@ -6,17 +6,22 @@ Node 22 or newer.
 npm install --save-dev @iyulab/canopy-page
 ```
 
-## Three commands
+## Four commands
 
 ```sh
-npx canopy-page init docs/site      # write a settings file
-npx canopy-page check docs/site     # report anything broken, build nothing
+npx canopy-page init docs/site        # write a settings file
+npx canopy-page check docs/site       # report anything broken, build nothing
 npx canopy-page build docs/site -o dist/help
+npx canopy-page watch docs/site       # rebuild on change, serve it locally
 ```
 
 `init` never replaces a settings file that is already there, and writes no page into a folder
 that already holds markdown. Adopting an existing set of documents and starting a new site are
 different situations, and only one of them wants a page written for it.
+
+`watch` builds once, then rebuilds on every save and serves the result locally, so a browser
+tab reloaded by hand is the only step left between editing a page and seeing it — no separate
+`build` to rerun each time.
 
 ## Putting it in a pipeline
 
