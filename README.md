@@ -40,7 +40,12 @@ go away.
   system setting
 - **Prev/next cards** linking to a page's neighbors in the sidebar's own order, and **backlinks**
   listing every page that points to it
-- **A full-screen menu on narrow screens**, rather than one that pushes the page's content down
+- **Sidebar groups collapse**, open exactly along the path to the page you're on and closed
+  everywhere else
+- **A breadcrumb trail** in the topbar, when there's a title, a logo, `home`, or search for it to
+  sit beside
+- **A full-screen menu on narrow screens** that starts closed instead of opening on every page,
+  remembering a reader's own choice to leave it open for the rest of that visit
 - **Sitemap and `robots.txt`**, once `siteUrl` is set
 
 See it live at <https://iyulab.github.io/canopy-page>, or read
@@ -112,7 +117,7 @@ unpublished.
 | `title` | Site name. Defaults to the folder's name |
 | `description` | Fills `<meta name="description">`, which is what link previews show |
 | `lang` | BCP 47 tag for `<html lang>`. Worth setting for any non-English site: assistive technology reads pronunciation from it |
-| `strings` | Overrides for the reader chrome's own text — `search`, `toggleTheme`, `siteNav`, `pageNav`, `onThisPage`, `indexTitle` (the auto-generated contents page's title/heading), `backlinks` (a page's "linked references" heading), `searchFailed` (the client search's failure message). `lang` only changes what `<html lang>` declares; this text is canopy's own UI or canopy-page's own search script, not vault content, so it stays English otherwise. No built-in translation table — the same reasoning `home.label` already follows: link text has to be written in the site's own language. Keys left out keep their English default |
+| `strings` | Overrides for the reader chrome's own text — `search`, `toggleTheme`, `siteNav`, `pageNav`, `onThisPage`, `indexTitle` (the auto-generated contents page's title/heading), `backlinks` (a page's "linked references" heading), `breadcrumb` (the topbar's ancestor-trail nav's label), `searchFailed` (the client search's failure message). `lang` only changes what `<html lang>` declares; this text is canopy's own UI or canopy-page's own search script, not vault content, so it stays English otherwise. No built-in translation table — the same reasoning `home.label` already follows: link text has to be written in the site's own language. Keys left out keep their English default |
 | `icon` | Favicon, relative to the settings file. Must be a published file |
 | `tokens` | CSS of design-token overrides, relative to the settings file. Appended *after* canopy's own tokens, so a file naming one value keeps the rest. It is configuration rather than content, so — unlike `icon` and `logo` — it is excluded from the published site automatically. Absent: canopy's default palette |
 | `logo` | Image shown beside the site title, relative to the settings file. Must be a published file — the opposite direction from `tokens`, because this one is content. Rendered with an empty `alt`, deliberately: the site title beside it already names the site, so there is no separate text to give it. Absent: the sidebar header shows the title text alone |

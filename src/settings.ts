@@ -135,6 +135,8 @@ export interface Settings {
     indexTitle?: string;
     /** Heading over a page's list of pages that link to it. */
     backlinks?: string;
+    /** Accessible label for the topbar's ancestor-trail nav. */
+    breadcrumb?: string;
     /**
      * Message shown in place of results when the client search index fails to
      * load. This key rides the same JSON `--strings` flag as every other one
@@ -187,6 +189,7 @@ export const STRINGS_KEYS = new Set([
   "onThisPage",
   "indexTitle",
   "backlinks",
+  "breadcrumb",
   "searchFailed",
 ]);
 
