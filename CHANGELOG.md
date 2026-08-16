@@ -7,7 +7,21 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
-## [Unreleased]
+## [0.11.0] — 2026-08-17
+
+### Added
+
+- **`strings.breadcrumb`**, overriding the accessible label of the topbar's new ancestor-trail
+  nav (canopy 0.11.0). Rides the same validated `strings` object every other reader-chrome
+  override already does.
+
+### Changed
+
+- **Upgraded to canopy 0.11.0** — collapsible sidebar groups and the breadcrumb trail (above),
+  a stronger sidebar current-page tint, a placeholder and icon on the search input, styled
+  topbar links, and the on-page outline now following the article instead of preceding it. See
+  [canopy's own changelog](https://github.com/iyulab/canopy/blob/main/CHANGELOG.md#0110--2026-08-17)
+  for the full list.
 
 ### Fixed
 
