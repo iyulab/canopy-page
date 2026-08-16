@@ -7,6 +7,7 @@ describe("assembleScript", () => {
     expect(script).toContain("CanopySearch");
     expect(script).toContain("CanopyScrollspy");
     expect(script).toContain("CanopyThemeToggle");
+    expect(script).toContain("CanopyMobileNav");
   });
 
   it("keeps the default search-failed message when no override is given", async () => {

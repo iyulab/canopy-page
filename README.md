@@ -145,6 +145,13 @@ specificity over a bare selector — so a bare `:root` appended after that block
 schemes. A one-block file naming only a light-mode colour would ship that colour onto a dark
 sidebar too.
 
+Unlike `settings.json` (below), `tokens` gets no such validation — it's a plain CSS file appended
+to canopy's own, and CSS silently ignores a custom property nothing reads. A file carried over
+from a previous documentation tool's own token names (or a `.dark`/`.light` class toggle instead
+of canopy's `[data-theme]` attribute) parses fine, builds fine, and changes nothing: the site
+keeps canopy's default colours with no error anywhere. If a `tokens` override doesn't show up on
+the built site, that silent mismatch — not a build failure — is the first thing to check.
+
 The settings file itself is never published, and neither is anything `exclude` names. A file
 named `settings.json` deeper in the site is content, and ships.
 

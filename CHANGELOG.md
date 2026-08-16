@@ -7,6 +7,18 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [Unreleased]
+
+### Fixed
+
+- **The mobile nav no longer opens on every page load.** canopy's shell ships the site
+  navigation as `<details open>` unconditionally — the one default that works with no script at
+  all — but on a narrow viewport, that meant a reader landed on a full navigation (rendered as a
+  full-screen overlay by canopy's own mobile styling) in front of the article they followed a
+  link to read, every single page. canopy-page's script now closes it by default on a narrow
+  viewport and remembers a reader's own choice to leave it open for the rest of that browser
+  session. A wide viewport, and a build with no script attached, are unaffected.
+
 ## [0.10.0] — 2026-08-11
 
 ### Added

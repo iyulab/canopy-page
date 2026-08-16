@@ -40,6 +40,8 @@ describe("npm pack contents", () => {
       "dist/assets/search.css",
       "dist/assets/scrollspy.js",
       "dist/assets/scrollspy.css",
+      "dist/assets/theme-toggle.js",
+      "dist/assets/mobile-nav.js",
     ]) {
       expect(paths).toContain(asset);
     }
