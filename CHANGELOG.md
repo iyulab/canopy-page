@@ -7,6 +7,17 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [0.11.1] — 2026-08-17
+
+### Changed
+
+- **Upgraded to canopy 0.11.1** — the sidebar's current-page highlight now fills the row instead
+  of just the label text, and the mobile topbar no longer stacks three separate rows of chrome
+  (breadcrumb dropped, search collapses to its icon and expands while focus stays inside the
+  search form) before a reader reaches the page. See
+  [canopy's own changelog](https://github.com/iyulab/canopy/blob/main/CHANGELOG.md#0111--2026-08-17)
+  for the full list.
+
 ## [0.11.0] — 2026-08-17
 
 ### Added
