@@ -7,6 +7,17 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [0.11.2] — 2026-08-18
+
+### Changed
+
+- **Upgraded to canopy 0.11.2** — `**` emphasis now closes correctly when a CJK character
+  follows it with no space (a Chinese, Japanese, or Korean particle or full-width punctuation
+  mark sitting flush against the closing marker), instead of surviving into the rendered page as
+  literal asterisks. See
+  [canopy's own changelog](https://github.com/iyulab/canopy/blob/main/CHANGELOG.md#0112--2026-08-18)
+  for details.
+
 ## [0.11.1] — 2026-08-17
 
 ### Changed
