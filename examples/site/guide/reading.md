@@ -23,6 +23,14 @@ Pages follow the system's dark/light setting with no script at all. The toggle i
 overrides that for readers who want a specific choice regardless of their system setting, and
 remembers it for their next visit.
 
+## Zooming an image
+
+Clicking an image in the body opens it full-size over the rest of the page. Click the dimmed
+background, press <kbd>Esc</kbd>, or use the close button to return to reading. An image an
+author already links to its own file opens the same way — the link underneath still works with a
+middle click or a modifier-held click, for readers who want the file itself rather than the
+zoomed view.
+
 ## Continuing to the next page
 
 The foot of every page carries prev/next cards linking to its neighbors in the sidebar's own

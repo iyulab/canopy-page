@@ -8,6 +8,7 @@ describe("assembleScript", () => {
     expect(script).toContain("CanopyScrollspy");
     expect(script).toContain("CanopyThemeToggle");
     expect(script).toContain("CanopyMobileNav");
+    expect(script).toContain("CanopyImageLightbox");
   });
 
   it("keeps the default search-failed message when no override is given", async () => {
@@ -35,6 +36,7 @@ describe("assembleTokensCss", () => {
     const css = await assembleTokensCss(undefined);
     expect(css).toContain(".canopy-search");
     expect(css).toContain(".canopy-outline");
+    expect(css).toContain(".canopy-lightbox-overlay");
   });
 
   it("appends its own CSS after a user's tokens, rather than replacing it", async () => {

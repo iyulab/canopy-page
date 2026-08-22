@@ -1,0 +1,61 @@
+/* Image lightbox — pairs with assets/image-lightbox.js. Reuses canopy's own
+   tokens (--bg-primary, --text-normal, --radius-m, --sp-*) rather than
+   introducing new ones. z-index 30 sits above search's 10 and the mobile
+   nav overlay's 20, since the lightbox can open while either is present. */
+
+.canopy-content img {
+  cursor: zoom-in;
+}
+
+body.canopy-lightbox-open {
+  overflow: hidden;
+}
+
+.canopy-lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-8);
+  background: rgba(0, 0, 0, 0.85);
+}
+
+.canopy-lightbox-overlay[hidden] {
+  display: none;
+}
+
+.canopy-lightbox-overlay img {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  cursor: default;
+  border-radius: var(--radius-m);
+}
+
+.canopy-lightbox-close {
+  position: fixed;
+  top: var(--sp-4);
+  right: var(--sp-4);
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  background: var(--bg-primary);
+  color: var(--text-normal);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.canopy-lightbox-close::before {
+  content: "\00d7";
+}
+
+.canopy-lightbox-close:hover {
+  background: var(--bg-secondary);
+}

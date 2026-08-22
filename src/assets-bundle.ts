@@ -38,11 +38,12 @@ const SEARCH_FAILED_DEFAULT = "Search failed to load.";
  * asset stays valid, readable JavaScript on its own.
  */
 export async function assembleScript(searchFailed?: string): Promise<string> {
-  const [search, scrollspy, themeToggle, mobileNav] = await Promise.all([
+  const [search, scrollspy, themeToggle, mobileNav, imageLightbox] = await Promise.all([
     readAsset("search.js"),
     readAsset("scrollspy.js"),
     readAsset("theme-toggle.js"),
     readAsset("mobile-nav.js"),
+    readAsset("image-lightbox.js"),
   ]);
   // A function replacer, not a replacement string: String.replace treats
   // "$&"/"$'"/"$$" etc. in a replacement string as patterns, and a site
@@ -51,7 +52,7 @@ export async function assembleScript(searchFailed?: string): Promise<string> {
     searchFailed === undefined
       ? search
       : search.replace(JSON.stringify(SEARCH_FAILED_DEFAULT), () => JSON.stringify(searchFailed));
-  return `${searchWithStrings}\n${scrollspy}\n${themeToggle}\n${mobileNav}`;
+  return `${searchWithStrings}\n${scrollspy}\n${themeToggle}\n${mobileNav}\n${imageLightbox}`;
 }
 
 /**
@@ -60,7 +61,11 @@ export async function assembleScript(searchFailed?: string): Promise<string> {
  * already uses, so no new canopy surface is needed for this either.
  */
 export async function assembleTokensCss(userTokensCss: string | undefined): Promise<string> {
-  const [search, scrollspy] = await Promise.all([readAsset("search.css"), readAsset("scrollspy.css")]);
-  const own = `${search}\n${scrollspy}`;
+  const [search, scrollspy, imageLightbox] = await Promise.all([
+    readAsset("search.css"),
+    readAsset("scrollspy.css"),
+    readAsset("image-lightbox.css"),
+  ]);
+  const own = `${search}\n${scrollspy}\n${imageLightbox}`;
   return userTokensCss === undefined ? own : `${userTokensCss}\n${own}`;
 }

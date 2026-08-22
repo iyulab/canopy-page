@@ -38,6 +38,8 @@ go away.
   you scroll
 - **A dark/light toggle** that remembers a reader's choice; without one, pages follow the
   system setting
+- **Content images open full-size in a lightbox** when clicked, closing on a background click,
+  <kbd>Esc</kbd>, or its close button
 - **Prev/next cards** linking to a page's neighbors in the sidebar's own order, and **backlinks**
   listing every page that points to it
 - **Sidebar groups collapse**, open exactly along the path to the page you're on and closed
