@@ -2,7 +2,7 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { checkSite, referenceFindings } from "./check.js";
+import { checkSite, filenameEncodingFindings, referenceFindings } from "./check.js";
 import { loadSite } from "./site.js";
 
 /**
@@ -192,6 +192,77 @@ describe("referenceFindings", () => {
     });
     const messages = (await referenceFindings(await loadSite(root))).map((f) => f.message);
     expect(messages[0]).toContain("points at nothing published");
+  });
+});
+
+describe("filenameEncodingFindings", () => {
+  it("warns about a page whose filename needs percent-encoding in its URL", async () => {
+    const root = await site({
+      "settings.json": "{}",
+      "index.md": "# Home",
+      "guide/error messages.md": "# Error messages",
+    });
+    const messages = filenameEncodingFindings(await loadSite(root)).map((f) => f.message);
+    expect(messages).toEqual([
+      'guide/error messages.md: published URL is "guide/error%20messages.html" ' +
+        "(rename to avoid the encoding, or ignore if intentional)",
+    ]);
+  });
+
+  it("warns about an asset with the same problem, unchanged extension", async () => {
+    const root = await site({
+      "settings.json": "{}",
+      "index.md": "# Home",
+      "assets/team photo.png": "not a real png",
+    });
+    const messages = filenameEncodingFindings(await loadSite(root)).map((f) => f.message);
+    expect(messages).toEqual([
+      'assets/team photo.png: published URL is "assets/team%20photo.png" ' +
+        "(rename to avoid the encoding, or ignore if intentional)",
+    ]);
+  });
+
+  it("says nothing about filenames that already round-trip through encodeURIComponent", async () => {
+    const root = await site({
+      "settings.json": "{}",
+      "index.md": "# Home",
+      "guide/install.md": "# Install",
+      "assets/logo.png": "not a real png",
+    });
+    expect(filenameEncodingFindings(await loadSite(root))).toEqual([]);
+  });
+
+  it("says nothing about a non-ASCII filename — every character in it needs encoding, but that's the language, not a mistake", async () => {
+    const root = await site({
+      "settings.json": "{}",
+      "index.md": "# Home",
+      "guide/한국어-예시/index.md": "# 한국어 예시",
+    });
+    expect(filenameEncodingFindings(await loadSite(root))).toEqual([]);
+  });
+
+  it("still warns when an ASCII mistake sits alongside non-ASCII content", async () => {
+    const root = await site({
+      "settings.json": "{}",
+      "index.md": "# Home",
+      "guide/오류 목록.md": "# 오류 목록",
+    });
+    const messages = filenameEncodingFindings(await loadSite(root)).map((f) => f.message);
+    expect(messages).toEqual([
+      'guide/오류 목록.md: published URL is "guide/%EC%98%A4%EB%A5%98%20%EB%AA%A9%EB%A1%9D.html" ' +
+        "(rename to avoid the encoding, or ignore if intentional)",
+    ]);
+  });
+
+  it("is a warning, so checkSite still leaves with a success code", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const root = await site({
+      "settings.json": "{}",
+      "guide/error messages.md": "# Error messages",
+    });
+
+    expect(await checkSite(root)).toBe(0);
+    expect(log.mock.calls.flat().join("")).toContain("1 warning(s)");
   });
 });
 

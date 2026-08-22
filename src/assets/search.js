@@ -208,6 +208,19 @@ var CanopySearch = (function () {
       }
     });
 
+    // The shortcut above only works if a reader knows it exists — the badge
+    // is what tells them. Built here rather than in canopy's own shell markup
+    // because only this script knows the shortcut actually ended up wired
+    // (a build with no --script attached never reaches this line at all, so
+    // it never advertises a key that would do nothing). CSS hides it once
+    // the input has focus (search.css) so it doesn't crowd a query being
+    // typed.
+    var shortcut = document.createElement("kbd");
+    shortcut.className = "canopy-search-shortcut";
+    shortcut.setAttribute("aria-hidden", "true");
+    shortcut.textContent = /Mac|iPhone|iPad/.test(navigator.platform || "") ? "⌘K" : "Ctrl K";
+    form.appendChild(shortcut);
+
     // A script that ran this far is a script that can wire the form up —
     // reveal it now, and not before, so a build with no script attached
     // (or one that throws before this point) never shows a dead control.

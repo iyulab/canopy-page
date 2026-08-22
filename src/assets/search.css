@@ -8,6 +8,44 @@
   position: relative;
 }
 
+/* Reserve room so the shortcut badge below doesn't sit on top of typed
+   text — canopy's own input padding only accounts for its search icon on
+   the left. */
+.canopy-search input[type="search"] {
+  padding-right: 3rem;
+}
+
+/* Advertises Ctrl+K/Cmd+K (search.js). An inert glyph, not a button — same
+   masked-icon-adjacent technique canopy's own shell uses for its search and
+   theme-toggle icons: pointer-events: none lets a click straight through to
+   the input underneath it. Hidden once the input has focus, so it doesn't
+   crowd a query being typed, and on narrow viewports, where canopy's own
+   shell (styles.ts, the `max-width: 40rem` breakpoint) collapses the input
+   to an icon-sized 2.25rem with no room for a badge — and where a physical
+   keyboard, the whole reason the shortcut exists, is unlikely anyway. */
+.canopy-search-shortcut {
+  position: absolute;
+  top: 50%;
+  right: var(--sp-2);
+  transform: translateY(-50%);
+  padding: 0.05em 0.4em;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  font-size: 0.75em;
+  line-height: 1.4;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  pointer-events: none;
+}
+.canopy-search input[type="search"]:focus ~ .canopy-search-shortcut {
+  display: none;
+}
+@media (max-width: 40rem) {
+  .canopy-search-shortcut {
+    display: none;
+  }
+}
+
 .canopy-search-results {
   position: absolute;
   top: 100%;

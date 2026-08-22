@@ -99,6 +99,58 @@ function wikilinkExists(site: LoadedSite, target: string): boolean {
   return site.index.pages.some((page) => toPageKey(page).split("/").pop() === key);
 }
 
+/**
+ * `encodeURIComponent`'s unreserved set — the ASCII characters it leaves
+ * alone. Everything else ASCII (a space, `#`, `&`, `?`, …) is the kind of
+ * character that lands in a filename by accident — a stray space, a
+ * character copied from somewhere that meant it as punctuation, not a path.
+ */
+const ASCII_URI_SAFE = /^[A-Za-z0-9\-_.!~*'()]$/;
+
+/**
+ * True if `segment` contains an ASCII character `encodeURIComponent` would
+ * escape. Deliberately blind to non-ASCII: canopy percent-encodes every
+ * character outside the unreserved set, which means *any* non-English
+ * filename — a Korean directory name, an emoji — would otherwise trip this,
+ * and canopy-page's own demo site intentionally ships one (see
+ * `examples/site/guide/한국어-예시/`) as a *supported* pattern, not a mistake
+ * to flag. An ASCII character in the escaped set, on the other hand, is
+ * consistently a slip — nobody names a file "error#messages.md" on purpose.
+ */
+function hasAsciiEncodingIssue(segment: string): boolean {
+  for (const char of segment) {
+    const code = char.codePointAt(0);
+    if (code !== undefined && code <= 0x7f && !ASCII_URI_SAFE.test(char)) return true;
+  }
+  return false;
+}
+
+/**
+ * A published path's segments, exactly where percent-encoding canopy applies
+ * to the *link* (never the file, which keeps its raw name) turns out to
+ * matter: `relativeHref` (canopy's site-path.ts) encodes each segment with
+ * `encodeURIComponent`, so a name with a space or other URL-unsafe character
+ * still resolves — a static host serves "error%20messages.html" correctly —
+ * but nothing tells the author whether that was intended. Pages become
+ * `.html`; every other published file's segments are checked exactly as
+ * written, mirroring `toSitePath`'s own "everything but markdown passes
+ * through unchanged".
+ */
+export function filenameEncodingFindings(site: LoadedSite): Finding[] {
+  const findings: Finding[] = [];
+  for (const file of [...site.index.pages, ...site.index.assets]) {
+    const published = file.replace(/\.md$/i, ".html");
+    const segments = published.split("/");
+    if (!segments.some(hasAsciiEncodingIssue)) continue;
+    const href = segments.map((segment) => encodeURIComponent(segment)).join("/");
+    findings.push({
+      level: "warning",
+      message: `${file}: published URL is "${href}" (rename to avoid the encoding, or ignore if intentional)`,
+    });
+  }
+  return findings;
+}
+
 /** Check every page's references, returning one finding per broken reference. */
 export async function referenceFindings(site: LoadedSite): Promise<Finding[]> {
   const findings: Finding[] = [];
@@ -189,6 +241,7 @@ export async function siteFindings(site: LoadedSite): Promise<Finding[]> {
   return [
     ...settingsFindings(site),
     ...navFindings(site.nav),
+    ...filenameEncodingFindings(site),
     ...(await referenceFindings(site)),
   ];
 }

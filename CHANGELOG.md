@@ -7,6 +7,19 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [Unreleased]
+
+### Added
+
+- **A `Ctrl K`/`⌘K` badge on the search box**, so the keyboard shortcut that already worked has
+  something telling a reader it exists. Hidden once the box has focus, and on narrow viewports
+  where the box collapses to an icon and a shortcut is unlikely to matter anyway.
+- **`check` warns about a filename that needs percent-encoding in its own URL** — a stray space
+  or other ASCII character outside a URL's unreserved set, most often. The page still publishes
+  correctly (a static host serves the encoded URL fine), so this is a warning, not an error;
+  ignore it if the encoding is intended. Blind to non-ASCII on purpose: a Korean, Japanese, or
+  any other non-English filename needs encoding too, but that's the language, not a mistake.
+
 ## [0.12.0] — 2026-08-22
 
 ### Added
