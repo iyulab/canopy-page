@@ -6,10 +6,11 @@ for what stays build-time only).
 
 ## Search
 
-`Ctrl+K` (`Cmd+K` on macOS) jumps to the search box in the top bar from anywhere on the page.
-It matches a query's terms against every page's title, headings, and body — a query has to match
-somewhere for a page to appear at all, and a match in the title or a heading ranks above one
-buried in the body.
+`Ctrl+K` (`Cmd+K` on macOS) jumps to the search box in the top bar from anywhere on the page —
+badged on the box itself, so the shortcut doesn't take reading this page to discover. It matches
+a query's terms against every page's title, headings, and body — a query has to match somewhere
+for a page to appear at all, and a match in the title or a heading ranks above one buried in the
+body.
 
 ## The current page, and the current section
 
@@ -42,3 +43,16 @@ document beside.
 Below a page's own width, the sidebar collapses to a single control. Opening it covers the
 screen with the full navigation rather than pushing the page's content down; closing it returns
 to reading.
+
+## Scrolling a wide code block
+
+A code block wider than the screen scrolls sideways rather than wrapping, which would break its
+indentation. A shadow at whichever edge still has more code to scroll to marks it as
+scrollable — a cue for a scrollbar some browsers hide until you hover it — and disappears once
+you've scrolled that far.
+
+## Knowing when a link leaves the site
+
+The link back to wherever this documentation sits beside (`home` in `settings.json`, "canopy-page
+on GitHub" at the top of this page) can point at a page on this same site or somewhere else
+entirely. When it leaves, an icon after the label says so before you click it.

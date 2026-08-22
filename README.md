@@ -33,7 +33,8 @@ page never depends on any of the scripted ones: block scripts, or print the page
 go away.
 
 - **Search**, matching a query against every page's title, headings, and body — `Ctrl+K` /
-  `Cmd+K` jumps to it from anywhere
+  `Cmd+K` jumps to it from anywhere, badged on the search box itself so the shortcut is
+  discoverable without reading the docs
 - **The current page and section, marked** in the sidebar and the on-page outline, updating as
   you scroll
 - **A dark/light toggle** that remembers a reader's choice; without one, pages follow the
@@ -45,9 +46,13 @@ go away.
 - **Sidebar groups collapse**, open exactly along the path to the page you're on and closed
   everywhere else
 - **A breadcrumb trail** in the topbar, when there's a title, a logo, `home`, or search for it to
-  sit beside
+  sit beside — and an icon on `home` specifically when it points off the site, so a link sitting
+  right next to that trail doesn't look like it stays on it
 - **A full-screen menu on narrow screens** that starts closed instead of opening on every page,
   remembering a reader's own choice to leave it open for the rest of that visit
+- **A code block wider than the screen shows a shadow at whichever edge still has more to
+  scroll to**, and nothing once you've scrolled there — a cue for a scrollbar that some
+  OS/browser combinations hide until hovered
 - **Sitemap and `robots.txt`**, once `siteUrl` is set
 
 See it live at <https://iyulab.github.io/canopy-page>, or read
@@ -236,6 +241,11 @@ Warnings — reported, and the build continues:
 - A section with no `label` and no index page, whose sidebar heading falls back to its own
   directory name — a filesystem detail, not a name anyone chose. Add a `label`, or an index page
   for the section to name itself
+- A filename whose published URL needs percent-encoding — a stray space or other ASCII
+  character outside a URL's unreserved set, most often. The page still publishes and works; this
+  is a nudge to check whether the encoding was intended, not a defect. Blind to non-ASCII on
+  purpose, so a Korean, Japanese, or any other non-English filename is never flagged for being
+  itself
 
 Checking reads the settings and each page. It never renders, so it is fast enough to sit at the
 front of a pipeline, at the scale a product manual reaches. References inside fenced
