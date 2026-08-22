@@ -7,6 +7,16 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [0.12.0] — 2026-08-22
+
+### Added
+
+- **Content images open full-size in a lightbox on click**, closing on a background click,
+  <kbd>Esc</kbd>, or its close button. An image already wrapped in a link to its own file — a
+  common workaround for the lack of a zoom before this — still opens the lightbox first; a
+  middle click or a modifier-held click on it still follows the link, for a reader who wants the
+  file itself.
+
 ## [0.11.2] — 2026-08-18
 
 ### Changed
