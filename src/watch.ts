@@ -3,6 +3,7 @@ import http from "node:http";
 import { basename, extname, resolve, sep } from "node:path";
 import { watch as watchFiles } from "chokidar";
 import { buildSite } from "./build.js";
+import { isSkippedDir } from "./vault.js";
 
 /**
  * Serving a build's output locally during authoring.
@@ -286,8 +287,7 @@ export async function watchSite(options: WatchOptions): Promise<WatchHandle | un
       const resolved = resolve(watchedPath);
       if (resolved === absoluteDir) return false;
       if (resolved === resolvedOut || resolved.startsWith(outWithSep)) return true;
-      const name = basename(resolved);
-      return name === "node_modules" || name.startsWith(".");
+      return isSkippedDir(basename(resolved));
     },
   });
   // chokidar.watch() returns before its initial directory scan finishes

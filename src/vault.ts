@@ -19,7 +19,7 @@ import path from "node:path";
  */
 
 /** Directories whose contents are never published, whatever the settings say. */
-function isSkippedDir(name: string): boolean {
+export function isSkippedDir(name: string): boolean {
   return name.startsWith(".") || name === "node_modules";
 }
 
