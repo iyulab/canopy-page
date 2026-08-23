@@ -10,6 +10,10 @@ itself is [canopy](https://github.com/iyulab/canopy)'s job, and canopy-page driv
 **Live docs**: <https://iyulab.github.io/canopy-page> — built with canopy-page itself, from the
 [`examples/site`](examples/site) in this repository, republished on every push to `main`.
 
+**Complete reference**: [`docs/USAGE.md`](docs/USAGE.md) — every command, every
+`settings.json` field, every markdown feature, and everything a published site ships with, in
+one document. This README stays the short version.
+
 ---
 
 ## Why
