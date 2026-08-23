@@ -7,10 +7,15 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
-## [Unreleased]
+## [0.13.0] — 2026-08-22
 
 ### Added
 
+- **Upgraded to canopy 0.12.0** — an external-link icon on `home` when it points outside the
+  site, a scroll-edge shadow on code blocks wider than the viewport, and the on-page outline now
+  shows its own label instead of only an `aria-label`. See
+  [canopy's own changelog](https://github.com/iyulab/canopy/blob/main/CHANGELOG.md#0120--2026-08-22)
+  for details.
 - **A `Ctrl K`/`⌘K` badge on the search box**, so the keyboard shortcut that already worked has
   something telling a reader it exists. Hidden once the box has focus, and on narrow viewports
   where the box collapses to an icon and a shortcut is unlikely to matter anyway.
