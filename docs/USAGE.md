@@ -455,10 +455,11 @@ attribute override (the dark toggle's own mechanism) — so the two paths can ne
 | `--accent` / `--accent-hover` | Links, the active sidebar entry, focus and hover states |
 | `--border` / `--border-strong` | Hairline dividers / a more visible border |
 | `--sidebar-active-bg` | The current page's sidebar highlight — derived from `--accent` automatically, not a separate value to keep in sync |
+| `--sidebar-hover-bg` | A hovered sidebar row's surface — derived from `--text-normal`, so it stays a neutral step below the active tint under any accent |
 | `--callout-{note,tip,warning,danger,quote}` / `-bg` | Each callout type's accent color and tinted background |
 | `--font-ui` / `--font-monospace` | UI/body typeface / code typeface |
 | `--content-max-width` | The article column's max width |
-| `--sp-2` … `--sp-8` / `--radius-m` | The spacing scale and corner radius every shell element is built from |
+| `--sp-1` … `--sp-8` / `--radius-m` | The spacing scale and corner radius every shell element is built from |
 
 Override what you need via `tokens` (a CSS file appended *after* these defaults):
 
