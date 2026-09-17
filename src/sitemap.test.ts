@@ -60,3 +60,14 @@ describe("sitemapXml: language editions", () => {
     expect(xml).not.toContain("xhtml");
   });
 });
+
+describe("sitemapXml: a regional site language beside a plain-language edition", () => {
+  it("lists both ko-KR (this site) and ko (the map's), the same way the pages' own hreflang links do", () => {
+    const xml = sitemapXml("https://example.test/kr", ["index.html"], {
+      lang: "ko-KR",
+      alternates: { ko: "https://example.test/ko" },
+    });
+    expect(xml).toContain('hreflang="ko-KR" href="https://example.test/kr/"');
+    expect(xml).toContain('hreflang="ko" href="https://example.test/ko/"');
+  });
+});
