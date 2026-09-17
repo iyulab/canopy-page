@@ -281,3 +281,46 @@ describe("buildSite failures", () => {
     );
   });
 });
+
+describe("canopyArgs: where the site is published", () => {
+  const SEARCH_ASSETS = { tokensCssPath: "/work/tokens.css", scriptPath: "/work/script.js" };
+  function siteWith(overrides: Partial<Settings>): LoadedSite {
+    const settings: Settings = { ...overrides };
+    const index = indexSite([]);
+    return {
+      root: path.join(tmpdir(), "canopy-page-build-args-site"),
+      settings,
+      index,
+      nav: translateNav(settings, index),
+      unusedExclusions: [],
+    };
+  }
+
+  it("passes siteUrl through as --site-url, so canopy can write canonical and og:url", () => {
+    const args = canopyArgs(siteWith({ siteUrl: "https://example.test/help" }), "/out", undefined, SEARCH_ASSETS);
+    expect(args[args.indexOf("--site-url") + 1]).toBe("https://example.test/help");
+  });
+
+  it("passes the preview image and each alternate edition as its own flag", () => {
+    const args = canopyArgs(
+      siteWith({
+        siteUrl: "https://example.test/help",
+        previewImage: "assets/cover.png",
+        alternates: { ko: "https://example.test/ko/help", "x-default": "https://example.test/help" },
+      }),
+      "/out",
+      undefined,
+      SEARCH_ASSETS,
+    );
+    expect(args[args.indexOf("--site-image") + 1]).toBe("assets/cover.png");
+    const alternates = args.flatMap((arg, i) => (arg === "--alternate" ? [args[i + 1]] : []));
+    expect(alternates).toEqual(["ko=https://example.test/ko/help", "x-default=https://example.test/help"]);
+  });
+
+  it("names none of them without a site URL", () => {
+    const args = canopyArgs(siteWith({}), "/out", undefined, SEARCH_ASSETS);
+    expect(args).not.toContain("--site-url");
+    expect(args).not.toContain("--site-image");
+    expect(args).not.toContain("--alternate");
+  });
+});

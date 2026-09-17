@@ -1,3 +1,6 @@
+---
+description: "Install canopy-page with npm, then the four commands (init, check, build, watch) that make up the whole pipeline."
+---
 # Installing canopy-page
 
 Node 22 or newer.

@@ -1,3 +1,6 @@
+---
+description: "What each error and warning canopy-page reports means, and which page and line it points at."
+---
 # Error messages
 
 Every message names the page and the line it is about. This page exists partly to be linked to:

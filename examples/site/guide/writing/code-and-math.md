@@ -1,3 +1,6 @@
+---
+description: "Syntax highlighting, math, and callouts, all rendered at build time with no script needed to read them."
+---
 # Code and math
 
 Everything on this page renders at build time — no script is needed to show the highlighting,

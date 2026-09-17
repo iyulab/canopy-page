@@ -146,7 +146,9 @@ completion and inline validation for every field below as you type.
 | `logo` | Image shown beside the site title in the sidebar header, relative to the settings file. Must be a published file. Renders with an empty `alt`: the title text right beside it already names the site |
 | `tokens` | Path to a CSS file of design-token overrides, relative to the settings file. See [Theming](#theming) |
 | `home` | A link back to the site this documentation sits beside: `{ url, label }`. Both required together — naming half of it is rejected. `url` is an absolute `http(s)` URL when the target is a different origin, or a relative path (`"../"`) naming a location from the site's own root when it is a sibling of the published site. No default `label` — link text has to be written in the site's own language |
-| `siteUrl` | Absolute `http(s)` URL naming where the built site will stand. **Only** when set does `build` write `sitemap.xml` and a `robots.txt` pointing at it — every link canopy writes is otherwise relative, on purpose, so the same output works at any sub-path |
+| `siteUrl` | Absolute `http(s)` URL naming where the built site will stand. **Only** when set does `build` write `sitemap.xml`, a `robots.txt` pointing at it, and the `<head>` tags a search engine reads as addresses — `<link rel="canonical">`, `og:url`, `og:image`, `hreflang`. Every link canopy writes *into* a page is relative regardless, on purpose, so the same output works at any sub-path and opens from a local folder. A directory's index page is addressed as the directory (`guide/index.html` → `…/guide/`), in the sitemap and in the page's own canonical alike. Once set, `check` also warns about pages with no `description:` of their own (see [What `check` reports](#what-check-reports)) |
+| `previewImage` | Image link previews show (`og:image`), relative to the settings file, for any page whose frontmatter has no `image:` of its own (a page's `image:` is a site path, or an absolute URL used as given). Must be a published file. Needs `siteUrl` — the tag has to be absolute |
+| `alternates` | The site's other language editions: `{ "<hreflang>": "<that edition's siteUrl>" }`, `"x-default"` allowed. Each page then lists its counterpart at the same path under every edition, its own first, both as `<link rel="alternate" hreflang>` in `<head>` and as `xhtml:link` entries in `sitemap.xml`. This is a declaration, not something `build` can verify — it sees one edition's tree at a time — so the editions keep it true by mirroring each other's structure. Needs `siteUrl` |
 | `exclude` | Paths to leave unpublished, relative to the settings file: a directory (`"_drafts"` or `"_drafts/**"`), an extension at any depth (`"*.tmp"`), or one exact path. A shape outside that list (e.g. `"images/*.md"`) is rejected rather than silently matching nothing |
 | `rehypePlugins` | Installed npm package names of rehype plugins to run on every page — see [Diagrams](#diagrams-via-rehypeplugins) |
 | `strings` | Overrides for the reader chrome's own text — see [`strings` and `lang`](#strings-and-lang-non-english-sites) |
@@ -440,7 +442,14 @@ go away.
 - **A code block wider than the screen shows a shadow at whichever edge still has more to
   scroll to**, and nothing once you've scrolled there — a scroll-position-aware, no-script cue
   for a scrollbar some OS/browser combinations hide until hovered.
-- **Sitemap and `robots.txt`**, once `siteUrl` is set (see [Top-level fields](#top-level-fields)).
+- **Search and link-preview metadata in every page's `<head>`** — a page's own `description:`
+  from its frontmatter (falling back to the site's), the Open Graph basics (`og:title`,
+  `og:description`, `og:type`, `og:site_name`) and a `twitter:card`. Once `siteUrl` is set, also
+  `<link rel="canonical">`, `og:url`, `og:image` (from `previewImage` or a page's own `image:`),
+  and `hreflang` links to the editions `alternates` names — the tags that only mean anything as
+  absolute URLs, so they wait for one (see [Top-level fields](#top-level-fields)).
+- **Sitemap and `robots.txt`**, once `siteUrl` is set — with an `xhtml:link` alternate per
+  language edition when `alternates` is set (see [Top-level fields](#top-level-fields)).
 
 ## Theming
 
@@ -523,6 +532,11 @@ not just that the build succeeded.
   serves the encoded URL fine); this is a nudge to confirm the encoding was intended, not a
   defect. Deliberately blind to non-ASCII: a Korean, Japanese, or any other non-English filename
   needs the exact same percent-encoding and is never flagged for it
+- Pages with no `description:` in their frontmatter, once `siteUrl` is set — one warning naming
+  them all. Such a page falls back to the site's `description`, which is fine for a site nobody
+  searches and a duplicate summary on every result for one that is public; `siteUrl` is what
+  says which of the two this is. A site published somewhere but not meant to be found that
+  way can ignore the warning: it never stops a build
 
 Checking reads the settings and every page's text; it never renders, which is what keeps it fast
 enough to sit at the front of a pipeline at the scale a large product manual reaches.

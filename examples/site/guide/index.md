@@ -1,3 +1,6 @@
+---
+description: "The short path from a folder of markdown to a published site: install, write, check, build."
+---
 # Guide
 
 The short path from a folder of markdown to a published site.

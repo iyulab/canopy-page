@@ -1,3 +1,6 @@
+---
+description: "A page in a directory with a Korean name, here to prove non-ASCII paths resolve in links and URLs."
+---
 # 한국어 예시
 
 This page's directory is named 한국어-예시 — Korean for "Korean example." Nothing about it is

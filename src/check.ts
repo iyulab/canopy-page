@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { parseFrontmatter } from "@iyulab/canopy";
 import {
   decodeTarget,
   extractReferences,
@@ -243,6 +244,44 @@ export async function siteFindings(site: LoadedSite): Promise<Finding[]> {
     ...navFindings(site.nav),
     ...filenameEncodingFindings(site),
     ...(await referenceFindings(site)),
+    ...(await descriptionFindings(site)),
+  ];
+}
+
+/**
+ * Pages with no `description:` of their own, on a site that is going to be
+ * found by search.
+ *
+ * Such a page falls back to the site's one description, which is harmless for
+ * a site nobody searches and a duplicate summary on every result for one that
+ * is public. `siteUrl` is the setting that says which of the two this is — the
+ * same gate the sitemap already uses — so the warning waits for it rather than
+ * asking for a field of its own. One warning naming every such page, one per
+ * line, for the same reason `navFindings` lists uncovered pages that way: on a
+ * real site the list runs to dozens, and a warning per page would be a wall.
+ * Never an error: a site published somewhere but not meant to be found that way
+ * is entitled to ignore this.
+ *
+ * Frontmatter is read with canopy's own parser, so what counts as a
+ * description here is exactly what canopy will put in the page.
+ */
+export async function descriptionFindings(site: LoadedSite): Promise<Finding[]> {
+  if (site.settings.siteUrl === undefined) return [];
+  const missing: string[] = [];
+  for (const page of site.index.pages) {
+    const { data } = parseFrontmatter(await readFile(path.join(site.root, page), "utf8"));
+    const description = data.description;
+    if (typeof description !== "string" || description.trim() === "") missing.push(page);
+  }
+  if (missing.length === 0) return [];
+  return [
+    {
+      level: "warning",
+      message:
+        `${missing.length} page(s) have no "description:" in their frontmatter, so search ` +
+        "results and link previews show the site's description for each of them:\n" +
+        missing.map((page) => `  ${page}`).join("\n"),
+    },
   ];
 }
 

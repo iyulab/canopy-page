@@ -23,8 +23,17 @@ const root = path.join(import.meta.dirname, "..");
  * rather than re-building, so it fails loudly with a clear message instead
  * of silently skipping when run out of order.
  */
+/**
+ * The ceiling is for a machine under load, not for a healthy run — the same
+ * reasoning build.test.ts's SPAWNS_A_PROCESS gives. `npm pack --dry-run` is an
+ * npm process start plus a packlist walk: sub-second when idle, and measured at
+ * over ten seconds on the same machine while another build had it busy. The
+ * default 5s turned that into a failure that said nothing about the package.
+ */
+const SPAWNS_NPM = 120_000;
+
 describe("npm pack contents", () => {
-  it("ships every static asset canopy-page's build wires into a site", async () => {
+  it("ships every static asset canopy-page's build wires into a site", { timeout: SPAWNS_NPM }, async () => {
     expect(existsSync(path.join(root, "dist")), "dist/ missing — run `npm run build` first").toBe(
       true,
     );

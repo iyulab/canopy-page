@@ -1,3 +1,6 @@
+---
+description: "Rendering diagram fences to SVG through rehypePlugins, canopy's one fixed extension point."
+---
 # Diagrams
 
 Canopy renders CommonMark, GFM, math, and highlighted code on its own. Anything past that — a

@@ -1,3 +1,6 @@
+---
+description: "Documentation for canopy-page, the authoring pipeline that turns a folder of markdown into a published site, built with canopy-page itself."
+---
 # Build a site from a folder of markdown
 
 One settings file and a single command are the whole authoring pipeline canopy-page provides.

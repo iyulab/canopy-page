@@ -2,7 +2,7 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { checkSite, filenameEncodingFindings, referenceFindings } from "./check.js";
+import { checkSite, descriptionFindings, filenameEncodingFindings, referenceFindings } from "./check.js";
 import { loadSite } from "./site.js";
 
 /**
@@ -350,5 +350,52 @@ describe("a target that names a directory", () => {
     const [finding] = await referenceFindings(await loadSite(root));
     expect(finding?.level).toBe("warning");
     expect(finding?.message).toContain("update-note/");
+  });
+});
+
+describe("descriptionFindings", () => {
+  async function descriptions(files: Record<string, string>): Promise<string[]> {
+    const root = await site(files);
+    return (await descriptionFindings(await loadSite(root))).map((finding) => finding.message);
+  }
+
+  it("says nothing without a site URL — a site nobody searches has nothing to duplicate", async () => {
+    expect(
+      await descriptions({ "settings.json": "{}", "index.md": "# Home\n", "guide/a.md": "# A\n" }),
+    ).toEqual([]);
+  });
+
+  it("names every page with no description of its own, in one warning, once siteUrl is set", async () => {
+    const messages = await descriptions({
+      "settings.json": JSON.stringify({ siteUrl: "https://example.test" }),
+      "index.md": "---\ndescription: The front page\n---\n# Home\n",
+      "guide/a.md": "# A\n",
+      "guide/b.md": "---\ndescription: \"  \"\n---\n# B\n",
+    });
+    expect(messages).toHaveLength(1);
+    expect(messages[0]).toContain('2 page(s) have no "description:"');
+    expect(messages[0]).toContain("\n  guide/a.md");
+    expect(messages[0]).toContain("\n  guide/b.md");
+    expect(messages[0]).not.toContain("index.md");
+  });
+
+  it("says nothing when every page describes itself", async () => {
+    expect(
+      await descriptions({
+        "settings.json": JSON.stringify({ siteUrl: "https://example.test" }),
+        "index.md": "---\ndescription: The front page\n---\n# Home\n",
+      }),
+    ).toEqual([]);
+  });
+
+  it("is a warning, so checkSite still leaves with a success code", async () => {
+    const root = await site({
+      "settings.json": JSON.stringify({ siteUrl: "https://example.test" }),
+      "index.md": "# Home\n",
+    });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    expect(await checkSite(root)).toBe(0);
+    expect(warn.mock.calls.flat().join("\n")).toContain('no "description:"');
   });
 });

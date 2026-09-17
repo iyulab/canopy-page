@@ -71,7 +71,18 @@
     "siteUrl": {
       "type": "string",
       "pattern": "^https?://",
-      "description": "Where the built site will stand, as an absolute http(s) URL. Only when set does `build` write sitemap.xml and a robots.txt pointing at it."
+      "description": "Where the built site will stand, as an absolute http(s) URL. Only when set does `build` write sitemap.xml, a robots.txt pointing at it, and the <head> tags a search engine reads as addresses (canonical, og:url, og:image, hreflang)."
+    },
+    "previewImage": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Image link previews show (og:image) for any page whose frontmatter has no `image` of its own, relative to this file. Must be a published file. Needs siteUrl."
+    },
+    "alternates": {
+      "type": "object",
+      "description": "The site's other language editions: hreflang tag (or \"x-default\") → that edition's own absolute site URL. Each page then names its counterpart at the same path under every edition, in <head> and in sitemap.xml. Needs siteUrl.",
+      "propertyNames": { "pattern": "^([A-Za-z0-9]+(-[A-Za-z0-9]+)*|x-default)$" },
+      "additionalProperties": { "type": "string", "pattern": "^https?://" }
     },
     "rehypePlugins": {
       "type": "array",

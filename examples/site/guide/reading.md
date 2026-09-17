@@ -1,3 +1,6 @@
+---
+description: "Everything a published site ships with out of the box: search, dark mode, an outline, prev/next cards, backlinks, with no setting to turn on."
+---
 # What a reader gets
 
 Everything below ships with every build — none of it is a `settings.json` field to turn on, and

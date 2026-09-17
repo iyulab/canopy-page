@@ -1,3 +1,6 @@
+---
+description: "Publishing a non-English site: lang for the document itself, strings for the reader chrome's own text."
+---
 # Publishing a non-English site
 
 `lang` and `strings` are what a non-English site needs beyond everything else in this guide.

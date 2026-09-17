@@ -1,3 +1,6 @@
+---
+description: "What changed in each canopy-page release, newest first."
+---
 # Release notes
 
 Newest first. The order is not written anywhere — the settings file asks this section for

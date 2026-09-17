@@ -53,6 +53,14 @@ export function canopyArgs(
     out,
     ...(settings.title === undefined ? [] : ["--site-title", settings.title]),
     ...(settings.description === undefined ? [] : ["--site-description", settings.description]),
+    // The same URL the sitemap below is written against, so canopy's canonical
+    // tags and the sitemap's entries name each page by one string.
+    ...(settings.siteUrl === undefined ? [] : ["--site-url", settings.siteUrl]),
+    ...(settings.previewImage === undefined ? [] : ["--site-image", settings.previewImage]),
+    ...Object.entries(settings.alternates ?? {}).flatMap(([hreflang, url]) => [
+      "--alternate",
+      `${hreflang}=${url}`,
+    ]),
     ...(settings.lang === undefined ? [] : ["--lang", settings.lang]),
     ...(settings.icon === undefined ? [] : ["--site-icon", settings.icon]),
     // Always present: canopy-page's own CSS (search, scrollspy) rides here
@@ -126,7 +134,14 @@ export async function buildSite({ dir, out }: BuildOptions): Promise<number> {
     if (code === 0 && site.settings.siteUrl !== undefined) {
       const outDir = path.resolve(out);
       const pages = await listHtmlFiles(outDir);
-      await writeFile(path.join(outDir, "sitemap.xml"), sitemapXml(site.settings.siteUrl, pages), "utf8");
+      await writeFile(
+        path.join(outDir, "sitemap.xml"),
+        sitemapXml(site.settings.siteUrl, pages, {
+          ...(site.settings.lang === undefined ? {} : { lang: site.settings.lang }),
+          ...(site.settings.alternates === undefined ? {} : { alternates: site.settings.alternates }),
+        }),
+        "utf8",
+      );
       await writeFile(path.join(outDir, "robots.txt"), robotsTxt(site.settings.siteUrl), "utf8");
       console.log(`canopy-page: sitemap.xml with ${pages.length} page(s)`);
     }

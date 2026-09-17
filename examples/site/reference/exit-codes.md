@@ -1,3 +1,6 @@
+---
+description: "The exit codes check and build return, and what a pipeline should do with each."
+---
 # Exit codes
 
 `check` and `build` are meant to be run by a pipeline, so what they report matters less than what

@@ -7,6 +7,35 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [Unreleased]
+
+### Added
+
+- **`siteUrl` now reaches the pages, not just the sitemap.** It is passed to canopy as
+  `--site-url`, so every page carries `<link rel="canonical">` and `og:url` naming its one
+  address — by exactly the string the sitemap lists it under, since both now come from canopy's
+  own `pageUrl()` rule rather than two copies of it. A page's frontmatter `description:` fills
+  its own `<meta name="description">` (the site's stays the fallback), and the Open Graph basics
+  ride on every page with or without `siteUrl`. Body links stay relative either way.
+- **`previewImage`** — the image link previews show (`og:image`) for any page whose frontmatter
+  has no `image:` of its own. Validated like `icon`/`logo` (a published file), and rejected
+  without `siteUrl`, since the tag has to be absolute.
+- **`alternates`** — the site's other language editions, `hreflang` → that edition's own site
+  URL (`x-default` allowed). Each page lists its counterpart at the same path under every
+  edition, its own first, as `hreflang` links in `<head>` and as `xhtml:link` entries in
+  `sitemap.xml`. Rejected without `siteUrl`.
+- **`check` warns about pages with no `description:` of their own once `siteUrl` is set** — one
+  warning naming them all, never an error. A public site's pages otherwise present one
+  identical summary in every search result, and `siteUrl` is the setting that says the site is
+  public.
+
+### Changed
+
+- **Sidebar redesign, via canopy 0.13.0** — rows with padding, a hover surface and a focus
+  ring; the group chevron moves to the row's trailing edge so labels at one depth share a left
+  edge; nested lists carry a guide line. Two new tokens, `--sidebar-hover-bg` and `--sp-1`. A
+  `tokens` file that styled `.canopy-nav-group > summary::before` should target `::after`.
+
 ## [0.13.0] — 2026-08-22
 
 ### Added

@@ -1,3 +1,6 @@
+---
+description: "How a page gets its name, how pages link to each other, what the checker refuses, and where backlinks come from."
+---
 # Writing pages
 
 Ordinary markdown. What follows is only the part where a site of many documents differs from a

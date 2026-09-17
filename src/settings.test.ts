@@ -299,3 +299,54 @@ describe("parseSettings sections", () => {
     ).toEqual(["*.tmp", "drafts/**", "notes/scratch.md"]);
   });
 });
+
+describe("parseSettings: where the site is published", () => {
+  it("reads a preview image and the site's other language editions", () => {
+    expect(
+      parseSettings(
+        JSON.stringify({
+          siteUrl: "https://example.test/help/",
+          previewImage: "assets/cover.png",
+          alternates: { ko: "https://example.test/ko/help/", "x-default": "https://example.test/help/" },
+        }),
+      ),
+    ).toEqual({
+      siteUrl: "https://example.test/help/",
+      previewImage: "assets/cover.png",
+      alternates: { ko: "https://example.test/ko/help/", "x-default": "https://example.test/help/" },
+    });
+  });
+
+  it("refuses a preview image without a site URL, naming what is missing", () => {
+    rejects(JSON.stringify({ previewImage: "assets/cover.png" }), /settings\.previewImage: needs siteUrl/);
+  });
+
+  it("keeps the preview image inside the site, like icon and logo", () => {
+    rejects(
+      JSON.stringify({ siteUrl: "https://example.test", previewImage: "../cover.png" }),
+      /settings\.previewImage/,
+    );
+  });
+
+  it("refuses alternates without a site URL — this edition has to be in the list too", () => {
+    rejects(JSON.stringify({ alternates: { ko: "https://example.test/ko" } }), /settings\.alternates: needs siteUrl/);
+  });
+
+  it("names the alternate whose URL is not absolute", () => {
+    rejects(
+      JSON.stringify({ siteUrl: "https://example.test", alternates: { ko: "/ko" } }),
+      /settings\.alternates\.ko: "\/ko" must be an absolute/,
+    );
+  });
+
+  it("rejects an alternate key that is neither a language tag nor x-default", () => {
+    rejects(
+      JSON.stringify({ siteUrl: "https://example.test", alternates: { "ko KR": "https://example.test/ko" } }),
+      /settings\.alternates: "ko KR" is not a language tag/,
+    );
+  });
+
+  it("rejects a non-object alternates", () => {
+    rejects(JSON.stringify({ siteUrl: "https://example.test", alternates: ["ko"] }), /settings\.alternates/);
+  });
+});

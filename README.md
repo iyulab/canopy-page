@@ -57,6 +57,11 @@ go away.
 - **A code block wider than the screen shows a shadow at whichever edge still has more to
   scroll to**, and nothing once you've scrolled there — a cue for a scrollbar that some
   OS/browser combinations hide until hovered
+- **Search and link-preview metadata in every page's `<head>`** — a page's own frontmatter
+  `description:` (falling back to the site's), the Open Graph basics and a `twitter:card`; once
+  `siteUrl` is set, also a canonical URL, `og:url`, `og:image` (`previewImage`, or a page's own
+  `image:`), and `hreflang` links to the language editions `alternates` names. Body links stay
+  relative regardless, so the same output still opens from a local folder
 - **Sitemap and `robots.txt`**, once `siteUrl` is set
 
 See it live at <https://iyulab.github.io/canopy-page>, or read

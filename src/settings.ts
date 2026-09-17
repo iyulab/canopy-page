@@ -99,10 +99,24 @@ export interface Settings {
    * Where the built site will stand, as an absolute URL.
    *
    * Every link canopy writes is relative, so a site needs this for nothing except
-   * the things that must be absolute: `sitemap.xml` and the robots file that
-   * points at it. Absent, neither is written.
+   * the things that must be absolute: `sitemap.xml`, the robots file that points
+   * at it, and the `<head>` tags a search engine reads as addresses — canonical,
+   * `og:url`, `og:image`, `hreflang`. Absent, none of them is written.
    */
   siteUrl?: string;
+  /**
+   * Image a link preview shows (`og:image`) for any page whose frontmatter has
+   * no `image` of its own, relative to the settings file. Must be a published
+   * file, like `icon` and `logo`. Needs `siteUrl`: the tag has to be absolute.
+   */
+  previewImage?: string;
+  /**
+   * The site's other language editions, `hreflang` tag → that edition's own
+   * absolute site URL (`x-default` allowed). Each page then names its
+   * counterpart at the same path under every edition, in `<head>` and in the
+   * sitemap. Needs `siteUrl`, which is the entry for this edition itself.
+   */
+  alternates?: Record<string, string>;
   /**
    * Rehype plugins to run on every page, after canopy's own sanitize step and
    * before syntax highlighting — canopy's fixed extension point for markdown
@@ -173,6 +187,8 @@ export const SETTINGS_KEYS = new Set([
   "logo",
   "home",
   "siteUrl",
+  "previewImage",
+  "alternates",
   "rehypePlugins",
   "strings",
 ]);
@@ -390,6 +406,8 @@ export function parseSettings(json: string): Settings {
     logo,
     home,
     siteUrl,
+    previewImage,
+    alternates,
     rehypePlugins,
     strings,
   } = value;
@@ -428,6 +446,32 @@ export function parseSettings(json: string): Settings {
     const url = asString(siteUrl, "settings.siteUrl");
     if (!/^https?:\/\//i.test(url)) {
       fail(`settings.siteUrl: "${url}" must be an absolute http(s) URL`);
+    }
+  }
+  // Both turn into absolute URLs, and siteUrl is the only thing they can be
+  // absolute against — so naming either without it is rejected here, where the
+  // message can say what is missing, rather than passed on for canopy to refuse.
+  if (previewImage !== undefined && siteUrl === undefined) {
+    fail("settings.previewImage: needs siteUrl, since a preview image has to be an absolute URL");
+  }
+  let parsedAlternates: Record<string, string> | undefined;
+  if (alternates !== undefined) {
+    const object = asObject(alternates, "settings.alternates", "expected an object of hreflang → site URL");
+    if (siteUrl === undefined) {
+      fail("settings.alternates: needs siteUrl, since this edition has to be listed alongside the others");
+    }
+    parsedAlternates = {};
+    for (const key of Object.keys(object)) {
+      // The same shape `lang` accepts, plus the one reserved value the
+      // protocol defines for "no better match".
+      if (key !== "x-default" && !/^[A-Za-z0-9]+(-[A-Za-z0-9]+)*$/.test(key)) {
+        fail(`settings.alternates: "${key}" is not a language tag like "en" or "ko-KR", or "x-default"`);
+      }
+      const url = asString(object[key], `settings.alternates.${key}`);
+      if (!/^https?:\/\//i.test(url)) {
+        fail(`settings.alternates.${key}: "${url}" must be an absolute http(s) URL`);
+      }
+      parsedAlternates[key] = url;
     }
   }
 
@@ -470,6 +514,10 @@ export function parseSettings(json: string): Settings {
     ...(logo === undefined ? {} : { logo: asRelativePath(logo, "settings.logo") }),
     ...(parsedHome === undefined ? {} : { home: parsedHome }),
     ...(siteUrl === undefined ? {} : { siteUrl: siteUrl as string }),
+    ...(previewImage === undefined
+      ? {}
+      : { previewImage: asRelativePath(previewImage, "settings.previewImage") }),
+    ...(parsedAlternates === undefined ? {} : { alternates: parsedAlternates }),
     ...(parsedStrings === undefined ? {} : { strings: parsedStrings }),
     ...(rehypePlugins === undefined
       ? {}

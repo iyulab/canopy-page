@@ -1,5 +1,6 @@
 import { readdir } from "node:fs/promises";
 import path from "node:path";
+import { pageUrl } from "@iyulab/canopy";
 
 /**
  * The two files a site is found by.
@@ -14,6 +15,13 @@ import path from "node:path";
  * a synthetic `index.html` to a site whose root has no index page, and a sitemap
  * that omitted it would omit the site's front door. Listing files is not reading
  * them — nothing here parses the HTML canopy produced.
+ *
+ * `pageUrl` is canopy's own rule for a page's canonical address (an index page
+ * is its directory) — the same function the shell uses for `rel="canonical"`,
+ * imported rather than restated so the sitemap's `<loc>` and the page's own
+ * canonical can never disagree by a character. canopy-page otherwise drives
+ * canopy through its command line (see `canopy.ts`); that stance is about the
+ * build, and a pure URL rule is not a second door into it.
  */
 
 function escapeXml(value: string): string {
@@ -25,27 +33,49 @@ function escapeXml(value: string): string {
     .replace(/'/g, "&apos;");
 }
 
-/**
- * The URL a page is canonically reached by.
- *
- * A directory's index page is the directory: `guide/index.html` and `guide/` are
- * one page, and listing both would ask a crawler to treat it as two.
- */
-function pageUrl(base: string, htmlPath: string): string {
-  const canonical = htmlPath.replace(/(^|\/)index\.html$/, "$1");
-  // encodeURI leaves the separators alone and fixes what a URL cannot carry raw.
-  return `${base}/${encodeURI(canonical)}`;
+/** The site's other language editions, for the sitemap's `xhtml:link` alternates. */
+export interface SitemapEditions {
+  /** This edition's own language tag; defaults to "en", as canopy's shell does. */
+  lang?: string;
+  /** `hreflang` → that edition's own site URL, `x-default` allowed. */
+  alternates?: Record<string, string>;
 }
 
-/** A sitemap naming every published page, newline-terminated. */
-export function sitemapXml(siteUrl: string, htmlPaths: readonly string[]): string {
-  const base = siteUrl.replace(/\/+$/, "");
+/**
+ * A sitemap naming every published page, newline-terminated.
+ *
+ * With an edition map, each entry also lists the page's counterpart in every
+ * edition, this one included — the sitemap form of the `hreflang` links the
+ * pages themselves carry, and the same rule: this edition leads unless the map
+ * already places its language explicitly.
+ */
+export function sitemapXml(
+  siteUrl: string,
+  htmlPaths: readonly string[],
+  editions: SitemapEditions = {},
+): string {
+  const editionList: [string, string][] = [];
+  if (editions.alternates !== undefined) {
+    const lang = editions.lang ?? "en";
+    if (!Object.hasOwn(editions.alternates, lang)) editionList.push([lang, siteUrl]);
+    editionList.push(...Object.entries(editions.alternates));
+  }
   const entries = [...htmlPaths]
     .sort()
-    .map((htmlPath) => `  <url><loc>${escapeXml(pageUrl(base, htmlPath))}</loc></url>`)
+    .map((htmlPath) => {
+      const alternates = editionList
+        .map(
+          ([hreflang, base]) =>
+            `<xhtml:link rel="alternate" hreflang="${escapeXml(hreflang)}" href="${escapeXml(pageUrl(base, htmlPath))}"/>`,
+        )
+        .join("");
+      return `  <url><loc>${escapeXml(pageUrl(siteUrl, htmlPath))}</loc>${alternates}</url>`;
+    })
     .join("\n");
+  const xhtmlNamespace =
+    editionList.length > 0 ? ' xmlns:xhtml="http://www.w3.org/1999/xhtml"' : "";
   return `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"${xhtmlNamespace}>
 ${entries}
 </urlset>
 `;

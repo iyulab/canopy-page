@@ -34,3 +34,29 @@ describe("robotsTxt", () => {
     );
   });
 });
+
+describe("sitemapXml: language editions", () => {
+  it("lists each page's counterpart in every edition, this one included, when alternates are given", () => {
+    const xml = sitemapXml("https://example.test/help", ["guide/index.html"], {
+      lang: "en",
+      alternates: { ko: "https://example.test/ko/help/", "x-default": "https://example.test/help" },
+    });
+    expect(xml).toContain('xmlns:xhtml="http://www.w3.org/1999/xhtml"');
+    expect(xml).toContain('<xhtml:link rel="alternate" hreflang="en" href="https://example.test/help/guide/"/>');
+    expect(xml).toContain('<xhtml:link rel="alternate" hreflang="ko" href="https://example.test/ko/help/guide/"/>');
+    expect(xml).toContain('<xhtml:link rel="alternate" hreflang="x-default" href="https://example.test/help/guide/"/>');
+  });
+
+  it("does not list this edition twice when the map already places its language", () => {
+    const xml = sitemapXml("https://example.test/ko", ["index.html"], {
+      lang: "ko",
+      alternates: { ko: "https://example.test/ko", en: "https://example.test/en" },
+    });
+    expect(xml.match(/hreflang="ko"/g)).toHaveLength(1);
+  });
+
+  it("declares no xhtml namespace and no alternates without an edition map", () => {
+    const xml = sitemapXml("https://example.test", ["index.html"]);
+    expect(xml).not.toContain("xhtml");
+  });
+});

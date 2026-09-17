@@ -1,3 +1,6 @@
+---
+description: "Every field of settings.json, the one file a canopy-page site is configured by, with the file that built this site as the example."
+---
 # The settings file
 
 Every field is an override, so `{}` is a valid settings file: a folder of markdown builds with
@@ -50,7 +53,9 @@ This is the file that produced the site you are reading:
 | `tokens` | CSS of design-token overrides, relative to the settings file |
 | `logo` | Image shown beside the site title in the sidebar header, relative to the settings file. Must be a published file |
 | `home` | A link back to the site this documentation sits beside: `{ url, label }` |
-| `siteUrl` | Where the built site will stand, as an absolute URL |
+| `siteUrl` | Where the built site will stand, as an absolute URL. Turns on the sitemap, and the `<head>` tags that are addresses: canonical, `og:url`, `og:image`, `hreflang` |
+| `previewImage` | Image link previews show, relative to the settings file, for pages with no `image:` of their own. Must be a published file. Needs `siteUrl` |
+| `alternates` | The site's other language editions, `hreflang` → that edition's site URL. Needs `siteUrl` |
 | `exclude` | Paths to leave unpublished |
 | `sections` | Ordered regions of the site |
 | `rehypePlugins` | Package names of rehype plugins to run on every page, such as a diagram renderer |
@@ -127,11 +132,26 @@ to be written in the site's own language, and canopy has no way to know what tha
 
 ## Where the site stands
 
-`siteUrl` exists for nothing except what a relative-link site cannot say about itself: `sitemap.xml`
-and the `robots.txt` that points at it both need one absolute address for the whole site, and
-without `siteUrl` neither is written. Set it and both files appear, with every entry an absolute
-URL rather than a path relative to nothing — this site's own `sitemap.xml` is built from
-`https://iyulab.github.io/canopy-page`, the address it is actually published at.
+`siteUrl` exists for nothing except what a relative-link site cannot say about itself: the
+things that have to be absolute. `sitemap.xml` and the `robots.txt` that points at it need one
+absolute address for the whole site, and so do the `<head>` tags a search engine reads as
+addresses — `<link rel="canonical">`, `og:url`, `og:image`, and the `hreflang` links to other
+language editions. Without `siteUrl` none of them is written; set it and all of them appear, with
+every entry an absolute URL rather than a path relative to nothing. Every link *inside* a page
+stays relative either way, so the same output still opens from a local folder. This site's own
+`sitemap.xml` and every page's canonical are built from `https://iyulab.github.io/canopy-page`,
+the address it is actually published at — and both name a page by the same string, because both
+come from canopy's one rule for it (an index page is its directory).
+
+Two more fields lean on it. `previewImage` names the image link previews show for any page whose
+own frontmatter has no `image:`; `alternates` maps `hreflang` tags (or `x-default`) to the site
+URLs of this site's other language editions, and every page then lists its counterpart under each
+of them, in `<head>` and in the sitemap. Both are rejected without `siteUrl` — they only ever
+turn into absolute URLs. Neither is set here: this site has one edition and no cover image.
+
+Setting `siteUrl` also says the site is meant to be found, so `check` starts warning about pages
+that have no `description:` of their own — every page of this site has one, which is why its
+build log doesn't.
 
 ## Extending what a page can render
 
