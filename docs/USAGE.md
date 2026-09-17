@@ -449,7 +449,11 @@ go away.
   and `hreflang` links to the editions `alternates` names — the tags that only mean anything as
   absolute URLs, so they wait for one (see [Top-level fields](#top-level-fields)).
 - **Sitemap and `robots.txt`**, once `siteUrl` is set — with an `xhtml:link` alternate per
-  language edition when `alternates` is set (see [Top-level fields](#top-level-fields)).
+  language edition when `alternates` is set (see [Top-level fields](#top-level-fields)). Each
+  entry carries `<lastmod>` when one can be trusted: a page's own frontmatter `updated:` date if
+  it names one, otherwise its source markdown's last git commit date. A page with no source file,
+  an untracked source, or (on a shallow clone) any page at all, is written without the element —
+  no `<lastmod>` beats a guessed one.
 
 ## Theming
 

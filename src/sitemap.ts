@@ -48,11 +48,17 @@ export interface SitemapEditions {
  * edition, this one included — the sitemap form of the `hreflang` links the
  * pages themselves carry, and the same rule: this edition leads unless the map
  * already places its language explicitly.
+ *
+ * `lastmodByPath` supplies each page's `<lastmod>` by its own htmlPath
+ * (`resolveLastmods` builds this map); a page missing from it — no source
+ * file, or one git has no record of — is written without the element rather
+ * than with a guessed date.
  */
 export function sitemapXml(
   siteUrl: string,
   htmlPaths: readonly string[],
   editions: SitemapEditions = {},
+  lastmodByPath: Readonly<Record<string, string>> = {},
 ): string {
   const editionList: [string, string][] = [];
   if (editions.alternates !== undefined) {
@@ -63,13 +69,15 @@ export function sitemapXml(
   const entries = [...htmlPaths]
     .sort()
     .map((htmlPath) => {
+      const lastmod = lastmodByPath[htmlPath];
+      const lastmodTag = lastmod === undefined ? "" : `<lastmod>${escapeXml(lastmod)}</lastmod>`;
       const alternates = editionList
         .map(
           ([hreflang, base]) =>
             `<xhtml:link rel="alternate" hreflang="${escapeXml(hreflang)}" href="${escapeXml(pageUrl(base, htmlPath))}"/>`,
         )
         .join("");
-      return `  <url><loc>${escapeXml(pageUrl(siteUrl, htmlPath))}</loc>${alternates}</url>`;
+      return `  <url><loc>${escapeXml(pageUrl(siteUrl, htmlPath))}</loc>${lastmodTag}${alternates}</url>`;
     })
     .join("\n");
   const xhtmlNamespace =

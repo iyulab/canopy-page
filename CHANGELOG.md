@@ -7,6 +7,17 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [Unreleased]
+
+### Added
+
+- **`sitemap.xml` entries now carry `<lastmod>`.** A page's own frontmatter `updated:` date wins
+  when it names one; otherwise it is the last git commit date of that page's source markdown.
+  A page with no source file (canopy's synthetic root `index.html`) or with an untracked source
+  is written without the element rather than with a guessed date. On a shallow clone — where an
+  untouched page would falsely report the clone's boundary date, indistinguishable from every
+  other untouched page — `<lastmod>` is withheld from the whole sitemap, and the build warns why.
+
 ## [0.14.0] — 2026-09-17
 
 ### Added

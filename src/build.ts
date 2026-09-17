@@ -4,6 +4,7 @@ import path from "node:path";
 import { assembleScript, assembleTokensCss } from "./assets-bundle.js";
 import { runCanopy } from "./canopy.js";
 import { siteFindings } from "./check.js";
+import { resolveLastmods } from "./lastmod.js";
 import { listHtmlFiles, robotsTxt, sitemapXml } from "./sitemap.js";
 import { loadSite, reportFindings } from "./site.js";
 
@@ -134,12 +135,25 @@ export async function buildSite({ dir, out }: BuildOptions): Promise<number> {
     if (code === 0 && site.settings.siteUrl !== undefined) {
       const outDir = path.resolve(out);
       const pages = await listHtmlFiles(outDir);
+      const { byPath: lastmodByPath, shallowClone } = await resolveLastmods(site.root, pages);
+      if (shallowClone) {
+        console.warn(
+          "warning: this checkout is a shallow git clone, so a page's last commit date cannot " +
+            "be trusted (every untouched page would report the same boundary date); " +
+            "sitemap.xml is written without <lastmod>",
+        );
+      }
       await writeFile(
         path.join(outDir, "sitemap.xml"),
-        sitemapXml(site.settings.siteUrl, pages, {
-          ...(site.settings.lang === undefined ? {} : { lang: site.settings.lang }),
-          ...(site.settings.alternates === undefined ? {} : { alternates: site.settings.alternates }),
-        }),
+        sitemapXml(
+          site.settings.siteUrl,
+          pages,
+          {
+            ...(site.settings.lang === undefined ? {} : { lang: site.settings.lang }),
+            ...(site.settings.alternates === undefined ? {} : { alternates: site.settings.alternates }),
+          },
+          lastmodByPath,
+        ),
         "utf8",
       );
       await writeFile(path.join(outDir, "robots.txt"), robotsTxt(site.settings.siteUrl), "utf8");

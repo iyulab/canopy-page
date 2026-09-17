@@ -27,6 +27,32 @@ describe("sitemapXml", () => {
   });
 });
 
+describe("sitemapXml: lastmod", () => {
+  it("writes <lastmod> for a page the map names", () => {
+    const xml = sitemapXml("https://example.test", ["guide/install.html"], {}, {
+      "guide/install.html": "2026-08-01",
+    });
+    expect(xml).toContain(
+      "<loc>https://example.test/guide/install.html</loc><lastmod>2026-08-01</lastmod>",
+    );
+  });
+
+  it("omits <lastmod> for a page the map leaves out", () => {
+    const xml = sitemapXml("https://example.test", ["index.html"], {}, {});
+    expect(xml).not.toContain("<lastmod>");
+  });
+
+  it("places <lastmod> before the edition alternates", () => {
+    const xml = sitemapXml(
+      "https://example.test",
+      ["index.html"],
+      { lang: "en", alternates: { ko: "https://example.test/ko" } },
+      { "index.html": "2026-08-01" },
+    );
+    expect(xml).toMatch(/<lastmod>2026-08-01<\/lastmod><xhtml:link/);
+  });
+});
+
 describe("robotsTxt", () => {
   it("points at the sitemap", () => {
     expect(robotsTxt("https://example.test/help")).toContain(
