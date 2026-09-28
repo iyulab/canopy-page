@@ -7,10 +7,12 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
-## [Unreleased]
+## [0.17.0] — 2026-09-28
 
 ### Changed
 
+- **Requires `@iyulab/canopy` 0.16.0** (its `--nav` `derive`/`unplaced` and exported link
+  functions).
 - **Section leftovers are placed by canopy, not by a copy of its rules.** Whatever a section
   does not list is now derived by canopy itself (its `--nav` `derive`), and pages no section
   covers are appended by canopy (`unplaced: "append"`) — the navigation derivation canopy-page
