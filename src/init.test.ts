@@ -24,6 +24,11 @@ afterEach(async () => {
   await Promise.all(temporary.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
 
+// Loading a site asks canopy for its file listing (`canopy list`), a fresh Node
+// process — the same hang-only ceiling reasoning as build.test.ts's
+// SPAWNS_A_PROCESS.
+const LOADS_A_SITE = 120_000;
+
 describe("titleFromDirectory", () => {
   it("reads a folder name as a title", () => {
     expect(titleFromDirectory("/x/product-help")).toBe("Product help");
@@ -31,7 +36,7 @@ describe("titleFromDirectory", () => {
   });
 });
 
-describe("initSite", () => {
+describe("initSite", { timeout: LOADS_A_SITE }, () => {
   it("writes a settings file naming the site after its folder", async () => {
     const root = await folder("product-help");
     const { settingsPath } = await initSite(root);

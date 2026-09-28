@@ -3,7 +3,6 @@ import http from "node:http";
 import { basename, extname, resolve, sep } from "node:path";
 import { watch as watchFiles } from "chokidar";
 import { buildSite } from "./build.js";
-import { isSkippedDir } from "./vault.js";
 
 /**
  * Serving a build's output locally during authoring.
@@ -47,6 +46,11 @@ function hasHiddenSegment(root: string, filePath: string): boolean {
   const relative = filePath.slice(root.length);
   const segments = relative.split(sep).filter((s) => s.length > 0);
   return segments.some((s) => s.startsWith("."));
+}
+
+/** A hidden or dependency directory — never worth a file watch. */
+function isToolingDir(name: string): boolean {
+  return name.startsWith(".") || name === "node_modules";
 }
 
 /**
@@ -113,8 +117,9 @@ export interface StaticServer {
 /** Serve the files in `root` over HTTP on `port` (0 for an OS-assigned port). */
 export function serveStatic(root: string, port: number): Promise<StaticServer> {
   const absoluteRoot = resolve(root);
-  // Path segments this server never has a reason to answer for — the same
-  // reasoning `isSkippedDir` in vault.ts applies to what a build publishes.
+  // Path segments this server never has a reason to answer for — canopy
+  // never publishes hidden files, so anything hidden under the output
+  // directory is not part of the site.
   const server = http.createServer((req, res) => {
     void (async () => {
       const file = await resolveFile(absoluteRoot, req.url ?? "/");
@@ -275,19 +280,20 @@ export async function watchSite(options: WatchOptions): Promise<WatchHandle | un
     rebuildTimer = setTimeout(runRebuild, DEBOUNCE_MS);
   }
 
-  // Ignoring is structural only — dot-directories, node_modules, and the
-  // resolved output directory itself (unignored, a build watching its own
-  // output would rebuild forever). Content-level exclusions (settings.exclude)
-  // are deliberately not repeated here: vault.ts already restates canopy's
-  // exclusion rules once as a tracked debt, and a watch trigger that fires on
-  // an excluded file costs one redundant rebuild, not a wrong answer.
+  // What to watch, which is a cost question rather than a publishing one: a
+  // version-control or dependency tree (.git/, node_modules/) is large, busy,
+  // and never the author's content, and the output directory has to be
+  // ignored or a build watching its own output would rebuild forever. Nothing
+  // here decides what ships — canopy does, when the rebuild asks it — so a
+  // trigger that fires on an unpublished file costs one redundant rebuild,
+  // never a wrong site.
   const watcher = watchFiles(absoluteDir, {
     ignoreInitial: true,
     ignored: (watchedPath: string) => {
       const resolved = resolve(watchedPath);
       if (resolved === absoluteDir) return false;
       if (resolved === resolvedOut || resolved.startsWith(outWithSep)) return true;
-      return isSkippedDir(basename(resolved));
+      return isToolingDir(basename(resolved));
     },
   });
   // chokidar.watch() returns before its initial directory scan finishes

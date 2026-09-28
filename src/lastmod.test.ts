@@ -11,6 +11,11 @@ const execFileAsync = promisify(execFile);
 
 const temporary: string[] = [];
 
+// Each case runs several git processes (init, commits, a clone). Measured past
+// vitest's 5s default on a machine scanning every process it starts — the same
+// reason, and the same hang-only ceiling, as build.test.ts's SPAWNS_A_PROCESS.
+const RUNS_GIT = 120_000;
+
 afterEach(async () => {
   await Promise.all(temporary.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
@@ -38,7 +43,7 @@ async function repoWith(commits: { files: Record<string, string>; date: string }
   return root;
 }
 
-describe("resolveLastmods", () => {
+describe("resolveLastmods", { timeout: RUNS_GIT }, () => {
   it("dates a page by its source markdown's last commit", async () => {
     const root = await repoWith([
       { files: { "index.md": "# Home\n" }, date: "2026-01-05T00:00:00Z" },
@@ -85,7 +90,7 @@ describe("resolveLastmods", () => {
   });
 });
 
-describe("isShallowClone", () => {
+describe("isShallowClone", { timeout: RUNS_GIT }, () => {
   it("is false for an ordinary repository", async () => {
     const root = await repoWith([{ files: { "a.md": "# A\n" }, date: "2026-01-01T00:00:00Z" }]);
     expect(await isShallowClone(root)).toBe(false);

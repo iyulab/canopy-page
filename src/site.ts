@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { type NavTranslation, translateNav } from "./nav.js";
 import { parseSettings, SettingsError, type Settings } from "./settings.js";
-import { indexSite, listSite, type PageIndex, SETTINGS_FILENAME } from "./vault.js";
+import { indexSite, listSite, type PageIndex, publishingExcludes, SETTINGS_FILENAME } from "./vault.js";
 
 /**
  * Loading a site: settings, the files they describe, and the navigation that
@@ -65,18 +65,18 @@ export async function loadSite(dir: string): Promise<LoadedSite> {
     throw error;
   }
 
-  const listing = await listSite(
-    root,
-    settings.exclude,
-    settings.tokens === undefined ? [] : [settings.tokens],
-  );
-  const index = indexSite(listing.files);
+  const listing = await listSite(root, publishingExcludes(settings));
+  const index = indexSite(listing);
+  // Only the author's own patterns are theirs to be told about: the ones
+  // canopy-page adds (the settings file, the tokens file) name configuration
+  // that may legitimately be absent.
+  const authored = new Set(settings.exclude ?? []);
   return {
     root,
     settings,
     index,
     nav: translateNav(settings, index),
-    unusedExclusions: listing.unusedExclusions,
+    unusedExclusions: listing.unusedExcludes.filter((pattern) => authored.has(pattern)),
   };
 }
 

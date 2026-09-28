@@ -1,6 +1,6 @@
 import { access, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { listSiteFiles, isPage, SETTINGS_FILENAME } from "./vault.js";
+import { listSite, SETTINGS_FILENAME } from "./vault.js";
 
 /**
  * Starting a site.
@@ -75,7 +75,7 @@ export async function initSite(dir: string): Promise<InitResult> {
   if (await exists(settingsPath)) {
     throw new InitError(`${settingsPath} already exists, and init will not replace it.`);
   }
-  const existing = await listSiteFiles(root);
+  const existing = await listSite(root);
 
   const title = titleFromDirectory(root);
   await writeFile(settingsPath, `${JSON.stringify({ title }, null, 2)}\n`, "utf8");
@@ -83,7 +83,7 @@ export async function initSite(dir: string): Promise<InitResult> {
   // A folder that already holds markdown is an existing set of documents being
   // adopted, not a new site; writing a home page into it would be an opinion
   // about content, which is not this tool's to have.
-  if (existing.some(isPage)) return { settingsPath };
+  if (existing.pages.length > 0) return { settingsPath };
 
   const pagePath = path.join(root, "index.md");
   await writeFile(pagePath, STARTER_PAGE.replace("{title}", title), "utf8");

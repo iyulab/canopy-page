@@ -43,17 +43,17 @@
     "prepublishOnly": "npm run build"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.0",
-    "@iyulab/declart": "^0.20.0",
-    "@types/node": "^25.9.3",
-    "playwright": "^1.62.1",
-    "rehype-declart": "^0.20.0",
+    "@biomejs/biome": "^2.5.14",
+    "@iyulab/declart": "^0.21.0",
+    "@types/node": "^26.6.3",
+    "playwright": "^1.63.0",
+    "rehype-declart": "^0.21.0",
     "rehype-mermaid": "^3.0.0",
-    "typescript": "^6.0.3",
-    "vitest": "^4.1.9"
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.2"
   },
   "dependencies": {
-    "@iyulab/canopy": "^0.13.0",
+    "@iyulab/canopy": "^0.15.0",
     "chokidar": "^5.0.0"
   }
 }

@@ -45,3 +45,26 @@ export async function runCanopy(args: readonly string[]): Promise<number> {
     });
   });
 }
+
+/** Something canopy was asked and could not answer — its own stderr says why. */
+export class CanopyError extends Error {}
+
+/**
+ * Run canopy for its answer rather than its side effects: stdout is captured
+ * and returned, stderr passes through so canopy's own message reaches the
+ * reader unchanged, and a failing exit is an error rather than an empty answer.
+ */
+export async function runCanopyForOutput(args: readonly string[]): Promise<string> {
+  const child = spawn(process.execPath, [canopyExecutable(), ...args], {
+    stdio: ["ignore", "pipe", "inherit"],
+  });
+  const chunks: Buffer[] = [];
+  child.stdout.on("data", (chunk: Buffer) => chunks.push(chunk));
+  return new Promise((resolve, reject) => {
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code === 0) resolve(Buffer.concat(chunks).toString("utf8"));
+      else reject(new CanopyError(`canopy ${args[0] ?? ""} exited with ${code ?? "a signal"}`));
+    });
+  });
+}

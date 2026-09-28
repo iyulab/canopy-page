@@ -33,7 +33,12 @@ afterEach(async () => {
   await Promise.all(temporary.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
 
-describe("referenceFindings", () => {
+// Loading a site asks canopy for its file listing (`canopy list`), a fresh Node
+// process — the same hang-only ceiling reasoning as build.test.ts's
+// SPAWNS_A_PROCESS.
+const LOADS_A_SITE = 120_000;
+
+describe("referenceFindings", { timeout: LOADS_A_SITE }, () => {
   it("says nothing about a site whose references all resolve", async () => {
     expect(
       await findings({
@@ -195,7 +200,7 @@ describe("referenceFindings", () => {
   });
 });
 
-describe("filenameEncodingFindings", () => {
+describe("filenameEncodingFindings", { timeout: LOADS_A_SITE }, () => {
   it("warns about a page whose filename needs percent-encoding in its URL", async () => {
     const root = await site({
       "settings.json": "{}",
@@ -266,7 +271,7 @@ describe("filenameEncodingFindings", () => {
   });
 });
 
-describe("checkSite", () => {
+describe("checkSite", { timeout: LOADS_A_SITE }, () => {
   it("leaves with a success code and says what it checked", async () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
     const root = await site({ "settings.json": "{}", "index.md": "# Home" });
@@ -328,7 +333,7 @@ describe("checkSite", () => {
   });
 });
 
-describe("a target that names a directory", () => {
+describe("a target that names a directory", { timeout: LOADS_A_SITE }, () => {
   // A directory is served by its index page, so a trailing slash is a working
   // link — reading it as a missing file reports a sound site as broken.
   it("resolves to the page the directory is entered by", async () => {
@@ -353,7 +358,7 @@ describe("a target that names a directory", () => {
   });
 });
 
-describe("descriptionFindings", () => {
+describe("descriptionFindings", { timeout: LOADS_A_SITE }, () => {
   async function descriptions(files: Record<string, string>): Promise<string[]> {
     const root = await site(files);
     return (await descriptionFindings(await loadSite(root))).map((finding) => finding.message);

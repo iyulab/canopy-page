@@ -7,7 +7,18 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
-## [Unreleased]
+## [0.16.0] — 2026-09-28
+
+### Changed
+
+- **Requires `@iyulab/canopy` 0.15.0.** A site with no `sections` now gets canopy's corrected
+  derived navigation: the root `index.md` is the first sidebar entry and opens the prev/next
+  reading order, instead of sorting after every folder and ending it.
+- **`check` and `build` read one file list, and it is canopy's.** The files a site publishes are
+  now listed by `canopy list` — the renderer's own walk — rather than by a second copy of its
+  exclusion rules kept here. The copy had already drifted: canopy stopped publishing hidden
+  *files* (`.env`, `.gitignore`) while `check` still counted them. Loading a site now starts one
+  short-lived canopy process. Unused-`exclude` warnings are unchanged.
 
 ### Fixed
 

@@ -2,31 +2,11 @@ import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { indexSite, listSite, listSiteFiles, matchesPattern, toPageKey } from "./vault.js";
+import { indexSite, listSite, publishingExcludes, toPageKey } from "./vault.js";
 
-describe("matchesPattern", () => {
-  it("matches a directory, written with or without the suffix", () => {
-    expect(matchesPattern("drafts/idea.md", "drafts")).toBe(true);
-    expect(matchesPattern("drafts/idea.md", "drafts/**")).toBe(true);
-    expect(matchesPattern("drafts/idea.md", "drafts/")).toBe(true);
-    // A prefix that is not a path segment is a different directory.
-    expect(matchesPattern("draftsy/idea.md", "drafts")).toBe(false);
-  });
-
-  it("matches an extension at any depth", () => {
-    expect(matchesPattern("notes/deep/scratch.tmp", "*.tmp")).toBe(true);
-    expect(matchesPattern("notes/scratch.md", "*.tmp")).toBe(false);
-  });
-
-  it("matches one exact path", () => {
-    expect(matchesPattern("notes/scratch.md", "notes/scratch.md")).toBe(true);
-    expect(matchesPattern("notes/other.md", "notes/scratch.md")).toBe(false);
-  });
-
-  it("compares case-insensitively, as canopy resolves paths", () => {
-    expect(matchesPattern("Drafts/Idea.md", "drafts")).toBe(true);
-  });
-});
+// listSite spawns canopy (`canopy list`), a fresh Node process per call — the
+// same hang-only ceiling reasoning as build.test.ts's SPAWNS_A_PROCESS.
+const SPAWNS_CANOPY = 120_000;
 
 describe("toPageKey", () => {
   it("reduces every way of writing a page to one key", () => {
@@ -41,10 +21,10 @@ describe("toPageKey", () => {
 });
 
 describe("indexSite", () => {
-  const site = indexSite(["index.md", "guide/install.md", "assets/logo.png"]);
+  const site = indexSite({ pages: ["guide/install.md", "index.md"], assets: ["assets/logo.png"] });
 
-  it("separates pages from the files copied alongside them", () => {
-    expect(site.pages).toEqual(["index.md", "guide/install.md"]);
+  it("keeps canopy's split between pages and the files copied alongside them", () => {
+    expect(site.pages).toEqual(["guide/install.md", "index.md"]);
     expect(site.assets).toEqual(["assets/logo.png"]);
   });
 
@@ -55,7 +35,18 @@ describe("indexSite", () => {
   });
 });
 
-describe("listSiteFiles", () => {
+describe("publishingExcludes", () => {
+  it("always leaves the settings file out, then the tokens file, then the author's own", () => {
+    expect(publishingExcludes({})).toEqual(["settings.json"]);
+    expect(publishingExcludes({ tokens: "brand.css", exclude: ["drafts"] })).toEqual([
+      "settings.json",
+      "brand.css",
+      "drafts",
+    ]);
+  });
+});
+
+describe("listSite", { timeout: SPAWNS_CANOPY }, () => {
   let root: string;
 
   beforeAll(async () => {
@@ -70,6 +61,7 @@ describe("listSiteFiles", () => {
     await write("assets/logo.png");
     await write("drafts/wip.md");
     await write("scratch.tmp");
+    await write(".env");
     await write(".obsidian/config.json");
     await write("node_modules/pkg/index.md");
   });
@@ -78,93 +70,19 @@ describe("listSiteFiles", () => {
     await rm(root, { recursive: true, force: true });
   });
 
-  it("lists publishable files as sorted relative POSIX paths", async () => {
-    expect(await listSiteFiles(root)).toEqual([
-      "assets/logo.png",
-      "drafts/wip.md",
-      "guide/install.md",
-      "index.md",
-      "scratch.tmp",
-    ]);
+  // The listing is canopy's answer, not a restatement of its rules: hidden
+  // files (.env) and directories and node_modules are left out because canopy
+  // leaves them out of a build.
+  it("returns what canopy would publish, split into pages and assets", async () => {
+    expect(await listSite(root, publishingExcludes({ exclude: ["drafts", "*.tmp"] }))).toEqual({
+      pages: ["guide/install.md", "index.md"],
+      assets: ["assets/logo.png"],
+      unusedExcludes: [],
+    });
   });
 
-  it("never publishes tooling state, whatever the settings say", async () => {
-    const files = await listSiteFiles(root);
-    expect(files.some((file) => file.startsWith(".obsidian/"))).toBe(false);
-    expect(files.some((file) => file.startsWith("node_modules/"))).toBe(false);
-  });
-
-  // The settings file configures the site; it is not part of its content.
-  it("leaves the settings file out of the site", async () => {
-    expect(await listSiteFiles(root)).not.toContain("settings.json");
-  });
-
-  it("applies exclusion patterns to pages and assets alike", async () => {
-    expect(await listSiteFiles(root, ["drafts", "*.tmp"])).toEqual([
-      "assets/logo.png",
-      "guide/install.md",
-      "index.md",
-    ]);
-  });
-});
-
-describe("listSite configFiles", () => {
-  let root: string;
-
-  beforeAll(async () => {
-    root = await mkdtemp(path.join(tmpdir(), "canopy-page-vault-"));
-    const write = async (rel: string) => {
-      await mkdir(path.join(root, path.dirname(rel)), { recursive: true });
-      await writeFile(path.join(root, rel), "x");
-    };
-    await write("index.md");
-    await write("brand.css");
-  });
-
-  afterAll(async () => {
-    await rm(root, { recursive: true, force: true });
-  });
-
-  // Written into a temp dir the way the other tests in this file do — follow
-  // that file's existing fixture helper rather than inventing one.
-  it("keeps a configuration file out of the listing, like the settings file", async () => {
-    const listing = await listSite(root, [], ["brand.css"]);
-    expect(listing.files).not.toContain("brand.css");
-    expect(listing.unusedExclusions).toEqual([]);
-  });
-});
-
-describe("unusedExclusions", () => {
-  async function unused(files: string[], patterns: string[]): Promise<string[]> {
-    const root = await mkdtemp(path.join(tmpdir(), "canopy-page-vault-"));
-    for (const rel of files) {
-      await mkdir(path.join(root, path.dirname(rel)), { recursive: true });
-      await writeFile(path.join(root, rel), "x");
-    }
-    const listing = await listSite(root, patterns);
-    await rm(root, { recursive: true, force: true });
-    return listing.unusedExclusions;
-  }
-
-  // "_archive" reads like it names that folder, but patterns are relative to
-  // the site root, so it matches nothing and the folder ships.
-  it("names a pattern that excluded nothing", async () => {
-    expect(
-      await unused(["index.md", "docs/_archive/old.md"], ["_archive", "docs/_archive"]),
-    ).toEqual(["_archive"]);
-  });
-
-  // An extension pattern is defensive: "*.tmp" in a site with no scratch files
-  // is a rule about what may never ship, not a claim that something is there.
-  it("says nothing about an extension pattern that matched nothing", async () => {
-    expect(await unused(["index.md"], ["*.tmp"])).toEqual([]);
-  });
-
-  // The broader pattern prunes the tree, so the narrower one is never reached.
-  // It is redundant, not wrong, and calling it unmatched would be a false alarm.
-  it("says nothing about a pattern shadowed by a broader one", async () => {
-    expect(
-      await unused(["index.md", "docs/_archive/old.md"], ["docs/_archive", "docs/_archive/old.md"]),
-    ).toEqual([]);
+  it("reports a place-naming exclusion that matched nothing", async () => {
+    const listing = await listSite(root, ["_archive", "*.bak"]);
+    expect(listing.unusedExcludes).toEqual(["_archive"]);
   });
 });

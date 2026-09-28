@@ -66,7 +66,7 @@ describe("canopyArgs", () => {
 
   function siteWith(overrides: Partial<Settings>): LoadedSite {
     const settings: Settings = { ...overrides };
-    const index = indexSite([]);
+    const index = indexSite({ pages: [], assets: [] });
     return {
       root: SITE_ROOT,
       settings,
@@ -286,7 +286,7 @@ describe("canopyArgs: where the site is published", () => {
   const SEARCH_ASSETS = { tokensCssPath: "/work/tokens.css", scriptPath: "/work/script.js" };
   function siteWith(overrides: Partial<Settings>): LoadedSite {
     const settings: Settings = { ...overrides };
-    const index = indexSite([]);
+    const index = indexSite({ pages: [], assets: [] });
     return {
       root: path.join(tmpdir(), "canopy-page-build-args-site"),
       settings,

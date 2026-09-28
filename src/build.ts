@@ -7,6 +7,7 @@ import { siteFindings } from "./check.js";
 import { resolveLastmods } from "./lastmod.js";
 import { listHtmlFiles, robotsTxt, sitemapXml } from "./sitemap.js";
 import { loadSite, reportFindings } from "./site.js";
+import { publishingExcludes } from "./vault.js";
 
 /**
  * Building a site: check first, then hand the whole of it to canopy in one pass.
@@ -83,14 +84,9 @@ export function canopyArgs(
     "search-index.json",
     "--script",
     searchAssets.scriptPath,
-    // The settings file is configuration rather than content, and canopy has no
-    // reason to know it exists; excluding it keeps it off the published site.
-    ...["--exclude", "settings.json"],
-    // Configuration, not content — the same reason settings.json is excluded.
-    // Without this the same CSS ships twice: once folded into tokens.css by
-    // assembleTokensCss, once copied as a plain asset.
-    ...(settings.tokens === undefined ? [] : ["--exclude", settings.tokens]),
-    ...(settings.exclude ?? []).flatMap((pattern) => ["--exclude", pattern]),
+    // The same list the check's listing ran against (see vault.ts), so what
+    // was checked is what ships.
+    ...publishingExcludes(settings).flatMap((pattern) => ["--exclude", pattern]),
     ...(settings.rehypePlugins ?? []).flatMap((specifier) => ["--rehype-plugin", specifier]),
   ];
 }

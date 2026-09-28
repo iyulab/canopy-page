@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { translateNav } from "./nav.js";
 import { parseSettings } from "./settings.js";
-import { indexSite } from "./vault.js";
+import { indexSite as indexListing } from "./vault.js";
+
+/** A site from a flat file list, split the way canopy's listing splits it. */
+function indexSite(files: string[]) {
+  return indexListing({
+    pages: files.filter((file) => file.endsWith(".md")),
+    assets: files.filter((file) => !file.endsWith(".md")),
+  });
+}
 
 const SITE = indexSite([
   "index.md",
