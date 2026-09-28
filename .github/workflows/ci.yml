@@ -23,8 +23,8 @@ jobs:
     steps:
       # The canopy submodule is not checked out: this package depends on the
       # published one and runs its command line. The submodule is here to read.
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           # Matches the `engines` floor declared in package.json. Raising one
           # without the other would let CI pass on a version consumers are told
