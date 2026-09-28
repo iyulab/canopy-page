@@ -72,6 +72,7 @@ different situations, and only one of them wants a page written for it.
 | `canopy-page check [site-dir]` | Check settings and references; build nothing |
 | `canopy-page build [site-dir] [-o out]` | Check, then publish to `out` (default `./site`) |
 | `canopy-page watch [site-dir] [-o out] [--port n]` | Build, then rebuild on every source change and serve the result locally (default port `8080`) |
+| `canopy-page --help` · `--version` | Print the usage text, or the installed version |
 
 `[site-dir]` is the folder holding `settings.json`, and defaults to the current directory.
 

@@ -1,5 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { parseArgs } from "./cli-args.js";
+import { parseArgs, requestedInfo } from "./cli-args.js";
+
+describe("requestedInfo", () => {
+  it("answers --help and -h, alone or after a command", () => {
+    expect(requestedInfo(["--help"])).toBe("help");
+    expect(requestedInfo(["-h"])).toBe("help");
+    expect(requestedInfo(["build", "site", "--help"])).toBe("help");
+  });
+
+  it("answers --version", () => {
+    expect(requestedInfo(["--version"])).toBe("version");
+  });
+
+  it("prefers help when both are asked for", () => {
+    expect(requestedInfo(["--version", "--help"])).toBe("help");
+  });
+
+  it("is nothing for an ordinary command", () => {
+    expect(requestedInfo(["build", "site", "-o", "dist"])).toBeUndefined();
+    expect(requestedInfo([])).toBeUndefined();
+  });
+});
 
 describe("parseArgs", () => {
   it("defaults to the current folder and ./site", () => {

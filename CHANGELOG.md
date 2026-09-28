@@ -7,6 +7,15 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [Unreleased]
+
+### Fixed
+
+- **`canopy-page --help` and `canopy-page --version` succeed.** Both printed the usage text
+  followed by `Expected a command before "--help"` and exited 1. `--help`/`-h` (also after a
+  command, as in `canopy-page build --help`) prints the usage to stdout and `--version` prints
+  the installed version, each exiting 0.
+
 ## [0.15.0] — 2026-09-17
 
 ### Added

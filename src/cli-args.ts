@@ -25,10 +25,28 @@ export const USAGE = [
   "  [site-dir]                 Folder holding settings.json (defaults to .)",
   "  -o, --out <dir>            Where build/watch writes the site (defaults to ./site)",
   "  --port <n>                 Port watch serves on (defaults to 8080)",
+  "",
+  "  -h, --help                 Show this text",
+  "  --version                  Show canopy-page's version",
 ].join("\n");
 
 const OUT_FLAGS = new Set(["-o", "--out"]);
 const PORT_FLAGS = new Set(["--port"]);
+
+/**
+ * Whether the invocation asks about canopy-page rather than for a command.
+ *
+ * Checked before `parseArgs`, and on every argument rather than only the
+ * first: `canopy-page --help` and `canopy-page build --help` are the same
+ * question, and both are a request that succeeded — answering with the usage
+ * text as an error and a failing exit code reports a problem where there is
+ * none. `--help` wins over `--version` when both are given.
+ */
+export function requestedInfo(argv: readonly string[]): "help" | "version" | undefined {
+  if (argv.some((arg) => arg === "--help" || arg === "-h")) return "help";
+  if (argv.includes("--version")) return "version";
+  return undefined;
+}
 
 export function parseArgs(argv: readonly string[]): ParsedArgs {
   const [command, ...rest] = argv;

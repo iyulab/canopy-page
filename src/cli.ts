@@ -2,11 +2,25 @@
 import { buildSite } from "./build.js";
 import { checkSite } from "./check.js";
 import { initSite, InitError } from "./init.js";
-import { parseArgs } from "./cli-args.js";
+import { readFile } from "node:fs/promises";
+import { parseArgs, requestedInfo, USAGE } from "./cli-args.js";
 import { SiteError } from "./site.js";
 import { WatchError, watchSite } from "./watch.js";
 
 async function main(): Promise<void> {
+  const info = requestedInfo(process.argv.slice(2));
+  if (info === "help") {
+    console.log(USAGE);
+    return;
+  }
+  if (info === "version") {
+    const manifest = JSON.parse(
+      await readFile(new URL("../package.json", import.meta.url), "utf8"),
+    ) as { version: string };
+    console.log(`canopy-page ${manifest.version}`);
+    return;
+  }
+
   const args = parseArgs(process.argv.slice(2));
   if (!args.ok) {
     console.error(args.error);

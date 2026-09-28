@@ -98,6 +98,7 @@ fail. Both leave with a non-zero exit code when they do, which is all a pipeline
 | `canopy-page check [site-dir]` | Check settings and references; build nothing |
 | `canopy-page build [site-dir] [-o out]` | Check, then publish to `out` (default `./site`) |
 | `canopy-page watch [site-dir] [-o out] [--port n]` | Build, then rebuild on change and serve it locally (default port `8080`) |
+| `canopy-page --help` · `--version` | Print the usage text, or the installed version |
 
 `[site-dir]` is the folder holding `settings.json`, and defaults to the current one.
 
