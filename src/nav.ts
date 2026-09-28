@@ -1,5 +1,5 @@
 import type { Settings, SettingsNavItem, SettingsSection } from "./settings.js";
-import { type PageIndex, toPageKey } from "./vault.js";
+import type { PageIndex } from "./vault.js";
 
 /**
  * Translate a settings file into the navigation spec canopy consumes.
@@ -10,23 +10,23 @@ import { type PageIndex, toPageKey } from "./vault.js";
  * is the whole of the translation between the two, which is what keeps the
  * author's vocabulary out of canopy and canopy's out of the settings file.
  *
- * ## Why a spec has to describe the whole site
+ * ## What is derived, and by whom
  *
- * Canopy applies a spec instead of deriving navigation, not alongside it: pages
- * a spec omits are left out and reported. So ordering one section means naming
- * every other page too, and the pages an author did not order are derived here
- * — a second derivation next to canopy's own, which is duplication with a drift
- * risk rather than a design.
- * TODO(upstream: claudedocs/issues/ISSUE-canopy-20260806-partial-nav-spec.md)
- * proposes the partial spec that would retire it.
+ * Only what the author wrote is translated here. Everything a section does not
+ * list is left to canopy: each section becomes a spec group that `derive`s its
+ * directory — canopy places the pages there that the settings did not, by its
+ * own rules — and pages outside every section are appended by canopy
+ * (`unplaced: "append"`). No derivation rule is restated on this side.
  *
  * When settings ask for no ordering at all, no spec is emitted and canopy
- * derives navigation itself — the case where the duplication costs nothing.
+ * derives navigation itself.
  */
 
 /** The navigation spec canopy reads from `--nav`: items in display order. */
 export interface NavSpec {
   items: NavSpecItem[];
+  /** Pages the spec places nowhere: appended by canopy rather than left out. */
+  unplaced?: "report" | "append";
 }
 
 /** One spec entry: a page (`path`), a group (`items`), or a group with its own page. */
@@ -34,6 +34,10 @@ export interface NavSpecItem {
   label?: string;
   path?: string;
   items?: NavSpecItem[];
+  /** A directory whose pages canopy derives into this group, after `items`. */
+  derive?: string;
+  /** File-name order of the derived part. */
+  order?: "asc" | "desc";
 }
 
 /** What the translation produced, and what it could not place. */
@@ -83,19 +87,6 @@ function pagesUnder(dir: string, pages: readonly string[]): string[] {
   return pages.filter((page) => page.toLowerCase().startsWith(prefix));
 }
 
-/** Immediate subdirectory names of a directory, in the order pages first named them. */
-function subdirectoriesOf(dir: string, pages: readonly string[]): string[] {
-  const prefix = dir === "" ? "" : `${dir}/`;
-  const names = new Set<string>();
-  for (const page of pages) {
-    if (!page.toLowerCase().startsWith(prefix.toLowerCase())) continue;
-    const rest = page.slice(prefix.length);
-    const slash = rest.indexOf("/");
-    if (slash > 0) names.add(rest.slice(0, slash));
-  }
-  return [...names];
-}
-
 function byStem(order: "asc" | "desc"): (a: string, b: string) => number {
   const direction = order === "desc" ? -1 : 1;
   return (a, b) => direction * stemOf(a).localeCompare(stemOf(b), undefined, { sensitivity: "base" });
@@ -104,48 +95,6 @@ function byStem(order: "asc" | "desc"): (a: string, b: string) => number {
 function byName(order: "asc" | "desc"): (a: string, b: string) => number {
   const direction = order === "desc" ? -1 : 1;
   return (a, b) => direction * a.localeCompare(b, undefined, { sensitivity: "base" });
-}
-
-/**
- * Derive the contents of a directory the author did not list.
- *
- * Ordering follows file names rather than frontmatter titles. Canopy's own
- * derivation prefers a title when a page has one, but reading titles means
- * parsing every document, which is canopy's work and not worth duplicating for
- * a sort key. File names are what an author sees in the folder they are
- * ordering, and `desc` on a log of dated files is exactly the case this serves.
- */
-function deriveItems(
-  dir: string,
-  index: PageIndex,
-  order: "asc" | "desc",
-  place: (page: string) => void,
-): NavSpecItem[] {
-  const items: NavSpecItem[] = [];
-  // Folders before pages, mirroring how canopy derives a tree, so a site that
-  // orders one section does not reshuffle the others.
-  for (const name of subdirectoriesOf(dir, index.pages).sort(byName(order))) {
-    const childDir = dir === "" ? name : `${dir}/${name}`;
-    const childIndex = indexOf(childDir, index);
-    if (childIndex !== undefined) place(childIndex);
-    items.push({
-      // A directory with an index page is named by that page — canopy asks the
-      // document first and falls back to this same directory name when it has
-      // no name of its own. Writing the label here would win over the document
-      // every time, which is this file answering a question it already delegates.
-      ...(childIndex === undefined ? { label: name } : { path: childIndex }),
-      items: deriveItems(childDir, index, order, place),
-    });
-  }
-  const ownIndex = indexOf(dir, index);
-  for (const page of pagesDirectlyIn(dir, index.pages).sort(byStem(order))) {
-    // A directory's index page is entered through the directory itself, so
-    // listing it again would show the same page twice under two names.
-    if (page === ownIndex) continue;
-    place(page);
-    items.push({ path: page });
-  }
-  return items;
 }
 
 /** What a translation pass records as it places pages. */
@@ -165,10 +114,10 @@ interface NavReport {
    * page to name it instead — `translateSection`'s only source for the
    * fallback. Reported so an author sees it rather than a raw path segment
    * silently becoming a sidebar's top-level heading (see `navFindings`).
-   * Scoped to sections, not every derived subdirectory `deriveItems` also
-   * falls back this way: a subdirectory with no index page is an ordinary,
-   * expected grouping (nav.test.ts pins it as kept behavior), while a raw
-   * slug at the section level sits at a far more visible spot in the sidebar.
+   * Scoped to sections, not every derived subdirectory canopy also names
+   * this way: a subdirectory with no index page is an ordinary, expected
+   * grouping, while a raw slug at the section level sits at a far more
+   * visible spot in the sidebar.
    */
   rawSlugLabels: string[];
 }
@@ -254,14 +203,11 @@ function translateSection(
   const sectionIndex = indexOf(section.path, index);
   if (sectionIndex !== undefined) report.place(sectionIndex);
 
-  const items =
-    section.items === undefined
-      ? deriveItems(section.path, index, section.order ?? "asc", report.place)
-      : section.items.flatMap((item) =>
-          expandItem(item, index, { ...report, sectionIndex }),
-        );
+  const items = (section.items ?? []).flatMap((item) =>
+    expandItem(item, index, { ...report, sectionIndex }),
+  );
 
-  if (sectionIndex === undefined && items.length === 0) {
+  if (sectionIndex === undefined && items.length === 0 && pagesUnder(section.path, index.pages).length === 0) {
     report.missing.push(section.path);
   }
 
@@ -276,16 +222,12 @@ function translateSection(
     ...(label === undefined ? {} : { label }),
     ...(sectionIndex === undefined ? {} : { path: sectionIndex }),
     items,
-  };
-}
-
-/** A view of the same site narrowed to a subset of its pages. */
-function narrowTo(pages: readonly string[], index: PageIndex): PageIndex {
-  const keys = new Set(pages.map(toPageKey));
-  return {
-    pages,
-    assets: index.assets,
-    resolve: (reference) => (keys.has(toPageKey(reference)) ? index.resolve(reference) : undefined),
+    // Whatever the section does not list, canopy fills in from its directory.
+    // The order is always by file name — what an author sees in the folder
+    // they are ordering, and what `order` has always meant here — ascending
+    // unless the section asks otherwise.
+    derive: section.path,
+    order: section.order ?? "asc",
   };
 }
 
@@ -322,26 +264,20 @@ export function translateNav(settings: Settings, index: PageIndex): NavTranslati
 
   // The root index is the site's home page: it is reached without navigation, so
   // it is neither placed by a section nor counted as something nobody placed.
+  // A section that lists nothing covers its whole directory; a page anywhere
+  // else the settings do not mention is an orphan — placed all the same (by
+  // canopy, inside the section whose directory holds it, else after the
+  // sections) and reported, so the author can say which they meant.
   const homePage = indexOf("", index);
-  const orphans = index.pages.filter((page) => !placements.has(page) && page !== homePage);
-
-  // Leftovers land in the section that covers them, so a partly-listed folder
-  // stays one folder in the sidebar instead of appearing a second time at the end.
-  let stray = orphans;
-  sections.forEach((section, i) => {
-    const mine = stray.filter((page) => page.toLowerCase().startsWith(`${section.path.toLowerCase()}/`));
-    if (mine.length === 0) return;
-    stray = stray.filter((page) => !mine.includes(page));
-    const target = items[i];
-    if (target === undefined) return;
-    target.items = [
-      ...(target.items ?? []),
-      ...deriveItems(section.path, narrowTo(mine, index), section.order ?? "asc", place),
-    ];
-  });
-  if (stray.length > 0) {
-    items.push(...deriveItems("", narrowTo(stray, index), "asc", place));
-  }
+  const covered = sections
+    .filter((section) => section.items === undefined)
+    .map((section) => `${section.path.toLowerCase()}/`);
+  const orphans = index.pages.filter(
+    (page) =>
+      !placements.has(page) &&
+      page !== homePage &&
+      !covered.some((prefix) => page.toLowerCase().startsWith(prefix)),
+  );
 
   if (homePage !== undefined) {
     // Home first: it is where a reader lands, so it reads oddly anywhere else.
@@ -353,5 +289,5 @@ export function translateNav(settings: Settings, index: PageIndex): NavTranslati
     .map(([page]) => page)
     .sort();
 
-  return { spec: { items }, missing, orphans, duplicates, rawSlugLabels };
+  return { spec: { items, unplaced: "append" }, missing, orphans, duplicates, rawSlugLabels };
 }

@@ -189,8 +189,9 @@ heading already links it, so this asks for what's already there.
 their directory, and reported as a warning either way. A page that exists but cannot be reached
 is worse than one shown in an order nobody chose deliberately.
 
-Where a section asks for no ordering at all (no `order`, no `items`), canopy derives the
-navigation itself from the folder tree, ordered by filename rather than by page title.
+Whatever a section does not list — all of it, when the section has no `items` — is filled in by
+canopy from the section's directory, the way it derives any folder: subfolders first, a folder's
+`index` page as its heading link, ordered by file name (ascending unless `order` says `"desc"`).
 
 ### `strings` and `lang` (non-English sites)
 

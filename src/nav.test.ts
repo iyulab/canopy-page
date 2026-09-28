@@ -1,3 +1,4 @@
+import { applyNavSpec, type NavNode } from "@iyulab/canopy";
 import { describe, expect, it } from "vitest";
 import { translateNav } from "./nav.js";
 import { parseSettings } from "./settings.js";
@@ -28,6 +29,24 @@ function translate(settings: unknown, site = SITE) {
   return translateNav(parseSettings(JSON.stringify(settings)), site);
 }
 
+/**
+ * The navigation a reader would see: the spec applied by canopy itself, as
+ * `[label, source page, children]`. What a section does not list is derived by
+ * canopy, so that part is only observable here, not in the spec.
+ */
+function rendered(settings: unknown, site = SITE): unknown {
+  const { spec } = translate(settings, site);
+  if (spec === undefined) throw new Error("expected a spec");
+  const entries = site.pages.map((page) => ({ sitePath: page.replace(/\.md$/i, ".html") }));
+  const shape = (nodes: NavNode[]): unknown =>
+    nodes.map((node) => [
+      node.label,
+      node.sitePath?.replace(/\.html$/, ".md"),
+      shape(node.children),
+    ]);
+  return shape(applyNavSpec(spec, entries).nodes);
+}
+
 /** The page paths a spec places, in the order it places them. */
 function flatten(items: readonly { path?: string; items?: unknown[] }[] = []): string[] {
   return items.flatMap((item) => [
@@ -48,9 +67,17 @@ describe("translateNav", () => {
       sections: [{ path: "release-notes", label: "Release notes", order: "desc" }],
     });
     const notes = spec?.items.find((item) => item.label === "Release notes");
-    expect(notes?.items?.map((item) => item.path)).toEqual([
-      "release-notes/2026-08.md",
-      "release-notes/2026-04.md",
+    // The section asks canopy to derive its directory by file name, descending.
+    expect(notes).toMatchObject({ derive: "release-notes", order: "desc", items: [] });
+    expect(
+      rendered({ sections: [{ path: "release-notes", label: "Release notes", order: "desc" }] }),
+    ).toContainEqual([
+      "Release notes",
+      undefined,
+      [
+        ["2026-08", "release-notes/2026-08.md", []],
+        ["2026-04", "release-notes/2026-04.md", []],
+      ],
     ]);
   });
 
@@ -82,27 +109,33 @@ describe("translateNav", () => {
       expect(guide?.label).toBeUndefined();
     });
 
-    it("omits a derived subdirectory label when it has an index page", () => {
+    it("fronts a derived subdirectory with its index page", () => {
       const site = indexSite([
         "guide/index.md",
         "guide/settings/index.md",
         "guide/settings/api-keys.md",
       ]);
-      const { spec } = translate({ sections: [{ path: "guide" }] }, site);
-      const settings = spec?.items
-        .find((item) => item.path === "guide/index.md")
-        ?.items?.find((item) => item.path === "guide/settings/index.md");
-      expect(settings).toBeDefined();
-      expect(settings?.label).toBeUndefined();
+      expect(rendered({ sections: [{ path: "guide" }] }, site)).toEqual([
+        [
+          "guide",
+          "guide/index.md",
+          [["settings", "guide/settings/index.md", [["api-keys", "guide/settings/api-keys.md", []]]]],
+        ],
+      ]);
     });
 
-    it("keeps a derived subdirectory label when it has no index page", () => {
-      const { spec } = translate({ sections: [{ path: "guide" }] });
-      const settings = spec?.items
-        .find((item) => item.path === "guide/index.md")
-        ?.items?.find((item) => item.label === "settings");
-      expect(settings).toBeDefined();
-      expect(settings?.path).toBeUndefined();
+    it("groups a derived subdirectory with no index page under its directory name", () => {
+      const guide = (rendered({ sections: [{ path: "guide" }] }) as unknown[][]).find(
+        (node) => node[1] === "guide/index.md",
+      );
+      expect(guide?.[2]).toContainEqual([
+        "settings",
+        undefined,
+        [
+          ["api-keys", "guide/settings/api-keys.md", []],
+          ["profile", "guide/settings/profile.md", []],
+        ],
+      ]);
     });
 
     it("still honors a label the settings file wrote", () => {
@@ -175,18 +208,22 @@ describe("translateNav", () => {
   });
 
   it("reads a list followed by a glob as 'these first, then the rest'", () => {
-    const { spec, duplicates } = translate({
-      sections: [{ path: "guide", label: "Guide", items: ["guide/install", "guide/*"] }],
-    });
+    const settings = { sections: [{ path: "guide", label: "Guide", items: ["guide/install", "guide/*"] }] };
+    const { spec, duplicates } = translate(settings);
     const guide = spec?.items.find((item) => item.label === "Guide");
-    expect(guide?.items?.slice(0, 2).map((item) => item.path)).toEqual([
+    expect(guide?.items?.map((item) => item.path)).toEqual([
       "guide/install.md",
       "guide/first-steps.md",
     ]);
+    expect(duplicates).toEqual([]);
     // `guide/*` is one directory deep, so the nested pages are leftovers and
     // land in the section as their own group rather than disappearing.
-    expect(guide?.items?.at(2)?.label).toBe("settings");
-    expect(duplicates).toEqual([]);
+    const shown = (rendered(settings) as unknown[][]).find((node) => node[0] === "Guide");
+    expect(((shown?.[2] ?? []) as unknown[][]).map((node) => node[0])).toEqual([
+      "install",
+      "first-steps",
+      "settings",
+    ]);
   });
 
   it("reports a reference that matches no page", () => {
@@ -218,21 +255,28 @@ describe("translateNav", () => {
   // A page that exists but cannot be reached is worse than one shown in an
   // order nobody chose, so leftovers are placed and reported, not dropped.
   it("keeps an unlisted page inside its own section", () => {
-    const { spec, orphans } = translate({
-      sections: [{ path: "guide", label: "Guide", items: ["guide/install"] }],
-    });
-    const guide = spec?.items.find((item) => item.label === "Guide");
-    expect(flatten(guide?.items)).toContain("guide/first-steps.md");
+    const settings = { sections: [{ path: "guide", label: "Guide", items: ["guide/install"] }] };
+    const { orphans } = translate(settings);
     expect(orphans).toContain("guide/first-steps.md");
+    const shown = rendered(settings) as unknown[][];
+    const guide = shown.find((node) => node[0] === "Guide");
+    expect(JSON.stringify(guide)).toContain("guide/first-steps.md");
     // And it does not appear a second time as a group of its own.
-    expect(spec?.items.filter((item) => item.label === "guide")).toEqual([]);
+    expect(shown.filter((node) => node[0] === "guide")).toEqual([]);
   });
 
   it("appends a page no section covers, after the sections", () => {
-    const { spec, orphans } = translate({ sections: [{ path: "guide" }] });
+    const settings = { sections: [{ path: "guide" }] };
+    const { spec, orphans } = translate(settings);
     expect(orphans).toContain("about.md");
-    expect(flatten(spec?.items)).toContain("about.md");
-    expect(spec?.items.at(-1)?.path).toBe("about.md");
+    expect(spec?.unplaced).toBe("append");
+    const shown = rendered(settings) as unknown[][];
+    expect(shown.at(-1)?.[1]).toBe("about.md");
+  });
+
+  it("does not call a page in a section that lists nothing an orphan", () => {
+    const { orphans } = translate({ sections: [{ path: "guide" }] });
+    expect(orphans.some((page) => page.startsWith("guide/"))).toBe(false);
   });
 
   it("does not call the home page an orphan", () => {
