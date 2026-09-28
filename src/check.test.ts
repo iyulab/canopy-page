@@ -66,6 +66,18 @@ describe("referenceFindings", { timeout: LOADS_A_SITE }, () => {
     expect(messages[0]).toContain("will render as plain text");
   });
 
+  // The renderer does not read a backslash as a directory separator, so it
+  // leaves such a link as written and it breaks on the published site. The
+  // check applies canopy's own resolution and says so, rather than quietly
+  // resolving what the renderer will not.
+  it("agrees with the renderer that a backslash is not a path separator", async () => {
+    const messages = await findings({
+      "index.md": "[install](guide\\install.md)",
+      "guide/install.md": "# Install",
+    });
+    expect(messages).toEqual(['index.md:1: link "guide\\install.md" points at nothing published']);
+  });
+
   it("resolves a link relative to the page holding it", async () => {
     expect(
       await findings({

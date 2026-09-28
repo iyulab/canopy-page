@@ -1,13 +1,13 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { parseFrontmatter } from "@iyulab/canopy";
 import {
-  decodeTarget,
-  extractReferences,
+  decodeLinkPath,
   isExternalUrl,
-  resolveFrom,
-  targetPath,
-} from "./references.js";
+  parseFrontmatter,
+  parseLinkUrl,
+  resolveRelative,
+} from "@iyulab/canopy";
+import { extractReferences } from "./references.js";
 import {
   type Finding,
   type LoadedSite,
@@ -79,12 +79,17 @@ function siteBasePath(site: LoadedSite): string | undefined {
  * link as broken.
  */
 function existsInSite(site: LoadedSite, sitePath: string): boolean {
+  // Matched the way the renderer matches a link target against its pages:
+  // the exact path, case-insensitively — not through `toPageKey`, whose
+  // forgiveness (a backslash read as a separator) is for settings references
+  // and would pass a link the renderer leaves broken.
   const directory = sitePath.endsWith("/");
-  const bare = directory ? sitePath.replace(/\/+$/, "") : sitePath;
-  if (directory) return site.index.resolve(`${bare}/index`) !== undefined;
-  if (site.index.resolve(bare) !== undefined) return true;
-  const key = bare.toLowerCase();
-  return site.index.assets.some((asset) => asset.toLowerCase() === key);
+  const bare = (directory ? sitePath.replace(/\/+$/, "") : sitePath).toLowerCase();
+  const pages = new Set(site.index.pages.map((page) => page.toLowerCase()));
+  if (directory) return pages.has(`${bare}/index.md`);
+  if (pages.has(bare) || pages.has(`${bare}.md`)) return true;
+  if (bare.endsWith(".html") && pages.has(bare.replace(/\.html$/, ".md"))) return true;
+  return site.index.assets.some((asset) => asset.toLowerCase() === bare);
 }
 
 /**
@@ -173,10 +178,12 @@ export async function referenceFindings(site: LoadedSite): Promise<Finding[]> {
         continue;
       }
 
-      const url = targetPath(reference.target);
+      // Where a link points is canopy's rule, applied here through the same
+      // functions the renderer calls, so the check cannot disagree with it.
+      const url = parseLinkUrl(reference.target).path;
 
       if (isRootAbsolute(url)) {
-        const atRoot = decodeTarget(url.replace(/^\/+/, "")) ?? url.replace(/^\/+/, "");
+        const atRoot = decodeLinkPath(url.replace(/^\/+/, "")) ?? url.replace(/^\/+/, "");
         const resolves = atRoot === "" || existsInSite(site, atRoot);
         const basePath = siteBasePath(site);
         if (resolves && basePath === undefined) continue;
@@ -198,11 +205,11 @@ export async function referenceFindings(site: LoadedSite): Promise<Finding[]> {
       // Classified as a URL above, resolved as a path from here — so the
       // encoding an editor wrote is undone only after the cases that are about
       // URL syntax have been answered.
-      const decoded = decodeTarget(url);
+      const decoded = decodeLinkPath(url);
       // An escape the renderer cannot read either: it leaves the link as
       // written, so there is no published target to hold the page to.
       if (decoded === undefined) continue;
-      const resolved = resolveFrom(page, decoded);
+      const resolved = resolveRelative(page, decoded);
       // A target that walks above the site root addresses something outside it,
       // which the renderer leaves alone and this has no standing to judge.
       if (resolved === undefined || resolved === "") continue;

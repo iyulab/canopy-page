@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  decodeTarget,
-  extractReferences,
-  isExternalUrl,
-  resolveFrom,
-  targetPath,
-} from "./references.js";
+import { extractReferences } from "./references.js";
 
 /** Targets in document order, dropping the positions. */
 function targets(markdown: string): string[] {
@@ -73,67 +67,5 @@ describe("extractReferences", () => {
       "notes/idea",
       "notes/idea",
     ]);
-  });
-});
-
-describe("isExternalUrl", () => {
-  it("leaves alone what the renderer leaves alone", () => {
-    expect(isExternalUrl("https://example.test/x")).toBe(true);
-    expect(isExternalUrl("mailto:a@example.test")).toBe(true);
-    expect(isExternalUrl("//example.test/x")).toBe(true);
-    expect(isExternalUrl("/help/x.png")).toBe(true);
-    expect(isExternalUrl("#section")).toBe(true);
-    expect(isExternalUrl("")).toBe(true);
-  });
-
-  it("treats a site-relative path as its own", () => {
-    expect(isExternalUrl("guide/install.md")).toBe(false);
-    expect(isExternalUrl("../assets/logo.png")).toBe(false);
-  });
-});
-
-describe("targetPath", () => {
-  it("drops the part that addresses a place within the target", () => {
-    expect(targetPath("guide/install.md#requirements")).toBe("guide/install.md");
-    expect(targetPath("guide/install.md?v=2")).toBe("guide/install.md");
-  });
-});
-
-describe("decodeTarget", () => {
-  it("reads the encoding an editor writes for a space", () => {
-    expect(decodeTarget("reference/error%20messages.md")).toBe("reference/error messages.md");
-  });
-
-  it("reads a non-ASCII directory back", () => {
-    expect(decodeTarget("%ED%98%84%ED%99%A9/daily.md")).toBe("현황/daily.md");
-  });
-
-  it("leaves an unencoded path exactly as it is", () => {
-    expect(decodeTarget("guide/install.md")).toBe("guide/install.md");
-  });
-
-  it("gives up on a malformed escape rather than guessing", () => {
-    expect(decodeTarget("a%zzb/note.md")).toBeUndefined();
-  });
-
-  it("does not let an encoded slash become a directory boundary", () => {
-    expect(decodeTarget("a%2Fb/note.md")).toBeUndefined();
-  });
-
-  it("keeps a trailing slash, which names a directory", () => {
-    expect(decodeTarget("release%20notes/")).toBe("release notes/");
-  });
-});
-
-describe("resolveFrom", () => {
-  it("resolves against the folder holding the document", () => {
-    expect(resolveFrom("guide/install.md", "first-steps.md")).toBe("guide/first-steps.md");
-    expect(resolveFrom("guide/settings/api.md", "../install.md")).toBe("guide/install.md");
-    expect(resolveFrom("index.md", "./guide/install.md")).toBe("guide/install.md");
-  });
-
-  // A target above the root addresses something the site was never given.
-  it("gives up on a path that leaves the site", () => {
-    expect(resolveFrom("index.md", "../outside.md")).toBeUndefined();
   });
 });

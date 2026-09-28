@@ -17,6 +17,17 @@ to it — its fields, its validation, and what the checks reject — are what th
   used to restate is gone. The sidebar a settings file produces is unchanged, with one
   exception: pages outside every section, appended after the sections and reported as orphans,
   are now ordered by page title like any derived navigation rather than by file name.
+- **`check` resolves links with canopy's own functions.** Where a markdown link points —
+  what counts as external, percent-decoding, `..` against the linking page — is now decided by
+  the functions the renderer itself calls, instead of a restated copy that had already lagged a
+  canopy release once. One visible consequence: a link written with a backslash
+  (`guide\install.md`) is now reported, because the renderer never treated `\` as a directory
+  separator and publishes that link broken; the check used to accept it.
+
+### Removed
+
+- **`isExternalUrl` is no longer re-exported** from canopy-page's library entry point. It is
+  canopy's rule; import it from `@iyulab/canopy`.
 
 ## [0.16.0] — 2026-09-28
 
