@@ -88,6 +88,9 @@ export function canopyArgs(
     // was checked is what ships.
     ...publishingExcludes(settings).flatMap((pattern) => ["--exclude", pattern]),
     ...(settings.rehypePlugins ?? []).flatMap((specifier) => ["--rehype-plugin", specifier]),
+    ...(settings.sections ?? [])
+      .filter((section) => section.feed === true)
+      .flatMap((section) => ["--feed", section.path]),
   ];
 }
 

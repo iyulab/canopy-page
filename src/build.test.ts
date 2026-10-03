@@ -114,6 +114,20 @@ describe("canopyArgs", () => {
     expect(args.join(" ")).toContain("--rehype-plugin rehype-declart --rehype-plugin rehype-mermaid");
   });
 
+  it("asks canopy for a feed of each section that wants one", () => {
+    const args = canopyArgs(
+      siteWith({
+        siteUrl: "https://example.test",
+        sections: [{ path: "release-notes", feed: true }, { path: "guide" }, { path: "blog", feed: true }],
+      }),
+      "/out",
+      undefined,
+      SEARCH_ASSETS,
+    );
+    expect(args.join(" ")).toContain("--feed release-notes --feed blog");
+    expect(args.filter((arg) => arg === "--feed")).toHaveLength(2);
+  });
+
   it("has no --rehype-plugin flag when a site names none", () => {
     const args = canopyArgs(siteWith({}), "/out", undefined, SEARCH_ASSETS);
     expect(args).not.toContain("--rehype-plugin");

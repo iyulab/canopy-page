@@ -2,7 +2,7 @@ import { execFile } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
-import { parseFrontmatter } from "@iyulab/canopy";
+import { frontmatterDate, parseFrontmatter } from "@iyulab/canopy";
 
 const execFileAsync = promisify(execFile);
 
@@ -18,13 +18,6 @@ const execFileAsync = promisify(execFile);
  * build, not the page.
  */
 
-/** A YAML scalar that plausibly names a calendar date, in either form the `yaml` parser hands back. */
-function asDateString(value: unknown): string | undefined {
-  if (value instanceof Date) return value.toISOString().slice(0, 10);
-  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10);
-  return undefined;
-}
-
 /** A page's own `updated:` frontmatter date, when it names one. */
 async function frontmatterUpdated(absPath: string): Promise<string | undefined> {
   let raw: string;
@@ -35,7 +28,9 @@ async function frontmatterUpdated(absPath: string): Promise<string | undefined> 
     // page whose source moved. Nothing to read frontmatter from.
     return undefined;
   }
-  return asDateString(parseFrontmatter(raw).data.updated);
+  // canopy's own rule for what is a date, so a page the renderer dates is the
+  // page the sitemap dates. A sitemap names the day only.
+  return frontmatterDate(parseFrontmatter(raw).data.updated)?.slice(0, 10);
 }
 
 /** The date (YYYY-MM-DD) git last recorded a change to `file`, or undefined when it has none. */

@@ -328,6 +328,28 @@ describe("parseSettings: where the site is published", () => {
     );
   });
 
+  it("accepts a section feed alongside a site URL", () => {
+    expect(
+      parseSettings(
+        JSON.stringify({
+          siteUrl: "https://example.test",
+          sections: [{ path: "release-notes", order: "desc", feed: true }, { path: "guide", feed: false }],
+        }),
+      ).sections,
+    ).toEqual([{ path: "release-notes", order: "desc", feed: true }, { path: "guide" }]);
+  });
+
+  it("refuses a section feed without a site URL, and a feed that is not a boolean", () => {
+    rejects(
+      JSON.stringify({ sections: [{ path: "log", feed: true }] }),
+      /settings\.sections\[0\]\.feed: needs siteUrl/,
+    );
+    rejects(
+      JSON.stringify({ siteUrl: "https://example.test", sections: [{ path: "log", feed: "yes" }] }),
+      /settings\.sections\[0\]\.feed: must be true or false/,
+    );
+  });
+
   it("refuses alternates without a site URL — this edition has to be in the list too", () => {
     rejects(JSON.stringify({ alternates: { ko: "https://example.test/ko" } }), /settings\.alternates: needs siteUrl/);
   });

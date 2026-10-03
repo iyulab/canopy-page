@@ -2,7 +2,13 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { checkSite, descriptionFindings, filenameEncodingFindings, referenceFindings } from "./check.js";
+import {
+  checkSite,
+  dateFindings,
+  descriptionFindings,
+  filenameEncodingFindings,
+  referenceFindings,
+} from "./check.js";
 import { loadSite } from "./site.js";
 
 /**
@@ -414,5 +420,50 @@ describe("descriptionFindings", { timeout: LOADS_A_SITE }, () => {
     vi.spyOn(console, "log").mockImplementation(() => {});
     expect(await checkSite(root)).toBe(0);
     expect(warn.mock.calls.flat().join("\n")).toContain('no "description:"');
+  });
+});
+
+describe("dateFindings", { timeout: LOADS_A_SITE }, () => {
+  async function dates(files: Record<string, string>): Promise<string[]> {
+    const root = await site(files);
+    return (await dateFindings(await loadSite(root))).map((finding) => finding.message);
+  }
+
+  it("says nothing about a site whose dates are all dates", async () => {
+    expect(
+      await dates({
+        "settings.json": "{}",
+        "index.md": "---\ndate: 2026-09-28\nupdated: 2026-10-01T09:30+09:00\n---\n# Home\n",
+        "guide/a.md": "# A\n",
+      }),
+    ).toEqual([]);
+  });
+
+  it("names every date canopy will not read as one", async () => {
+    const messages = await dates({
+      "settings.json": "{}",
+      "a.md": "---\ndate: 2026-02-30\n---\n# A\n",
+      "b.md": "---\nupdated: 28/09/2026\n---\n# B\n",
+    });
+    expect(messages).toHaveLength(1);
+    expect(messages[0]).toContain("2 frontmatter date(s) are not dates");
+    expect(messages[0]).toContain("\n  a.md (date: 2026-02-30)");
+    expect(messages[0]).toContain("\n  b.md (updated: 28/09/2026)");
+  });
+
+  it("names pages a feed section leaves out for having no date, but not the section's index", async () => {
+    const messages = await dates({
+      "settings.json": JSON.stringify({
+        siteUrl: "https://example.test",
+        sections: [{ path: "log", order: "desc", feed: true }, { path: "guide" }],
+      }),
+      "log/index.md": "# Changes\n",
+      "log/2026-09-28.md": "---\ndate: 2026-09-28\n---\n# Dated\n",
+      "log/notes.md": "# Undated\n",
+      "guide/a.md": "# Not in a feed\n",
+    });
+    expect(messages).toEqual([
+      '1 page(s) in a feed section have no "date:", so the feed leaves them out:\n  log/notes.md',
+    ]);
   });
 });

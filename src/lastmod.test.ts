@@ -73,6 +73,28 @@ describe("resolveLastmods", { timeout: RUNS_GIT }, () => {
     expect(byPath["index.html"]).toBe("2020-06-01");
   });
 
+  it("falls back to git when updated: is not a date canopy recognizes", async () => {
+    const root = await repoWith([
+      {
+        files: { "index.md": "---\nupdated: 2020-02-30\n---\n# Home\n" },
+        date: "2026-01-05T00:00:00Z",
+      },
+    ]);
+    const { byPath } = await resolveLastmods(root, ["index.html"]);
+    expect(byPath["index.html"]).toBe("2026-01-05");
+  });
+
+  it("names the day of an updated: date-time", async () => {
+    const root = await repoWith([
+      {
+        files: { "index.md": "---\nupdated: 2020-06-01T09:30:00+09:00\n---\n# Home\n" },
+        date: "2026-01-05T00:00:00Z",
+      },
+    ]);
+    const { byPath } = await resolveLastmods(root, ["index.html"]);
+    expect(byPath["index.html"]).toBe("2020-06-01");
+  });
+
   it("omits a page with no corresponding source file", async () => {
     const root = await repoWith([{ files: { "index.md": "# Home\n" }, date: "2026-01-05T00:00:00Z" }]);
     // canopy's synthetic root index.html, when a site names none of its own.

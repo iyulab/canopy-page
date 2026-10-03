@@ -46,6 +46,12 @@ export interface SettingsSection {
   order?: "asc" | "desc";
   /** Explicit contents, in display order. Overrides `order`. */
   items?: SettingsNavItem[];
+  /**
+   * Publish an Atom feed of the section's dated pages at `<path>/feed.xml`, so
+   * a reader can follow it. Needs `siteUrl`. A page is in the feed when its
+   * frontmatter names a `date:`.
+   */
+  feed?: boolean;
 }
 
 /**
@@ -193,7 +199,7 @@ export const SETTINGS_KEYS = new Set([
   "strings",
 ]);
 
-export const SECTION_KEYS = new Set(["path", "label", "order", "items"]);
+export const SECTION_KEYS = new Set(["path", "label", "order", "items", "feed"]);
 
 export const HOME_KEYS = new Set(["url", "label"]);
 
@@ -355,7 +361,8 @@ function parseSection(value: unknown, where: string): SettingsSection {
   const section = asObject(value, where, 'expected an object with a "path"');
   rejectUnknownKeys(section, SECTION_KEYS, where);
 
-  const { path, label, order, items } = section;
+  const { path, label, order, items, feed } = section;
+  if (feed !== undefined && typeof feed !== "boolean") fail(`${where}.feed: must be true or false`);
   if (path === undefined) fail(`${where}: needs a "path" naming the directory it covers`);
   if (label !== undefined) asString(label, `${where}.label`);
   if (order !== undefined && order !== "asc" && order !== "desc") {
@@ -375,6 +382,7 @@ function parseSection(value: unknown, where: string): SettingsSection {
     ...(items === undefined
       ? {}
       : { items: (items as unknown[]).map((item, i) => parseNavItem(item, `${where}.items[${i}]`)) }),
+    ...(feed === true ? { feed: true } : {}),
   };
 }
 
@@ -453,6 +461,13 @@ export function parseSettings(json: string): Settings {
   // message can say what is missing, rather than passed on for canopy to refuse.
   if (previewImage !== undefined && siteUrl === undefined) {
     fail("settings.previewImage: needs siteUrl, since a preview image has to be an absolute URL");
+  }
+  if (siteUrl === undefined && Array.isArray(sections)) {
+    sections.forEach((section, i) => {
+      if (typeof section === "object" && section !== null && (section as { feed?: unknown }).feed === true) {
+        fail(`settings.sections[${i}].feed: needs siteUrl, since a feed's entries are absolute URLs`);
+      }
+    });
   }
   let parsedAlternates: Record<string, string> | undefined;
   if (alternates !== undefined) {

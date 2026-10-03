@@ -147,6 +147,10 @@
           "type": "array",
           "items": { "$ref": "#/$defs/navItem" },
           "description": "Explicit contents, in display order. Overrides `order`."
+        },
+        "feed": {
+          "type": "boolean",
+          "description": "Publish an Atom feed of the section's dated pages (those whose frontmatter names a `date:`) at <path>/feed.xml, linked from the section's pages. Needs siteUrl."
         }
       }
     },

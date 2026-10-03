@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import {
   decodeLinkPath,
+  frontmatterDate,
   isExternalUrl,
   parseFrontmatter,
   parseLinkUrl,
@@ -252,6 +253,7 @@ export async function siteFindings(site: LoadedSite): Promise<Finding[]> {
     ...filenameEncodingFindings(site),
     ...(await referenceFindings(site)),
     ...(await descriptionFindings(site)),
+    ...(await dateFindings(site)),
   ];
 }
 
@@ -290,6 +292,60 @@ export async function descriptionFindings(site: LoadedSite): Promise<Finding[]> 
         missing.map((page) => `  ${page}`).join("\n"),
     },
   ];
+}
+
+/**
+ * Dates that will not do what their author meant.
+ *
+ * Two ways a date goes quietly missing, both read with canopy's own rule
+ * (`frontmatterDate`) so what is flagged here is exactly what canopy will and
+ * will not treat as dated:
+ *
+ * - a `date:` or `updated:` that is not a date (`2026-02-30`, `28/09/2026`) —
+ *   the page renders as if the line were not there;
+ * - a page in a `feed` section with no `date:` — it is left out of the feed,
+ *   which a reader following the section never finds out. The section's own
+ *   index page is exempt: it describes the series rather than being an entry.
+ *
+ * Warnings, not errors: an undated page is still a sound page.
+ */
+export async function dateFindings(site: LoadedSite): Promise<Finding[]> {
+  const feedDirs = (site.settings.sections ?? [])
+    .filter((section) => section.feed === true)
+    .map((section) => section.path.toLowerCase());
+  const malformed: string[] = [];
+  const undatedInFeed: string[] = [];
+  for (const page of site.index.pages) {
+    const { data } = parseFrontmatter(await readFile(path.join(site.root, page), "utf8"));
+    for (const key of ["date", "updated"] as const) {
+      if (data[key] !== undefined && data[key] !== null && frontmatterDate(data[key]) === undefined) {
+        malformed.push(`  ${page} (${key}: ${String(data[key])})`);
+      }
+    }
+    const key = page.toLowerCase();
+    const inFeed = feedDirs.some((dir) => key.startsWith(`${dir}/`) && key !== `${dir}/index.md`);
+    if (inFeed && data.date === undefined) undatedInFeed.push(`  ${page}`);
+  }
+  const findings: Finding[] = [];
+  if (malformed.length > 0) {
+    findings.push({
+      level: "warning",
+      message:
+        `${malformed.length} frontmatter date(s) are not dates (expected YYYY-MM-DD, optionally ` +
+        "with a time), so those pages render as undated:\n" +
+        malformed.join("\n"),
+    });
+  }
+  if (undatedInFeed.length > 0) {
+    findings.push({
+      level: "warning",
+      message:
+        `${undatedInFeed.length} page(s) in a feed section have no "date:", so the feed leaves ` +
+        "them out:\n" +
+        undatedInFeed.join("\n"),
+    });
+  }
+  return findings;
 }
 
 /** Check the site in `dir`, returning the exit code to leave with. */
