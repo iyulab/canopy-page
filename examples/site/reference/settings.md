@@ -16,7 +16,7 @@ This is the file that produced the site you are reading:
   "lang": "en",
   "icon": "assets/logo.svg",
   "logo": "assets/logo.svg",
-  "tokens": "brand.css",
+  "styles": "brand.css",
   "home": { "url": "https://github.com/iyulab/canopy-page", "label": "canopy-page on GitHub" },
   "siteUrl": "https://iyulab.github.io/canopy-page",
   "exclude": ["_drafts"],
@@ -50,7 +50,7 @@ This is the file that produced the site you are reading:
 | `lang` | BCP 47 tag for `<html lang>`. Assistive technology reads pronunciation from it |
 | `strings` | Overrides for the reader chrome's own text (`search`, `toggleTheme`, `siteNav`, `pageNav`, `onThisPage`, `indexTitle`, `backlinks`, `searchFailed`) — `lang` alone does not translate it, since it is canopy's UI (or canopy-page's own search script) rather than vault content |
 | `icon` | Favicon, relative to the settings file. Must be a published file |
-| `tokens` | CSS of design-token overrides, relative to the settings file |
+| `styles` | CSS files, relative to the settings file, linked after canopy's own |
 | `logo` | Image shown beside the site title in the sidebar header, relative to the settings file. Must be a published file |
 | `home` | A link back to the site this documentation sits beside: `{ url, label }` |
 | `siteUrl` | Where the built site will stand, as an absolute URL. Turns on the sitemap, and the `<head>` tags that are addresses: canonical, `og:url`, `og:image`, `hreflang` |
@@ -123,20 +123,23 @@ and not reachable.
 
 | Field | Not set |
 |---|---|
-| `tokens` | Only canopy's own colours and spacing apply |
+| `styles` | Only canopy's own look applies |
 | `logo` | The sidebar header shows the title text alone |
 | `home` | No link back to a surrounding site is rendered |
 
-`tokens` names a CSS file appended *after* canopy's own tokens, so a file naming one custom
-property — `--accent`, say — keeps every other default rather than replacing the whole sheet. It
-is read at build time and left out of the published site: it configures the build, it is not a
-page of it. This site's own `brand.css` is the proof — open the built output and it is not there.
+`styles` names CSS files linked *after* canopy's own, outside its cascade layer, so a file naming
+one custom property — `--accent`, say — keeps every other default, and a rule restyling a region
+wins without a specificity contest. The file is read at build time and its rules travel as a
+stylesheet of the build's own; the file itself is left out of the published site — it configures
+the build, it is not a page of it. This site's own `brand.css` is the proof: its colours are on
+every page, and the built output has no `brand.css`.
 
-`brand.css` is two blocks rather than one line for a reason worth stating: canopy's own defaults
-end with a `prefers-color-scheme: dark` block, and a media query adds no specificity over a bare
-selector. A bare `:root` appended after that block wins in *both* schemes, which is exactly why
-this file repeats itself — a light accent for the default block, a lighter one for dark, so the
-colour that reads well on a white sidebar is not the one forced onto a dark one.
+`brand.css` is three blocks rather than one line for a reason worth stating: a bare `:root`
+outside canopy's cascade layer wins in *both* colour schemes, which is exactly why this file
+repeats itself — a light accent for the default block, a lighter one for dark, so the colour that
+reads well on a white sidebar is not the one forced onto a dark one. Dark is stated twice, the way
+canopy states its own palette: for a system that prefers dark (unless the reader switched the page
+to light with the theme toggle) and for a page switched to dark.
 
 `logo` is separate from `icon`: `icon` is the favicon a browser tab shows, `logo` is the image
 beside the title in the sidebar itself, and the two are free to differ. This site happens to use
@@ -184,7 +187,7 @@ Shiki would otherwise render that fence as plain highlighted text. A site names 
 depends on; the plugin itself is an ordinary dependency, installed the same way any other one is.
 See [Diagrams](../guide/writing/diagrams.md) for what this looks like end to end.
 
-A relative path (`./plugins/mine.js`) is refused here for the same reason a relative `tokens` path
+A relative path (`./plugins/mine.js`) is refused here for the same reason a relative `styles` path
 is resolved against the settings file rather than left to the shell that happened to start the
 build: a plugin loaded by canopy's own process would otherwise resolve against whatever directory
 the build was run from, not this file's directory, and get it right by accident or not at all.

@@ -23,7 +23,7 @@ itself, from [`examples/site`](../examples/site) in this repository.
   - [Top-level fields](#top-level-fields)
   - [`sections`](#sections)
   - [`strings` and `lang`](#strings-and-lang-non-english-sites)
-  - [`tokens` and branding](#tokens-and-branding)
+  - [`styles` and branding](#styles-and-branding)
   - [`rehypePlugins`](#rehypeplugins-extending-what-a-page-can-render)
 - [Writing pages](#writing-pages)
   - [How a page gets its name](#how-a-page-gets-its-name)
@@ -109,7 +109,7 @@ stays unpublished.
 Validation is strict: an unknown key is rejected rather than silently ignored (a mistyped key
 that is quietly dropped looks like a tool disobeying its configuration), and every error message
 names the exact position it is about, down to `sections[0].items[1]`. The settings file itself is
-never published, and neither is anything `exclude` names or anything `tokens` points at.
+never published, and neither is anything `exclude` names or anything `styles` names.
 
 ```json
 {
@@ -119,7 +119,7 @@ never published, and neither is anything `exclude` names or anything `tokens` po
   "lang": "en-GB",
   "icon": "assets/favicon.png",
   "logo": "assets/logo.svg",
-  "tokens": "brand.css",
+  "styles": "brand.css",
   "home": { "url": "https://example.com", "label": "Back to Product" },
   "siteUrl": "https://help.example.com",
   "exclude": ["_drafts", "*.tmp"],
@@ -148,7 +148,7 @@ completion and inline validation for every field below as you type.
 | `lang` | [BCP 47](https://www.rfc-editor.org/rfc/rfc5646) tag for `<html lang>` (`"en"`, `"ko-KR"`). Changes only that one attribute — see [`strings`](#strings-and-lang-non-english-sites) for the reader chrome's own text |
 | `icon` | Favicon, relative to the settings file. Must be a published file (not excluded) |
 | `logo` | Image shown beside the site title in the sidebar header, relative to the settings file. Must be a published file. Renders with an empty `alt`: the title text right beside it already names the site |
-| `tokens` | Path to a CSS file of design-token overrides, relative to the settings file. See [Theming](#theming) |
+| `styles` | One CSS file or a list, relative to the settings file, linked after canopy's and canopy-page's own CSS — wins at any specificity. See [Theming](#theming) |
 | `home` | A link back to the site this documentation sits beside: `{ url, label }`. Both required together — naming half of it is rejected. `url` is an absolute `http(s)` URL when the target is a different origin, or a relative path (`"../"`) naming a location from the site's own root when it is a sibling of the published site. No default `label` — link text has to be written in the site's own language |
 | `siteUrl` | Absolute `http(s)` URL naming where the built site will stand. **Only** when set does `build` write `sitemap.xml`, a `robots.txt` pointing at it, and the `<head>` tags a search engine reads as addresses — `<link rel="canonical">`, `og:url`, `og:image`, `hreflang`. Every link canopy writes *into* a page is relative regardless, on purpose, so the same output works at any sub-path and opens from a local folder. A directory's index page is addressed as the directory (`guide/index.html` → `…/guide/`), in the sitemap and in the page's own canonical alike. Once set, `check` also warns about pages with no `description:` of their own (see [What `check` reports](#what-check-reports)) |
 | `previewImage` | Image link previews show (`og:image`), relative to the settings file, for any page whose frontmatter has no `image:` of its own (a page's `image:` is a site path, or an absolute URL used as given). Must be a published file. Needs `siteUrl` — the tag has to be absolute |
@@ -230,12 +230,14 @@ Nine keys exist; every one is optional and keeps its English default when left o
 There is no built-in translation table — canopy-page has no way to guess what your language
 calls "Search"; link text (`home.label`, page titles) follows the same reasoning.
 
-### `tokens` and branding
+### `styles` and branding
 
-See [Theming](#theming) below for the full token vocabulary. `tokens` names a CSS file, relative
-to the settings file, appended *after* canopy's own default tokens — so naming one custom
-property keeps every other default, and the file is read at build time and excluded from the
-published output automatically (it configures the build; it is not a page of it).
+See [Theming](#theming) below for the full token vocabulary. `styles` names one CSS file or a
+list of them, relative to the settings file, linked in order after canopy's and canopy-page's own
+CSS. Both of those sit in cascade layers, so a rule here wins at any specificity — restate one
+custom property and every other default stays, or restyle a region outright. The files are read
+at build time and excluded from the published output automatically, and a path with no file
+behind it is a `check` error.
 
 ### `rehypePlugins`: extending what a page can render
 
@@ -512,7 +514,7 @@ attribute override (the dark toggle's own mechanism) — so the two paths can ne
 | `--content-max-width` | The article column's max width |
 | `--sp-1` … `--sp-8` / `--radius-m` | The spacing scale and corner radius every shell element is built from |
 
-Override what you need via `tokens` (a CSS file appended *after* these defaults):
+Override what you need in a `styles` file (linked after these defaults, outside their cascade layer):
 
 ```css
 /* brand.css */
@@ -522,20 +524,26 @@ Override what you need via `tokens` (a CSS file appended *after* these defaults)
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --accent: #4ecfa2;
     --accent-hover: #6fdcb5;
   }
 }
+
+:root[data-theme="dark"] {
+  --accent: #4ecfa2;
+  --accent-hover: #6fdcb5;
+}
 ```
 
-**Two blocks, not one, on purpose.** Canopy's own defaults end with a
-`prefers-color-scheme: dark` block, and a media query adds no specificity over a bare selector —
-so a bare `:root` appended after that block wins in **both** color schemes. A one-block file
-naming only a light-mode color would ship that same color onto a dark sidebar too; the second,
-explicit `@media` block is what gives dark mode its own value back.
+**Dark values twice, on purpose.** A bare `:root` outside canopy's cascade layer wins in
+**both** color schemes, so a one-block file naming only a light-mode color would ship that same
+color onto a dark sidebar too. The dark value is stated for the two ways dark mode happens —
+the system preference (unless the reader switched the page to light) and the theme toggle's
+`[data-theme="dark"]` — exactly as canopy's own palette is; a plain `:root` inside the media
+query would override a reader who switched to light.
 
-**A custom property `tokens` sets that canopy never reads is not an error — it's silently
+**A custom property a `styles` file sets that canopy never reads is not an error — it's silently
 ignored.** No warning, and the build still exits `0`. This is the trap moving an existing docs
 site onto canopy-page tends to spring: a stylesheet carried over from a previous tool's own token
 names (a `--vp-c-*` set, an `--ifm-*` set, a `.dark`/`.light` class toggle instead of the
@@ -543,6 +551,10 @@ names (a `--vp-c-*` set, an `--ifm-*` set, a `.dark`/`.light` class toggle inste
 none of the intended colors, because nothing in it actually matched anything canopy looks at. If
 an override doesn't show up on the built site, check the rendered page's computed styles first,
 not just that the build succeeded.
+
+Beyond tokens, any class canopy lists as a hook in its
+[theming contract](https://github.com/iyulab/canopy/blob/main/docs/THEMING.md) is safe to select
+on — `.canopy-sidebar { display: none; }` works as written.
 
 ## What `check` reports
 
@@ -659,7 +671,7 @@ than working around here with a private integration.
   root.** Every link canopy writes is relative for exactly this reason — the same output works
   at `/` or at `/help/` without a rebuild. A hand-written `/assets/logo.png` in your own markdown
   breaks under a sub-path mount; `check` warns about this once `siteUrl` declares one.
-- **`tokens` silently no-ops on an unrecognized custom property.** See
+- **`styles` silently no-ops on an unrecognized custom property.** See
   [Theming](#theming) — check the rendered page's computed styles, not just a green build, when
   a brand override doesn't show up.
 - **`rehypePlugins` entries are package names, not file paths.** A relative path is rejected

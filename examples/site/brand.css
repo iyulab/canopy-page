@@ -1,5 +1,9 @@
-/* Only what differs from canopy's defaults; everything else is inherited. */
+/* Only what differs from canopy's defaults; everything else is inherited.
+   Dark values are stated the way canopy states its own: once for a reader
+   whose system prefers dark (unless they switched the page to light), once
+   for a reader who switched it to dark. */
 :root { --accent: #0a7c5a; --accent-hover: #096a4d; }
 @media (prefers-color-scheme: dark) {
-  :root { --accent: #4ecfa2; --accent-hover: #6fdcb5; }
+  :root:not([data-theme="light"]) { --accent: #4ecfa2; --accent-hover: #6fdcb5; }
 }
+:root[data-theme="dark"] { --accent: #4ecfa2; --accent-hover: #6fdcb5; }

@@ -7,6 +7,33 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [0.21.0] — 2026-10-03
+
+### Changed
+
+- **Breaking: `tokens` is renamed `styles`, and takes a list.** `"styles": "brand.css"` or
+  `"styles": ["brand.css", "layout.css"]`, linked in that order. Migration: rename the key — the
+  value carries over unchanged. A settings file still naming `tokens` gets an error saying so.
+- **A site's CSS wins at any specificity.** canopy's CSS (from canopy 0.19.0) and canopy-page's
+  own search/outline/lightbox CSS now sit in cascade layers, and `styles` are linked after both,
+  unlayered — so a `styles` rule restyles any region, not only the design tokens. canopy-page's
+  own CSS is carried as its own stylesheet rather than inside canopy's token file.
+
+### Added
+
+- `check` reports a `styles` path with no file behind it.
+
+### Fixed
+
+- The search box reserves room for its `Ctrl+K` badge on wide screens, so typed text no longer
+  runs under it. The reservation existed but was overridden by the input's own padding.
+- **A site's dark-mode colours apply.** The documented dark override lost to canopy's own dark
+  palette, so dark mode always showed the default accent. It now wins, and the documented form is
+  corrected to follow the theme toggle as well: state dark values under
+  `@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { … } }` and under
+  `:root[data-theme="dark"] { … }` (see the README's `styles` section). A `styles` file using the
+  old single dark block should add the second selector.
+
 ## [0.20.0] — 2026-10-03
 
 ### Added

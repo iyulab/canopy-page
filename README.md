@@ -140,8 +140,8 @@ unpublished.
 | `lang` | BCP 47 tag for `<html lang>`. Worth setting for any non-English site: assistive technology reads pronunciation from it |
 | `strings` | Overrides for the reader chrome's own text — `search`, `toggleTheme`, `siteNav`, `pageNav`, `onThisPage`, `indexTitle` (the auto-generated contents page's title/heading), `backlinks` (a page's "linked references" heading), `breadcrumb` (the topbar's ancestor-trail nav's label), `searchFailed` (the client search's failure message). `lang` only changes what `<html lang>` declares; this text is canopy's own UI or canopy-page's own search script, not vault content, so it stays English otherwise. No built-in translation table — the same reasoning `home.label` already follows: link text has to be written in the site's own language. Keys left out keep their English default |
 | `icon` | Favicon, relative to the settings file. Must be a published file |
-| `tokens` | CSS of design-token overrides, relative to the settings file. Appended *after* canopy's own tokens, so a file naming one value keeps the rest. It is configuration rather than content, so — unlike `icon` and `logo` — it is excluded from the published site automatically. Absent: canopy's default palette |
-| `logo` | Image shown beside the site title, relative to the settings file. Must be a published file — the opposite direction from `tokens`, because this one is content. Rendered with an empty `alt`, deliberately: the site title beside it already names the site, so there is no separate text to give it. Absent: the sidebar header shows the title text alone |
+| `styles` | Stylesheets, relative to the settings file — one path or a list, linked in that order after canopy's and canopy-page's own CSS. Those sit in cascade layers, so a rule here wins at any specificity: restate a design token, or restyle a whole region. Configuration rather than content, so — unlike `icon` and `logo` — excluded from the published site automatically. A missing file is a `check` error. Absent: canopy's default look |
+| `logo` | Image shown beside the site title, relative to the settings file. Must be a published file — the opposite direction from `styles`, because this one is content. Rendered with an empty `alt`, deliberately: the site title beside it already names the site, so there is no separate text to give it. Absent: the sidebar header shows the title text alone |
 | `home` | A link back to the site this documentation sits beside: `{ url, label }`. Both are required together — naming half of it is not a valid setting. `url` is absolute when the target is a different origin, relative when it is a sibling of the published site (each page resolves it against its own depth, the same as every other internal link); there is no default `label`, because link text has to be written in the site's own language. Absent: no link back to a surrounding site is rendered |
 | `siteUrl` | Absolute URL naming where the built site will stand. Every link canopy writes is relative, which is what lets a site be served from any sub-path — and exactly why a sitemap, whose entries must be absolute, needs this separately. **Only** when it is set does `build` write `sitemap.xml` and a `robots.txt` pointing at it. Absent: neither file is written |
 | `exclude` | Paths to leave unpublished: a directory (`_drafts` or `_drafts/**`), an extension at any depth (`*.tmp`), or one exact path. Patterns are relative to the settings file, and a shape outside that list — `images/*.md` — is refused rather than left to match nothing |
@@ -149,8 +149,14 @@ unpublished.
 | `sections` | Ordered regions of the site — see below |
 | `knownBroken` | Pages whose broken links and images are known and being fixed, each `{ path, reason }`: published anyway, with a warning — see [Adopting a site that is already broken](#adopting-a-site-that-is-already-broken) |
 
-`tokens` is two blocks in practice, not one — a bare `:root` and a `prefers-color-scheme: dark`
-override:
+A `styles` file can restate design tokens, restyle any part of the page, or both. canopy's and
+canopy-page's own CSS sit in cascade layers, and a rule outside any layer beats every layered rule
+whatever its specificity — so `.canopy-sidebar { display: none; }` simply works. The class names
+that are safe to select on, and the full token list, are canopy's
+[theming contract](https://github.com/iyulab/canopy/blob/main/docs/THEMING.md).
+
+Dark values are stated twice — for a reader whose system prefers dark (unless they switched the
+page to light), and for a page switched to dark — the same two paths canopy's own palette uses:
 
 ```css
 /* brand.css */
@@ -160,24 +166,26 @@ override:
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --accent: #4ecfa2;
     --accent-hover: #6fdcb5;
   }
 }
+
+:root[data-theme="dark"] {
+  --accent: #4ecfa2;
+  --accent-hover: #6fdcb5;
+}
 ```
 
-canopy's own tokens end with a `prefers-color-scheme: dark` block, and a media query adds no
-specificity over a bare selector — so a bare `:root` appended after that block wins in *both*
-schemes. A one-block file naming only a light-mode colour would ship that colour onto a dark
-sidebar too.
+A bare `:root` outside canopy's layer wins in *both* colour schemes, so a one-block file naming
+only a light-mode colour would ship that colour onto a dark sidebar too — and a plain `:root`
+inside the dark media query would override a reader who switched the page to light.
 
-Unlike `settings.json` (below), `tokens` gets no such validation — it's a plain CSS file appended
-to canopy's own, and CSS silently ignores a custom property nothing reads. A file carried over
-from a previous documentation tool's own token names (or a `.dark`/`.light` class toggle instead
-of canopy's `[data-theme]` attribute) parses fine, builds fine, and changes nothing: the site
-keeps canopy's default colours with no error anywhere. If a `tokens` override doesn't show up on
-the built site, that silent mismatch — not a build failure — is the first thing to check.
+CSS silently ignores a custom property nothing reads. A file carried over from a previous
+documentation tool's own token names (or a `.dark`/`.light` class toggle instead of canopy's
+`[data-theme]` attribute) parses fine, builds fine, and changes nothing. If an override doesn't
+show up on the built site, that silent mismatch — not a build failure — is the first thing to check.
 
 The settings file itself is never published, and neither is anything `exclude` names. A file
 named `settings.json` deeper in the site is content, and ships.
