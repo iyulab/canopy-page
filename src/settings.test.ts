@@ -379,7 +379,7 @@ describe("parseSettings: where the site is published", () => {
           sections: [{ path: "release-notes", order: "desc", feed: true }, { path: "guide", feed: false }],
         }),
       ).sections,
-    ).toEqual([{ path: "release-notes", order: "desc", feed: true }, { path: "guide" }]);
+    ).toEqual([{ path: "release-notes", order: "desc", feed: true }, { path: "guide", feed: false }]);
   });
 
   it("refuses a section feed without a site URL, and a feed that is not a boolean", () => {
@@ -413,5 +413,69 @@ describe("parseSettings: where the site is published", () => {
 
   it("rejects a non-object alternates", () => {
     rejects(JSON.stringify({ siteUrl: "https://example.test", alternates: ["ko"] }), /settings\.alternates/);
+  });
+});
+
+describe("parseSettings: profiles and regions", () => {
+  it("reads a site profile and regions, and a section's own", () => {
+    expect(
+      parseSettings(
+        JSON.stringify({
+          profile: "manual",
+          regions: { head: "partials/head.html", header: "partials\\header.html" },
+          sections: [
+            { path: "blog", profile: "stream", regions: { afterArticle: "partials/cta.html", header: "" } },
+          ],
+        }),
+      ),
+    ).toEqual({
+      profile: "manual",
+      regions: { head: "partials/head.html", header: "partials/header.html" },
+      sections: [{ path: "blog", profile: "stream", regions: { afterArticle: "partials/cta.html", header: "" } }],
+    });
+  });
+
+  it("keeps a section's feed: false, which turns off a stream's default feed", () => {
+    expect(
+      parseSettings(JSON.stringify({ sections: [{ path: "blog", profile: "stream", feed: false }] })).sections,
+    ).toEqual([{ path: "blog", profile: "stream", feed: false }]);
+  });
+
+  it("lets a manual section in a stream site keep its order", () => {
+    expect(
+      parseSettings(
+        JSON.stringify({ profile: "stream", sections: [{ path: "docs", profile: "manual", order: "desc" }] }),
+      ).sections,
+    ).toEqual([{ path: "docs", profile: "manual", order: "desc" }]);
+  });
+
+  it("reads the reading-time and language strings", () => {
+    expect(
+      parseSettings(JSON.stringify({ strings: { readingTime: "{n}분", language: "언어" } })).strings,
+    ).toEqual({ readingTime: "{n}분", language: "언어" });
+  });
+
+  it.each([
+    [{ profile: "blog" }, /settings\.profile: must be one of manual, stream/],
+    [{ regions: { sidebar: "x.html" } }, /settings\.regions: unknown region "sidebar"/],
+    [{ regions: { footer: "" } }, /settings\.regions\.footer: must not be empty/],
+    [{ regions: { footer: "../x.html" } }, /settings\.regions\.footer: must stay inside the site/],
+    [{ regions: [] }, /settings\.regions: expected an object of region → fragment path/],
+    [
+      { sections: [{ path: "blog", profile: "stream", order: "desc" }] },
+      /settings\.sections\[0\]\.order: a stream section is ordered newest first by its pages' date:/,
+    ],
+    [
+      { sections: [{ path: "blog", profile: "stream", items: ["blog/a"] }] },
+      /settings\.sections\[0\]\.items: a stream section lists its pages newest first by date:/,
+    ],
+    [
+      { profile: "stream", sections: [{ path: "blog", order: "desc" }] },
+      /a stream section \(from settings\.profile\) is ordered/,
+    ],
+    [{ sections: [{ path: "blog", regions: { aside: "x.html" } }] }, /settings\.sections\[0\]\.regions: unknown region "aside"/],
+    [{ strings: { readingTime: "min read" } }, /settings\.strings\.readingTime: needs "\{n\}"/],
+  ])("rejects %j", (settings, message) => {
+    rejects(JSON.stringify(settings), message);
   });
 });

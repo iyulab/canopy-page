@@ -26,12 +26,22 @@
  * if there is one. Two genuinely independent sites are two settings files.
  */
 
+import { PROFILES, type Profile, REGIONS, type RegionName } from "@iyulab/canopy";
+
 /** Why a settings file was rejected, phrased for someone editing it. */
 export class SettingsError extends Error {}
 
 function fail(message: string): never {
   throw new SettingsError(message);
 }
+
+/**
+ * Region → the HTML fragment that fills it, relative to the settings file.
+ * `header` and `footer` replace canopy's own with the fragment's markup; `head`,
+ * `beforeArticle` and `afterArticle` add to the page. canopy's controls go
+ * where the fragment's `<canopy-slot name="…"></canopy-slot>` elements say.
+ */
+export type RegionPaths = Partial<Record<RegionName, string>>;
 
 /** One ordered region of the site: a guide, a release log, a reference section. */
 export interface SettingsSection {
@@ -49,9 +59,19 @@ export interface SettingsSection {
   /**
    * Publish an Atom feed of the section's dated pages at `<path>/feed.xml`, so
    * a reader can follow it. Needs `siteUrl`. A page is in the feed when its
-   * frontmatter names a `date:`.
+   * frontmatter names a `date:`. A stream section has one by default once
+   * `siteUrl` is set; `false` turns it off.
    */
   feed?: boolean;
+  /**
+   * How the section reads. `stream` is for dated pages: newest first by
+   * `date:`, one column, a lead and a byline under each title, and an index
+   * listing them — written for the section when it has none. Defaults to the
+   * site's `profile`.
+   */
+  profile?: Profile;
+  /** Fragments for this section, over the site's `regions` key by key. `""` turns one off here. */
+  regions?: RegionPaths;
 }
 
 /** Pages whose broken references are known and being fixed — see `Settings.knownBroken`. */
@@ -98,6 +118,10 @@ export interface Settings {
   styles?: string[];
   /** Paths to leave unpublished: a directory, an extension (`*.tmp`), or one exact path. */
   exclude?: string[];
+  /** How the site reads by default: `manual` (a tree to look things up in) or `stream` (dated pages, newest first). */
+  profile?: Profile;
+  /** Fragments that fill the site's regions — a host site's own header, footer and stylesheet links. */
+  regions?: RegionPaths;
   /** Ordered regions of the site. Without them, navigation follows the folder tree. */
   sections?: SettingsSection[];
   /**
@@ -175,6 +199,10 @@ export interface Settings {
     backlinks?: string;
     /** Accessible label for the topbar's ancestor-trail nav. */
     breadcrumb?: string;
+    /** Accessible label for the other-language links a `language` slot shows. */
+    language?: string;
+    /** A stream page's reading time, with `{n}` where the minutes go: "{n} min read". */
+    readingTime?: string;
     /**
      * Message shown in place of results when the client search index fails to
      * load. This key rides the same JSON `--strings` flag as every other one
@@ -206,6 +234,8 @@ export const SETTINGS_KEYS = new Set([
   "lang",
   "icon",
   "styles",
+  "profile",
+  "regions",
   "exclude",
   "sections",
   "logo",
@@ -220,7 +250,7 @@ export const SETTINGS_KEYS = new Set([
 
 export const KNOWN_BROKEN_KEYS = new Set(["path", "reason"]);
 
-export const SECTION_KEYS = new Set(["path", "label", "order", "items", "feed"]);
+export const SECTION_KEYS = new Set(["path", "label", "order", "items", "feed", "profile", "regions"]);
 
 export const HOME_KEYS = new Set(["url", "label"]);
 
@@ -233,6 +263,8 @@ export const STRINGS_KEYS = new Set([
   "indexTitle",
   "backlinks",
   "breadcrumb",
+  "language",
+  "readingTime",
   "searchFailed",
 ]);
 
@@ -299,6 +331,28 @@ function asStylesList(value: unknown): string[] {
     fail("settings.styles: expected a path or a non-empty list of paths");
   }
   return value.map((entry, i) => asRelativePath(entry, `settings.styles[${i}]`));
+}
+
+function asProfile(value: unknown, where: string): Profile {
+  if (!(PROFILES as readonly unknown[]).includes(value)) fail(`${where}: must be one of ${PROFILES.join(", ")}`);
+  return value as Profile;
+}
+
+/**
+ * A region map. A section may write `""` to turn off a region the site sets;
+ * the site has nothing above it to turn off, so there an empty path is just
+ * an empty path, and refused like any other.
+ */
+function asRegions(value: unknown, where: string, allowOff: boolean): RegionPaths {
+  const object = asObject(value, where, "expected an object of region → fragment path");
+  const regions: RegionPaths = {};
+  for (const [name, file] of Object.entries(object)) {
+    if (!(REGIONS as readonly string[]).includes(name)) {
+      fail(`${where}: unknown region "${name}" (regions: ${REGIONS.join(", ")})`);
+    }
+    regions[name as RegionName] = allowOff && file === "" ? "" : asRelativePath(file, `${where}.${name}`);
+  }
+  return regions;
 }
 
 /**
@@ -404,11 +458,11 @@ function parseNavItem(value: unknown, where: string): SettingsNavItem {
   };
 }
 
-function parseSection(value: unknown, where: string): SettingsSection {
+function parseSection(value: unknown, where: string, siteProfile: Profile | undefined): SettingsSection {
   const section = asObject(value, where, 'expected an object with a "path"');
   rejectUnknownKeys(section, SECTION_KEYS, where);
 
-  const { path, label, order, items, feed } = section;
+  const { path, label, order, items, feed, profile, regions } = section;
   if (feed !== undefined && typeof feed !== "boolean") fail(`${where}.feed: must be true or false`);
   if (path === undefined) fail(`${where}: needs a "path" naming the directory it covers`);
   if (label !== undefined) asString(label, `${where}.label`);
@@ -422,6 +476,23 @@ function parseSection(value: unknown, where: string): SettingsSection {
     fail(`${where}: "items" already gives the order, so "order" cannot be set too`);
   }
 
+  const ownProfile = profile === undefined ? undefined : asProfile(profile, `${where}.profile`);
+  // A stream is ordered by its pages' own dates. An order written here would
+  // either be ignored or fight that, and neither should happen silently.
+  if ((ownProfile ?? siteProfile) === "stream") {
+    const inherited = ownProfile === undefined ? " (from settings.profile)" : "";
+    if (order !== undefined) {
+      fail(
+        `${where}.order: a stream section${inherited} is ordered newest first by its pages' date:, so it takes no "order"`,
+      );
+    }
+    if (items !== undefined) {
+      fail(
+        `${where}.items: a stream section${inherited} lists its pages newest first by date:, so it takes no "items"`,
+      );
+    }
+  }
+
   return {
     path: asRelativePath(path, `${where}.path`),
     ...(label === undefined ? {} : { label: label as string }),
@@ -429,7 +500,9 @@ function parseSection(value: unknown, where: string): SettingsSection {
     ...(items === undefined
       ? {}
       : { items: (items as unknown[]).map((item, i) => parseNavItem(item, `${where}.items[${i}]`)) }),
-    ...(feed === true ? { feed: true } : {}),
+    ...(feed === undefined ? {} : { feed: feed as boolean }),
+    ...(ownProfile === undefined ? {} : { profile: ownProfile }),
+    ...(regions === undefined ? {} : { regions: asRegions(regions, `${where}.regions`, true) }),
   };
 }
 
@@ -461,6 +534,8 @@ export function parseSettings(json: string): Settings {
     lang,
     icon,
     styles,
+    profile,
+    regions,
     exclude,
     sections,
     logo,
@@ -483,6 +558,7 @@ export function parseSettings(json: string): Settings {
       fail(`settings.lang: "${tag}" is not a language tag like "en" or "ko-KR"`);
     }
   }
+  const siteProfile = profile === undefined ? undefined : asProfile(profile, "settings.profile");
   if (exclude !== undefined && !Array.isArray(exclude)) fail("settings.exclude: must be an array");
   if (sections !== undefined && !Array.isArray(sections)) fail("settings.sections: must be an array");
   if (knownBroken !== undefined && !Array.isArray(knownBroken)) {
@@ -557,6 +633,9 @@ export function parseSettings(json: string): Settings {
         `settings.strings.${key}`,
       );
     }
+    if (parsedStrings.readingTime !== undefined && !parsedStrings.readingTime.includes("{n}")) {
+      fail('settings.strings.readingTime: needs "{n}" where the number of minutes goes, as in "{n} min read"');
+    }
   }
 
   return {
@@ -565,6 +644,8 @@ export function parseSettings(json: string): Settings {
     ...(lang === undefined ? {} : { lang: lang as string }),
     ...(icon === undefined ? {} : { icon: asRelativePath(icon, "settings.icon") }),
     ...(styles === undefined ? {} : { styles: asStylesList(styles) }),
+    ...(siteProfile === undefined ? {} : { profile: siteProfile }),
+    ...(regions === undefined ? {} : { regions: asRegions(regions, "settings.regions", false) }),
     ...(exclude === undefined
       ? {}
       : {
@@ -579,7 +660,7 @@ export function parseSettings(json: string): Settings {
       ? {}
       : {
           sections: (sections as unknown[]).map((section, i) =>
-            parseSection(section, `settings.sections[${i}]`),
+            parseSection(section, `settings.sections[${i}]`, siteProfile),
           ),
         }),
     ...(knownBroken === undefined

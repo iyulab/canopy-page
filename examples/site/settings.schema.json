@@ -42,6 +42,14 @@
       "items": { "type": "string", "minLength": 1 },
       "description": "Paths to leave unpublished, relative to this file: a directory (\"_drafts\" or \"_drafts/**\"), an extension at any depth (\"*.tmp\"), or one exact path."
     },
+    "profile": {
+      "enum": ["manual", "stream"],
+      "description": "How the site reads by default. \"manual\": a tree to look things up in. \"stream\": dated pages, newest first, one column, with an index listing them. Sections can set their own."
+    },
+    "regions": {
+      "$ref": "#/$defs/regions",
+      "description": "HTML fragments, relative to this file, that fill the site's regions. header and footer replace canopy's own with the fragment's markup; head, beforeArticle and afterArticle add to the page. canopy's controls go where <canopy-slot name=\"…\"></canopy-slot> elements say."
+    },
     "sections": {
       "type": "array",
       "items": { "$ref": "#/$defs/section" },
@@ -137,6 +145,16 @@
           "minLength": 1,
           "description": "Accessible label for the topbar's ancestor-trail nav. Default: \"Breadcrumb\""
         },
+        "language": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Accessible label for the other-language links a language slot shows. Defaults to \"Languages\"."
+        },
+        "readingTime": {
+          "type": "string",
+          "pattern": "\\{n\\}",
+          "description": "A stream page's reading time, with {n} where the minutes go. Defaults to \"{n} min read\"."
+        },
         "searchFailed": {
           "type": "string",
           "minLength": 1,
@@ -173,8 +191,38 @@
         },
         "feed": {
           "type": "boolean",
-          "description": "Publish an Atom feed of the section's dated pages (those whose frontmatter names a `date:`) at <path>/feed.xml, linked from the section's pages. Needs siteUrl."
+          "description": "Publish an Atom feed of the section's dated pages (those whose frontmatter names a `date:`) at <path>/feed.xml, linked from the section's pages. Needs siteUrl. A stream section has one by default once siteUrl is set; false turns it off."
+        },
+        "profile": {
+          "enum": ["manual", "stream"],
+          "description": "How this section reads; defaults to the site's profile. A stream section takes no order or items: it is ordered newest first by its pages' date:."
+        },
+        "regions": {
+          "$ref": "#/$defs/sectionRegions",
+          "description": "Fragments for this section, over the site's regions key by key. \"\" turns one off here."
         }
+      }
+    },
+    "regions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "head": { "type": "string", "minLength": 1 },
+        "header": { "type": "string", "minLength": 1 },
+        "beforeArticle": { "type": "string", "minLength": 1 },
+        "afterArticle": { "type": "string", "minLength": 1 },
+        "footer": { "type": "string", "minLength": 1 }
+      }
+    },
+    "sectionRegions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "head": { "type": "string" },
+        "header": { "type": "string" },
+        "beforeArticle": { "type": "string" },
+        "afterArticle": { "type": "string" },
+        "footer": { "type": "string" }
       }
     },
     "navItem": {
