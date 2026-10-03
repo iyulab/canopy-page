@@ -32,12 +32,15 @@ itself, from [`examples/site`](../examples/site) in this repository.
   - [Syntax highlighting](#syntax-highlighting)
   - [Math](#math)
   - [Callouts](#callouts)
+  - [Dated pages](#dated-pages)
+  - [Index pages that list their series](#index-pages-that-list-their-series)
   - [Contents list](#contents-list)
   - [Diagrams](#diagrams-via-rehypeplugins)
   - [Raw HTML](#raw-html)
 - [What ships in every site](#what-ships-in-every-site)
 - [Theming](#theming)
 - [What `check` reports](#what-check-reports)
+  - [Adopting a site that is already broken](#adopting-a-site-that-is-already-broken)
 - [Exit codes and CI](#exit-codes-and-ci)
 - [Deploying the output](#deploying-the-output)
 - [What belongs where](#what-belongs-where-canopy-page-vs-canopy)
@@ -154,6 +157,7 @@ completion and inline validation for every field below as you type.
 | `rehypePlugins` | Installed npm package names of rehype plugins to run on every page — see [Diagrams](#diagrams-via-rehypeplugins) |
 | `strings` | Overrides for the reader chrome's own text — see [`strings` and `lang`](#strings-and-lang-non-english-sites) |
 | `sections` | Ordered regions of the site — see [`sections`](#sections) |
+| `knownBroken` | Pages whose broken links and images are known and being fixed, `[{ "path", "reason" }]` — published anyway, with a warning. See [Adopting a site that is already broken](#adopting-a-site-that-is-already-broken) |
 
 ### `sections`
 
@@ -168,6 +172,7 @@ Two genuinely independent sites are two settings files.
 | `label` | Heading shown for the section. Defaults to the name the section's own index page gives itself (frontmatter `title`, else its opening heading), then the directory name as a last resort |
 | `order` | `"asc"` or `"desc"` for the pages inside, when they are not listed one by one. `"desc"` is what a release log wants — newest first. Cannot be combined with `items`: a list is already an order |
 | `items` | Explicit contents, in display order |
+| `feed` | `true` publishes `<path>/feed.xml`, an Atom feed of the section's dated pages (frontmatter `date:`), newest first, linked from every page in the section (`<link rel="alternate" type="application/atom+xml">`) so browsers and feed readers find it. Entries carry each page's name, `date:`/`updated:`, own `description:` as the summary, and `author:`; the section's index page is not an entry. Needs `siteUrl` (a feed's links are absolute). A section with no dated page publishes no feed. Independent of `order` |
 
 An entry in `items` is a page path (`"guide/install"`), or a group with its own nested `items`:
 
@@ -366,6 +371,35 @@ Five core styles: `note`, `tip`, `warning`, `danger`, `quote`. Common aliases ma
 (`info` → note, `error` → danger, …), and an unrecognized type falls back to `note` rather than
 failing. A nested blockquote (inside another blockquote) stays a plain quote, not a callout.
 
+### Dated pages
+
+A page that names its publication date in frontmatter is treated as an article:
+
+```markdown
+---
+date: 2026-10-03          # a day, or an ISO 8601 date-time
+updated: 2026-10-05       # optional: when it last changed in substance
+author: Jane Doe          # optional: a person's name
+---
+```
+
+The date is shown under the page's heading as a `<time>`, spelled for the site's `lang` (the day
+the author wrote, never shifted by a timezone). `<head>` gains `article:published_time` and, from
+`updated:`, `article:modified_time`, plus a schema.org `Article` record (headline, description,
+dates, language, author; image and URL once `siteUrl` makes them absolute). A page without
+`date:` is unchanged. A value that is not a real day (`2026-02-30`, `28/09/2026`) is not a date —
+`check` says so. `updated:` also dates the page's sitemap entry, by the same rule.
+
+A section with `"feed": true` publishes its dated pages as an Atom feed — see [`sections`](#sections).
+
+### Index pages that list their series
+
+`listing: true` in a page's frontmatter ends that page with a list of the pages it fronts — its
+children in the sidebar (for the site's front page, the rest of the top level), in sidebar order,
+each with its name, its `date:` and its own `description:`. Meant for a folder's `index.md` over
+a series of dated pages, so the index never restates by hand what each entry already says; the
+page's own text stays above the list.
+
 ### Contents list
 
 A page with at least two headings gets an on-page contents list automatically, built from the
@@ -456,6 +490,8 @@ go away.
   it names one, otherwise its source markdown's last git commit date. A page with no source file,
   an untracked source, or (on a shallow clone) any page at all, is written without the element —
   no `<lastmod>` beats a guessed one.
+- **A dated page's date under its title, and article metadata in its `<head>`** — for any page
+  whose frontmatter names a `date:` (see [Dated pages](#dated-pages)). Undated pages are unchanged.
 
 ## Theming
 
@@ -543,15 +579,38 @@ not just that the build succeeded.
   searches and a duplicate summary on every result for one that is public; `siteUrl` is what
   says which of the two this is. A site published somewhere but not meant to be found that
   way can ignore the warning: it never stops a build
+- A `date:` or `updated:` that is not a date (the page would render as undated), and a page in a
+  `feed` section with no `date:`, which the feed would silently leave out (the section's index
+  page is exempt)
+- Broken references on pages `knownBroken` excuses — one warning per entry, naming its reason —
+  and an entry that matches no page or has nothing broken left, so it gets removed
 
 Checking reads the settings and every page's text; it never renders, which is what keeps it fast
 enough to sit at the front of a pipeline at the scale a large product manual reaches.
+
+### Adopting a site that is already broken
+
+A site moving to canopy-page often arrives already publishing broken links and missing images —
+the first `check` is where they surface, and fixing them all can take longer than the rest of the
+site should wait. `knownBroken` names the pages being fixed and why:
+
+```json
+"knownBroken": [
+  { "path": "help/statistics/kpi/**", "reason": "Screenshots being retaken" }
+]
+```
+
+`path` is one page, `"dir/*"` (the pages directly in a directory) or `"dir/**"` (every page
+beneath it); `reason` is required. Broken references on those pages are reported as a warning
+instead of an error, so `build` goes ahead. A broken reference anywhere else is still an error —
+the list excuses what is known, not what happens next. An entry that matches no page, or whose
+pages have nothing broken left, is reported for removal: the baseline only shrinks.
 
 ## Exit codes and CI
 
 | Code | Meaning |
 |---|---|
-| `0` | Nothing broken. Warnings may still have been printed |
+| `0` | Nothing broken — or only what [`knownBroken`](#adopting-a-site-that-is-already-broken) excuses. Warnings may still have been printed |
 | non-zero | At least one error. `build` wrote nothing at all |
 
 A site published with half its images missing is worse than a site that didn't publish, because
