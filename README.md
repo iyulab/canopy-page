@@ -63,6 +63,9 @@ go away.
   `image:`), and `hreflang` links to the language editions `alternates` names. Body links stay
   relative regardless, so the same output still opens from a local folder
 - **Sitemap and `robots.txt`**, once `siteUrl` is set
+- **Dated pages** — a page whose frontmatter names a `date:` shows it under its heading and is
+  described to search engines as an article (`article:*` times, schema.org `Article`); a section
+  with `"feed": true` can be followed as an Atom feed of those pages
 
 See it live at <https://iyulab.github.io/canopy-page>, or read
 [What a reader gets](examples/site/guide/reading.md) for how each one behaves.
@@ -193,6 +196,7 @@ two settings files.
 | `label` | Heading shown for it. Defaults to the directory name |
 | `order` | `asc` or `desc` for the pages inside. `desc` is what a release log wants |
 | `items` | Explicit contents, in display order. Cannot be combined with `order` — a list *is* an order |
+| `feed` | `true` publishes an Atom feed of the section's dated pages at `<path>/feed.xml`, linked from its pages. Needs `siteUrl` |
 
 An entry in `items` is a page path, or a group:
 

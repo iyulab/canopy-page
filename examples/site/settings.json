@@ -24,6 +24,6 @@
       ]
     },
     { "path": "reference", "label": "Reference" },
-    { "path": "release-notes", "order": "desc" }
+    { "path": "release-notes", "order": "desc", "feed": true }
   ]
 }

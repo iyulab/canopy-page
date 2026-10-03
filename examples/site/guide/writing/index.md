@@ -66,6 +66,24 @@ Nothing on this page declares who links to it. The list at the foot is built by 
 link in the site, so a page always knows what refers to it — which is the thing that rots first
 when a sidebar is maintained by hand.
 
+## Dated pages
+
+A page that says when it was published shows that date under its heading, spelled in the site's
+language:
+
+```markdown
+---
+date: 2026-10-03
+updated: 2026-10-05
+---
+```
+
+`updated:` is optional. A dated page also tells search engines it is an article — its publication
+and modification times, and a schema.org `Article` record — and can be followed in a feed when its
+section asks for one (`"feed": true`, see [Settings](../../reference/settings.md#feeds)). Every
+page in [Release notes](../../release-notes/index.md) is dated this way. A page without `date:`
+stays a plain document page, exactly as before.
+
 ## What the checker refuses {#what-check-refuses}
 
 - A link or wikilink pointing at nothing published
@@ -73,7 +91,8 @@ when a sidebar is maintained by hand.
 - A page the settings file places twice
 
 And what it warns about without stopping: pages no section covers, a root-absolute reference that
-would break under a sub-path mount, and an `exclude` pattern that matched nothing.
+would break under a sub-path mount, an `exclude` pattern that matched nothing, a `date:` or
+`updated:` that is not a date, and a page a feed leaves out for having no `date:`.
 
 References inside code fences are left alone. An example of a broken link is documentation, not a
 broken link:

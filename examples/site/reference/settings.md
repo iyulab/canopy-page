@@ -35,7 +35,7 @@ This is the file that produced the site you are reading:
       ]
     },
     { "path": "reference", "label": "Reference" },
-    { "path": "release-notes", "order": "desc" }
+    { "path": "release-notes", "order": "desc", "feed": true }
   ]
 }
 ```
@@ -72,6 +72,7 @@ position it is about, down to `sections[0].items[1]`.
 | `label` | Heading shown for it. Defaults to the name the section's index page gives itself, then the directory name |
 | `order` | `asc` or `desc` for the pages inside |
 | `items` | Explicit contents, in display order. Cannot be combined with `order` — a list *is* an order |
+| `feed` | `true` publishes an Atom feed of the section's dated pages. Needs `siteUrl` |
 
 Note what the demo's settings do **not** contain: a label for `guide` or for `release-notes`.
 Those sections have index pages, and a page that opens with a heading has already said what it is
@@ -79,9 +80,9 @@ called. `Reference` is labelled because this section has no index page of its ow
 
 ### Ordering
 
-`release-notes` uses `"order": "desc"`, which is why August 8 comes before August 7. Ordering
-derived this way follows filenames, not headings — filenames are what you see in the folder you
-are ordering, and a log of dated files is exactly the case it serves.
+`release-notes` uses `"order": "desc"`, which is why the August 8 notes come before the August 7
+ones. Ordering derived this way follows filenames, not headings — filenames are what you see in
+the folder you are ordering, and a log of dated files is exactly the case it serves.
 
 `guide` uses `items` instead, which is a list and therefore already an order — the two cannot be
 combined. Its second entry is a group carrying its own page: `guide/writing/index` is the page the
@@ -91,6 +92,21 @@ page, not a directory, so an index page is written out.
 Globs are the other way to fill a section: `dir/*` is the pages directly in a directory, `dir/**`
 is every page beneath it. A glob means the pages there **that are not placed already**, which is
 what makes `["guide/install", "guide/*"]` read the way it looks — this page first, then the rest.
+
+### Feeds
+
+`release-notes` also sets `"feed": true`, so this site publishes `release-notes/feed.xml` — an
+Atom feed a reader can subscribe to — and every page in that section links it for browsers and
+feed readers to find.
+
+An entry is a page beneath the section whose frontmatter names a `date:` (see
+[Dated pages](../guide/writing/index.md#dated-pages)), newest first: its name, its `date:` and
+`updated:`, its own `description:` as the summary, and its `author:` if it has one. The section's
+index page describes the series rather than being an entry, so it is left out. A feed's links are
+absolute, which is why `feed` needs `siteUrl`; a section with no dated page publishes no feed.
+
+`check` warns about a page in a feed section that has no `date:` — it is silently missing from the
+feed otherwise — and about any `date:` or `updated:` that is not a date.
 
 ### What `exclude` takes
 
