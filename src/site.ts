@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { type NavTranslation, translateNav } from "./nav.js";
 import { parseSettings, SettingsError, type Settings } from "./settings.js";
@@ -26,6 +26,8 @@ export interface LoadedSite {
   nav: NavTranslation;
   /** Exclusion patterns that left the site exactly as they found it. */
   unusedExclusions: string[];
+  /** `styles` entries with no file behind them, as the settings file writes them. */
+  missingStyles: string[];
   /**
    * Each page's markdown, read once when the site is loaded. Every check reads
    * a page from here rather than from disk, so all of them judge the same text
@@ -80,6 +82,17 @@ export async function loadSite(dir: string): Promise<LoadedSite> {
   // canopy-page adds (the settings file, the styles files) name configuration
   // that may legitimately be absent.
   const authored = new Set(settings.exclude ?? []);
+  // Read with everything else at load time, so check and build judge the same
+  // snapshot (see `sources` below) — and a missing stylesheet is found by
+  // `check`, not first by the build that needed it.
+  const missingStyles: string[] = [];
+  for (const style of settings.styles ?? []) {
+    const found = await stat(path.join(root, style)).then(
+      (entry) => entry.isFile(),
+      () => false,
+    );
+    if (!found) missingStyles.push(style);
+  }
   const sources = new Map(
     await Promise.all(
       index.pages.map(async (page) => [page, await readFile(path.join(root, page), "utf8")] as const),
@@ -91,6 +104,7 @@ export async function loadSite(dir: string): Promise<LoadedSite> {
     index,
     nav: translateNav(settings, index),
     unusedExclusions: listing.unusedExcludes.filter((pattern) => authored.has(pattern)),
+    missingStyles,
     sources,
   };
 }
@@ -104,12 +118,18 @@ export async function loadSite(dir: string): Promise<LoadedSite> {
  * by being told.
  */
 export function settingsFindings(site: LoadedSite): Finding[] {
-  return site.unusedExclusions.map((pattern) => ({
-    level: "warning" as const,
-    message:
-      `settings: exclude "${pattern}" matched nothing, so everything it names is published. ` +
-      "Patterns are relative to the settings file",
-  }));
+  return [
+    ...site.missingStyles.map((style) => ({
+      level: "error" as const,
+      message: `settings: styles "${style}" names no file. Paths are relative to the settings file`,
+    })),
+    ...site.unusedExclusions.map((pattern) => ({
+      level: "warning" as const,
+      message:
+        `settings: exclude "${pattern}" matched nothing, so everything it names is published. ` +
+        "Patterns are relative to the settings file",
+    })),
+  ];
 }
 
 /**

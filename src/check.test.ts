@@ -9,7 +9,7 @@ import {
   filenameEncodingFindings,
   referenceFindings,
 } from "./check.js";
-import { loadSite } from "./site.js";
+import { loadSite, settingsFindings } from "./site.js";
 
 /**
  * Checking never builds, so these are milliseconds: a folder, a read per page,
@@ -530,6 +530,23 @@ describe("dateFindings", { timeout: LOADS_A_SITE }, () => {
     });
     expect(messages).toEqual([
       '1 page(s) in a feed section have no "date:", so the feed leaves them out:\n  log/notes.md',
+    ]);
+  });
+});
+
+describe("settingsFindings — styles", { timeout: LOADS_A_SITE }, () => {
+  it("reports a styles path with no file behind it, without building", async () => {
+    const root = await site({
+      "settings.json": JSON.stringify({ styles: ["brand.css", "theme/missing.css"] }),
+      "brand.css": ":root {}",
+      "index.md": "# Home\n",
+    });
+    const found = settingsFindings(await loadSite(root));
+    expect(found).toEqual([
+      {
+        level: "error",
+        message: 'settings: styles "theme/missing.css" names no file. Paths are relative to the settings file',
+      },
     ]);
   });
 });

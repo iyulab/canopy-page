@@ -73,6 +73,7 @@ describe("canopyArgs", () => {
       index,
       nav: translateNav(settings, index),
       unusedExclusions: [],
+      missingStyles: [],
       sources: new Map(),
     };
   }
@@ -348,6 +349,7 @@ describe("canopyArgs: where the site is published", () => {
       index,
       nav: translateNav(settings, index),
       unusedExclusions: [],
+      missingStyles: [],
       sources: new Map(),
     };
   }
