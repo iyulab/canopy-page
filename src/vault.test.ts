@@ -36,11 +36,12 @@ describe("indexSite", () => {
 });
 
 describe("publishingExcludes", () => {
-  it("always leaves the settings file out, then the tokens file, then the author's own", () => {
+  it("always leaves the settings file out, then the styles files, then the author's own", () => {
     expect(publishingExcludes({})).toEqual(["settings.json"]);
-    expect(publishingExcludes({ tokens: "brand.css", exclude: ["drafts"] })).toEqual([
+    expect(publishingExcludes({ styles: ["brand.css", "theme/layout.css"], exclude: ["drafts"] })).toEqual([
       "settings.json",
       "brand.css",
+      "theme/layout.css",
       "drafts",
     ]);
   });

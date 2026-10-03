@@ -77,7 +77,7 @@ export async function loadSite(dir: string): Promise<LoadedSite> {
   const listing = await listSite(root, publishingExcludes(settings));
   const index = indexSite(listing);
   // Only the author's own patterns are theirs to be told about: the ones
-  // canopy-page adds (the settings file, the tokens file) name configuration
+  // canopy-page adds (the settings file, the styles files) name configuration
   // that may legitimately be absent.
   const authored = new Set(settings.exclude ?? []);
   const sources = new Map(

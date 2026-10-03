@@ -30,10 +30,12 @@
       "minLength": 1,
       "description": "Favicon, relative to this file. Must be a published file."
     },
-    "tokens": {
-      "type": "string",
-      "minLength": 1,
-      "description": "CSS of design-token overrides, relative to this file. Appended after canopy's own tokens. Configuration, not content — excluded from the published site automatically."
+    "styles": {
+      "oneOf": [
+        { "type": "string", "minLength": 1 },
+        { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }
+      ],
+      "description": "Stylesheets, relative to this file, linked after canopy's and canopy-page's own CSS in the order given. Those sit in cascade layers, so these win at any specificity. Configuration, not content — excluded from the published site automatically."
     },
     "exclude": {
       "type": "array",

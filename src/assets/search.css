@@ -10,9 +10,13 @@
 
 /* Reserve room so the shortcut badge below doesn't sit on top of typed
    text — canopy's own input padding only accounts for its search icon on
-   the left. */
-.canopy-search input[type="search"] {
-  padding-right: 3rem;
+   the left. Only where the badge shows: on narrow viewports canopy
+   collapses the input to an icon-sized box (see the badge's own media
+   query below), and a right padding there would widen it. */
+@media not all and (max-width: 40rem) {
+  .canopy-search input[type="search"] {
+    padding-right: 3rem;
+  }
 }
 
 /* Advertises Ctrl+K/Cmd+K (search.js). An inert glyph, not a button — same

@@ -88,13 +88,13 @@ export interface Settings {
   /** Favicon, relative to the settings file. Must be a published file. */
   icon?: string;
   /**
-   * CSS of design-token overrides, relative to the settings file.
-   *
-   * Appended after canopy's own tokens, so a file naming one value keeps the
-   * rest. It is configuration rather than content: it is read at build time and
-   * left off the published site.
+   * Stylesheets, relative to the settings file, linked after canopy's and
+   * canopy-page's own CSS in the order given. Both of those sit in cascade
+   * layers, so a rule here wins over them at any specificity — a token
+   * restated or a region restyled alike. Configuration rather than content:
+   * read at build time and left off the published site.
    */
-  tokens?: string;
+  styles?: string[];
   /** Paths to leave unpublished: a directory, an extension (`*.tmp`), or one exact path. */
   exclude?: string[];
   /** Ordered regions of the site. Without them, navigation follows the folder tree. */
@@ -204,7 +204,7 @@ export const SETTINGS_KEYS = new Set([
   "description",
   "lang",
   "icon",
-  "tokens",
+  "styles",
   "exclude",
   "sections",
   "logo",
@@ -289,6 +289,15 @@ function asRelativePath(value: unknown, where: string): string {
     fail(`${where}: must name a path inside the site`);
   }
   return normalized;
+}
+
+/** `styles` takes one path or a list of them; either way it becomes a list, in link order. */
+function asStylesList(value: unknown): string[] {
+  if (typeof value === "string") return [asRelativePath(value, "settings.styles")];
+  if (!Array.isArray(value) || value.length === 0) {
+    fail("settings.styles: expected a path or a non-empty list of paths");
+  }
+  return value.map((entry, i) => asRelativePath(entry, `settings.styles[${i}]`));
 }
 
 /**
@@ -438,6 +447,11 @@ export function parseSettings(json: string): Settings {
     fail(`not valid JSON: ${error instanceof Error ? error.message : String(error)}`);
   }
   const value = asObject(raw, "settings", "expected a JSON object");
+  // The one key renamed rather than removed: say where it went, since
+  // "unknown key" would read as the setting having been dropped.
+  if ("tokens" in value) {
+    fail('settings.tokens: renamed to "styles" — the value carries over unchanged ("styles": "brand.css")');
+  }
   rejectUnknownKeys(value, SETTINGS_KEYS, "settings");
 
   const {
@@ -445,7 +459,7 @@ export function parseSettings(json: string): Settings {
     description,
     lang,
     icon,
-    tokens,
+    styles,
     exclude,
     sections,
     logo,
@@ -549,7 +563,7 @@ export function parseSettings(json: string): Settings {
     ...(description === undefined ? {} : { description: description as string }),
     ...(lang === undefined ? {} : { lang: lang as string }),
     ...(icon === undefined ? {} : { icon: asRelativePath(icon, "settings.icon") }),
-    ...(tokens === undefined ? {} : { tokens: asRelativePath(tokens, "settings.tokens") }),
+    ...(styles === undefined ? {} : { styles: asStylesList(styles) }),
     ...(exclude === undefined
       ? {}
       : {

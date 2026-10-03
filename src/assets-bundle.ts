@@ -5,9 +5,9 @@ import { fileURLToPath } from "node:url";
 /**
  * Assembling canopy-page's own client-side surface for a build.
  *
- * canopy carries at most one `--script` and one `--tokens-css`, so every UI
- * feature canopy-page ships (search, the outline scrollspy, and whatever
- * follows) has to land in those two files rather than one each. Reading the
+ * canopy carries one `--script`, so every UI feature canopy-page ships
+ * (search, the outline scrollspy, and whatever follows) lands in one script
+ * and one stylesheet rather than a file each. Reading the
  * pieces here — rather than at each call site — keeps the list of what
  * ships in one place: adding a feature means adding one line below, not
  * hunting for every place a script or stylesheet gets assembled.
@@ -56,16 +56,16 @@ export async function assembleScript(searchFailed?: string): Promise<string> {
 }
 
 /**
- * CSS canopy-page contributes on top of a site's own tokens, carried via
- * canopy's `--tokens-css` — the same channel a site's own `settings.tokens`
- * already uses, so no new canopy surface is needed for this either.
+ * The stylesheet every canopy-page site carries via canopy's `--stylesheet`,
+ * first of the caller stylesheets — so its layer, `canopy-page`, is declared
+ * after canopy's own and outranks it, while a site's own `styles` (linked
+ * after this, unlayered) outrank both.
  */
-export async function assembleTokensCss(userTokensCss: string | undefined): Promise<string> {
+export async function assembleStylesheet(): Promise<string> {
   const [search, scrollspy, imageLightbox] = await Promise.all([
     readAsset("search.css"),
     readAsset("scrollspy.css"),
     readAsset("image-lightbox.css"),
   ]);
-  const own = `${search}\n${scrollspy}\n${imageLightbox}`;
-  return userTokensCss === undefined ? own : `${userTokensCss}\n${own}`;
+  return `@layer canopy-page {\n${search}\n${scrollspy}\n${imageLightbox}\n}\n`;
 }

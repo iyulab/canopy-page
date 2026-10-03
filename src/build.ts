@@ -1,7 +1,7 @@
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { assembleScript, assembleTokensCss } from "./assets-bundle.js";
+import { assembleScript, assembleStylesheet } from "./assets-bundle.js";
 import { runCanopy } from "./canopy.js";
 import { siteFindings } from "./check.js";
 import { resolveLastmods } from "./lastmod.js";
@@ -28,8 +28,8 @@ export interface BuildOptions {
 
 /** Assembled search/UI assets, written to real files so canopy's CLI can read them. */
 export interface SearchAssets {
-  /** Absolute path to the assembled tokens CSS (a site's own tokens, plus canopy-page's). */
-  tokensCssPath: string;
+  /** Absolute path to canopy-page's own layered stylesheet (search, scrollspy, lightbox). */
+  stylesheetPath: string;
   /** Absolute path to the assembled client script (search, scrollspy, ...). */
   scriptPath: string;
 }
@@ -65,19 +65,19 @@ export function canopyArgs(
     ]),
     ...(settings.lang === undefined ? [] : ["--lang", settings.lang]),
     ...(settings.icon === undefined ? [] : ["--site-icon", settings.icon]),
-    // Always present: canopy-page's own CSS (search, scrollspy) rides here
-    // whether or not the site names a tokens file of its own (assembleTokensCss
-    // folds one into the other before this ever runs) — no settings field for
-    // this, matching the minimal-configuration principle Wave 2 already set.
-    "--tokens-css",
-    searchAssets.tokensCssPath,
+    // canopy-page's own CSS first, always — no settings field for it, matching
+    // the minimal-configuration principle — then the site's own styles, so
+    // theirs are linked last and win (see assembleStylesheet).
+    "--stylesheet",
+    searchAssets.stylesheetPath,
+    ...(settings.styles ?? []).flatMap((style) => ["--stylesheet", path.join(site.root, style)]),
     ...(settings.logo === undefined ? [] : ["--site-logo", settings.logo]),
     ...(settings.home === undefined
       ? []
       : ["--home-url", settings.home.url, "--home-label", settings.home.label]),
     ...(settings.strings === undefined ? [] : ["--strings", JSON.stringify(settings.strings)]),
     ...(navPath === undefined ? [] : ["--nav", navPath]),
-    // Always on, same reasoning as --tokens-css above: a search index and the
+    // Always on, same reasoning as canopy-page's stylesheet above: a search index and the
     // script that searches it are canopy-page's own contribution, not a site
     // author's choice to make.
     "--search-index",
@@ -115,18 +115,14 @@ export async function buildSite({ dir, out }: BuildOptions): Promise<number> {
       await writeFile(navPath, JSON.stringify(site.nav.spec, null, 2), "utf8");
     }
 
-    const userTokensCss =
-      site.settings.tokens === undefined
-        ? undefined
-        : await readFile(path.join(site.root, site.settings.tokens), "utf8");
-    const tokensCssPath = path.join(workDir, "tokens.css");
-    await writeFile(tokensCssPath, await assembleTokensCss(userTokensCss), "utf8");
+    const stylesheetPath = path.join(workDir, "canopy-page.css");
+    await writeFile(stylesheetPath, await assembleStylesheet(), "utf8");
 
     const scriptPath = path.join(workDir, "script.js");
     await writeFile(scriptPath, await assembleScript(site.settings.strings?.searchFailed), "utf8");
 
     const code = await runCanopy(
-      canopyArgs(site, path.resolve(out), navPath, { tokensCssPath, scriptPath }),
+      canopyArgs(site, path.resolve(out), navPath, { stylesheetPath, scriptPath }),
     );
     // Only after canopy succeeded, and only over what it actually wrote: a
     // sitemap listing pages a failed build never produced would be a lie a

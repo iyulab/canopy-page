@@ -54,14 +54,26 @@ describe("parseSettings", () => {
     rejects(JSON.stringify({ icon: "/absolute.png" }), /must be relative/);
   });
 
-  it("reads a tokens path", () => {
-    expect(parseSettings(JSON.stringify({ tokens: "brand.css" }))).toEqual({
-      tokens: "brand.css",
+  it("reads one styles path as a one-entry list", () => {
+    expect(parseSettings(JSON.stringify({ styles: "brand.css" }))).toEqual({ styles: ["brand.css"] });
+  });
+
+  it("reads a list of styles paths in link order, normalized", () => {
+    expect(parseSettings(JSON.stringify({ styles: ["brand.css", "theme\\layout.css"] }))).toEqual({
+      styles: ["brand.css", "theme/layout.css"],
     });
   });
 
-  it("refuses a tokens path that leaves the site", () => {
-    rejects(JSON.stringify({ tokens: "../shared/brand.css" }), /settings\.tokens/);
+  it("refuses a styles path that leaves the site, naming its position", () => {
+    rejects(JSON.stringify({ styles: ["brand.css", "../shared/x.css"] }), /settings\.styles\[1\]/);
+  });
+
+  it("refuses an empty styles list", () => {
+    rejects(JSON.stringify({ styles: [] }), /settings\.styles/);
+  });
+
+  it("points a tokens setting at its new name rather than calling it unknown", () => {
+    rejects(JSON.stringify({ tokens: "brand.css" }), /settings\.tokens: renamed to "styles"/);
   });
 
   it("normalizes a path written with backslashes or a trailing slash", () => {

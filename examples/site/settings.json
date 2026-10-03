@@ -5,7 +5,7 @@
   "lang": "en",
   "icon": "assets/logo.svg",
   "logo": "assets/logo.svg",
-  "tokens": "brand.css",
+  "styles": "brand.css",
   "home": { "url": "https://github.com/iyulab/canopy-page", "label": "canopy-page on GitHub" },
   "siteUrl": "https://iyulab.github.io/canopy-page",
   "exclude": ["_drafts"],

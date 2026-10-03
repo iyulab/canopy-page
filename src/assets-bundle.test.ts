@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assembleScript, assembleTokensCss } from "./assets-bundle.js";
+import { assembleScript, assembleStylesheet } from "./assets-bundle.js";
 
 describe("assembleScript", () => {
   it("concatenates every UI script canopy-page ships, in one file", async () => {
@@ -31,16 +31,33 @@ describe("assembleScript", () => {
   });
 });
 
-describe("assembleTokensCss", () => {
-  it("carries canopy-page's own CSS even with no user tokens file", async () => {
-    const css = await assembleTokensCss(undefined);
+describe("assembleStylesheet", () => {
+  it("carries every piece of canopy-page's own CSS", async () => {
+    const css = await assembleStylesheet();
     expect(css).toContain(".canopy-search");
     expect(css).toContain(".canopy-outline");
     expect(css).toContain(".canopy-lightbox-overlay");
   });
 
-  it("appends its own CSS after a user's tokens, rather than replacing it", async () => {
-    const css = await assembleTokensCss(":root { --accent: #ff0000; }");
-    expect(css.indexOf("--accent: #ff0000")).toBeLessThan(css.indexOf(".canopy-search"));
+  // Above canopy's layer (it is linked later, so its layer is declared later),
+  // below a site's own unlayered styles — which is what lets a site restyle
+  // search or the lightbox the same way it restyles anything else.
+  it("sits in its own cascade layer", async () => {
+    const css = await assembleStylesheet();
+    expect(css.startsWith("@layer canopy-page {\n")).toBe(true);
+    expect(css.trimEnd().endsWith("}")).toBe(true);
+    expect(css).not.toMatch(/@import|@charset/);
+  });
+
+  // Now that canopy-page's layer outranks canopy's, this reservation actually
+  // applies — so it must not reach the narrow layout, where canopy collapses
+  // the input to an icon-sized box with no badge to make room for.
+  it("reserves room for the shortcut badge only where the badge is shown", async () => {
+    const css = await assembleStylesheet();
+    const reservation = css.indexOf("padding-right: 3rem");
+    const wideOnly = css.lastIndexOf("@media not all and (max-width: 40rem)", reservation);
+    expect(reservation).toBeGreaterThan(-1);
+    expect(wideOnly).toBeGreaterThan(-1);
+    expect(css.slice(wideOnly, reservation)).not.toContain("}\n}");
   });
 });
