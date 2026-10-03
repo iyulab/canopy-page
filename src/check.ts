@@ -1,5 +1,3 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import {
   decodeLinkPath,
   frontmatterDate,
@@ -159,11 +157,11 @@ export function filenameEncodingFindings(site: LoadedSite): Finding[] {
 }
 
 /** Check every page's references, returning one finding per broken reference. */
-export async function referenceFindings(site: LoadedSite): Promise<Finding[]> {
+export function referenceFindings(site: LoadedSite): Finding[] {
   const findings: Finding[] = [];
 
   for (const page of site.index.pages) {
-    const markdown = await readFile(path.join(site.root, page), "utf8");
+    const markdown = site.sources.get(page) ?? "";
     for (const reference of extractReferences(markdown)) {
       const where = `${page}:${reference.line}`;
 
@@ -250,14 +248,14 @@ export async function referenceFindings(site: LoadedSite): Promise<Finding[]> {
  * Everything worth saying about a site, in the order a reader wants it: what
  * the settings got wrong first, then what the pages point at.
  */
-export async function siteFindings(site: LoadedSite): Promise<Finding[]> {
+export function siteFindings(site: LoadedSite): Finding[] {
   return [
     ...settingsFindings(site),
     ...navFindings(site.nav),
     ...filenameEncodingFindings(site),
-    ...knownBrokenFindings(site, await referenceFindings(site)),
-    ...(await descriptionFindings(site)),
-    ...(await dateFindings(site)),
+    ...knownBrokenFindings(site, referenceFindings(site)),
+    ...descriptionFindings(site),
+    ...dateFindings(site),
   ];
 }
 
@@ -330,11 +328,11 @@ export function knownBrokenFindings(site: LoadedSite, findings: Finding[]): Find
  * Frontmatter is read with canopy's own parser, so what counts as a
  * description here is exactly what canopy will put in the page.
  */
-export async function descriptionFindings(site: LoadedSite): Promise<Finding[]> {
+export function descriptionFindings(site: LoadedSite): Finding[] {
   if (site.settings.siteUrl === undefined) return [];
   const missing: string[] = [];
   for (const page of site.index.pages) {
-    const { data } = parseFrontmatter(await readFile(path.join(site.root, page), "utf8"));
+    const { data } = parseFrontmatter(site.sources.get(page) ?? "");
     const description = data.description;
     if (typeof description !== "string" || description.trim() === "") missing.push(page);
   }
@@ -365,14 +363,14 @@ export async function descriptionFindings(site: LoadedSite): Promise<Finding[]> 
  *
  * Warnings, not errors: an undated page is still a sound page.
  */
-export async function dateFindings(site: LoadedSite): Promise<Finding[]> {
+export function dateFindings(site: LoadedSite): Finding[] {
   const feedDirs = (site.settings.sections ?? [])
     .filter((section) => section.feed === true)
     .map((section) => section.path.toLowerCase());
   const malformed: string[] = [];
   const undatedInFeed: string[] = [];
   for (const page of site.index.pages) {
-    const { data } = parseFrontmatter(await readFile(path.join(site.root, page), "utf8"));
+    const { data } = parseFrontmatter(site.sources.get(page) ?? "");
     for (const key of ["date", "updated"] as const) {
       if (data[key] !== undefined && data[key] !== null && frontmatterDate(data[key]) === undefined) {
         malformed.push(`  ${page} (${key}: ${String(data[key])})`);
@@ -407,7 +405,7 @@ export async function dateFindings(site: LoadedSite): Promise<Finding[]> {
 /** Check the site in `dir`, returning the exit code to leave with. */
 export async function checkSite(dir: string): Promise<number> {
   const site = await loadSite(dir);
-  const findings = await siteFindings(site);
+  const findings = siteFindings(site);
   const failed = reportFindings(findings);
   if (!failed) {
     // "nothing broken" after a screen of warnings reads as a contradiction, so

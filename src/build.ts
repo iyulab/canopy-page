@@ -99,7 +99,7 @@ export async function buildSite({ dir, out }: BuildOptions): Promise<number> {
   const site = await loadSite(dir);
   // The same checks `check` runs, on the same view of the site, so a build can
   // never publish something a passing check said was sound.
-  if (reportFindings(await siteFindings(site))) return 1;
+  if (reportFindings(siteFindings(site))) return 1;
 
   // The spec is derived from settings and means nothing on its own, so it lives
   // in a temporary file rather than in the site or its output: writing it beside

@@ -31,7 +31,7 @@ async function site(files: Record<string, string>): Promise<string> {
 
 async function findings(files: Record<string, string>): Promise<string[]> {
   const root = await site({ "settings.json": "{}", ...files });
-  return (await referenceFindings(await loadSite(root))).map((finding) => finding.message);
+  return referenceFindings(await loadSite(root)).map((finding) => finding.message);
 }
 
 afterEach(async () => {
@@ -141,7 +141,7 @@ describe("referenceFindings", { timeout: LOADS_A_SITE }, () => {
       "index.md": "[install](/guide/install)",
       "guide/install.md": "# Install",
     });
-    const [finding] = await referenceFindings(await loadSite(root));
+    const [finding] = referenceFindings(await loadSite(root));
 
     expect(finding?.level).toBe("warning");
     expect(finding?.message).toContain('"/guide/install"');
@@ -157,7 +157,7 @@ describe("referenceFindings", { timeout: LOADS_A_SITE }, () => {
       "index.md": "[install](/guide/install)",
       "guide/install.md": "# Install",
     });
-    await expect(referenceFindings(await loadSite(root))).resolves.toEqual([]);
+    expect(referenceFindings(await loadSite(root))).toEqual([]);
   });
 
   it("says nothing about a resolvable root-absolute path when siteUrl mounts at the domain root", async () => {
@@ -166,7 +166,7 @@ describe("referenceFindings", { timeout: LOADS_A_SITE }, () => {
       "index.md": "[install](/guide/install)",
       "guide/install.md": "# Install",
     });
-    expect(await referenceFindings(await loadSite(root))).toEqual([]);
+    expect(referenceFindings(await loadSite(root))).toEqual([]);
   });
 
   it("warns about a root-absolute path nothing in the site answers", async () => {
@@ -175,7 +175,7 @@ describe("referenceFindings", { timeout: LOADS_A_SITE }, () => {
       "index.md": "![shot](/assets/orders.png)",
       "public/assets/orders.png": "binary",
     });
-    const [finding] = await referenceFindings(await loadSite(root));
+    const [finding] = referenceFindings(await loadSite(root));
 
     // A warning, not an error: mounting the site under a prefix would make it
     // right, and a checker has no standing to call that a mistake.
@@ -213,7 +213,7 @@ describe("referenceFindings", { timeout: LOADS_A_SITE }, () => {
       "index.md": "[draft](_drafts/wip.md)",
       "_drafts/wip.md": "# Work in progress",
     });
-    const messages = (await referenceFindings(await loadSite(root))).map((f) => f.message);
+    const messages = referenceFindings(await loadSite(root)).map((f) => f.message);
     expect(messages[0]).toContain("points at nothing published");
   });
 });
@@ -370,7 +370,7 @@ describe("a target that names a directory", { timeout: LOADS_A_SITE }, () => {
       "index.md": "[notes](/update-note/)",
       "update-note/2026-04.md": "# April",
     });
-    const [finding] = await referenceFindings(await loadSite(root));
+    const [finding] = referenceFindings(await loadSite(root));
     expect(finding?.level).toBe("warning");
     expect(finding?.message).toContain("update-note/");
   });
@@ -379,7 +379,7 @@ describe("a target that names a directory", { timeout: LOADS_A_SITE }, () => {
 describe("descriptionFindings", { timeout: LOADS_A_SITE }, () => {
   async function descriptions(files: Record<string, string>): Promise<string[]> {
     const root = await site(files);
-    return (await descriptionFindings(await loadSite(root))).map((finding) => finding.message);
+    return descriptionFindings(await loadSite(root)).map((finding) => finding.message);
   }
 
   it("says nothing without a site URL — a site nobody searches has nothing to duplicate", async () => {
@@ -492,7 +492,7 @@ describe("knownBroken", { timeout: LOADS_A_SITE }, () => {
 describe("dateFindings", { timeout: LOADS_A_SITE }, () => {
   async function dates(files: Record<string, string>): Promise<string[]> {
     const root = await site(files);
-    return (await dateFindings(await loadSite(root))).map((finding) => finding.message);
+    return dateFindings(await loadSite(root)).map((finding) => finding.message);
   }
 
   it("says nothing about a site whose dates are all dates", async () => {

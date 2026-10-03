@@ -26,6 +26,13 @@ export interface LoadedSite {
   nav: NavTranslation;
   /** Exclusion patterns that left the site exactly as they found it. */
   unusedExclusions: string[];
+  /**
+   * Each page's markdown, read once when the site is loaded. Every check reads
+   * a page from here rather than from disk, so all of them judge the same text
+   * — a file saved halfway through a check (in `watch`, say) cannot have one
+   * check see the old version and another the new.
+   */
+  sources: ReadonlyMap<string, string>;
 }
 
 /** Something worth telling the author about their site. */
@@ -73,12 +80,18 @@ export async function loadSite(dir: string): Promise<LoadedSite> {
   // canopy-page adds (the settings file, the tokens file) name configuration
   // that may legitimately be absent.
   const authored = new Set(settings.exclude ?? []);
+  const sources = new Map(
+    await Promise.all(
+      index.pages.map(async (page) => [page, await readFile(path.join(root, page), "utf8")] as const),
+    ),
+  );
   return {
     root,
     settings,
     index,
     nav: translateNav(settings, index),
     unusedExclusions: listing.unusedExcludes.filter((pattern) => authored.has(pattern)),
+    sources,
   };
 }
 
