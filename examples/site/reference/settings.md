@@ -129,10 +129,10 @@ and not reachable.
 
 `styles` names CSS files linked *after* canopy's own, outside its cascade layer, so a file naming
 one custom property — `--accent`, say — keeps every other default, and a rule restyling a region
-wins without a specificity contest. The file is read at build time and its rules travel as a
-stylesheet of the build's own; the file itself is left out of the published site — it configures
-the build, it is not a page of it. This site's own `brand.css` is the proof: its colours are on
-every page, and the built output has no `brand.css`.
+wins without a specificity contest. Like `icon` and `logo`, the file is published where it stands
+and every page links it there, so a relative `url()` inside it — a font beside it, say — resolves
+exactly as written. This site's own `brand.css` is one: open the built output and it is at the
+site's root, linked from every page.
 
 `brand.css` is three blocks rather than one line for a reason worth stating: a bare `:root`
 outside canopy's cascade layer wins in *both* colour schemes, which is exactly why this file

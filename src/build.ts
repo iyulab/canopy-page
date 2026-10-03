@@ -65,12 +65,13 @@ export function canopyArgs(
     ]),
     ...(settings.lang === undefined ? [] : ["--lang", settings.lang]),
     ...(settings.icon === undefined ? [] : ["--site-icon", settings.icon]),
-    // canopy-page's own CSS first, always — no settings field for it, matching
-    // the minimal-configuration principle — then the site's own styles, so
-    // theirs are linked last and win (see assembleStylesheet).
+    // canopy-page's own CSS, always — no settings field for it, matching the
+    // minimal-configuration principle — carried in from outside the site.
     "--stylesheet",
     searchAssets.stylesheetPath,
-    ...(settings.styles ?? []).flatMap((style) => ["--stylesheet", path.join(site.root, style)]),
+    // The site's own styles are published files, linked where they stand (so a
+    // relative url() inside one resolves as written) and after everything else.
+    ...(settings.styles ?? []).flatMap((style) => ["--site-stylesheet", style]),
     ...(settings.logo === undefined ? [] : ["--site-logo", settings.logo]),
     ...(settings.home === undefined
       ? []

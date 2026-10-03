@@ -35,7 +35,7 @@
         { "type": "string", "minLength": 1 },
         { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }
       ],
-      "description": "Stylesheets, relative to this file, linked after canopy's and canopy-page's own CSS in the order given. Those sit in cascade layers, so these win at any specificity. Configuration, not content — excluded from the published site automatically."
+      "description": "Stylesheets, relative to this file, linked after canopy's and canopy-page's own CSS in the order given. Those sit in cascade layers, so these win at any specificity. Each must be a published file, linked where it stands, so a relative url() inside it resolves as written."
     },
     "exclude": {
       "type": "array",

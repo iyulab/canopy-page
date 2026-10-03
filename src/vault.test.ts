@@ -36,14 +36,9 @@ describe("indexSite", () => {
 });
 
 describe("publishingExcludes", () => {
-  it("always leaves the settings file out, then the styles files, then the author's own", () => {
+  it("always leaves the settings file out, then the author's own", () => {
     expect(publishingExcludes({})).toEqual(["settings.json"]);
-    expect(publishingExcludes({ styles: ["brand.css", "theme/layout.css"], exclude: ["drafts"] })).toEqual([
-      "settings.json",
-      "brand.css",
-      "theme/layout.css",
-      "drafts",
-    ]);
+    expect(publishingExcludes({ exclude: ["drafts"] })).toEqual(["settings.json", "drafts"]);
   });
 });
 

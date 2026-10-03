@@ -14,6 +14,10 @@ to it — its fields, its validation, and what the checks reject — are what th
 - **Breaking: `tokens` is renamed `styles`, and takes a list.** `"styles": "brand.css"` or
   `"styles": ["brand.css", "layout.css"]`, linked in that order. Migration: rename the key — the
   value carries over unchanged. A settings file still naming `tokens` gets an error saying so.
+- **A `styles` file is published, like `icon` and `logo`.** It used to be read at build time and
+  left off the site; it is now published where it stands and linked there, so a relative `url()`
+  inside it — a font, a background image — resolves exactly as written. A path that is missing or
+  excluded is a `check` error.
 - **A site's CSS wins at any specificity.** canopy's CSS (from canopy 0.19.0) and canopy-page's
   own search/outline/lightbox CSS now sit in cascade layers, and `styles` are linked after both,
   unlayered — so a `styles` rule restyles any region, not only the design tokens. canopy-page's
@@ -21,7 +25,7 @@ to it — its fields, its validation, and what the checks reject — are what th
 
 ### Added
 
-- `check` reports a `styles` path with no file behind it.
+- `check` reports a `styles` path that is not a published file (missing, or excluded).
 
 ### Fixed
 
@@ -32,7 +36,8 @@ to it — its fields, its validation, and what the checks reject — are what th
   corrected to follow the theme toggle as well: state dark values under
   `@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { … } }` and under
   `:root[data-theme="dark"] { … }` (see the README's `styles` section). A `styles` file using the
-  old single dark block should add the second selector.
+  old single dark block should change that block's selector to
+  `:root:not([data-theme="light"])` and repeat its values under `:root[data-theme="dark"]`.
 
 ## [0.20.0] — 2026-10-03
 

@@ -73,12 +73,13 @@ describe("canopyArgs", () => {
       index,
       nav: translateNav(settings, index),
       unusedExclusions: [],
-      missingStyles: [],
       sources: new Map(),
     };
   }
 
-  it("carries the site's styles after canopy-page's own CSS, and keeps them off the published site", () => {
+  // Published where they stand rather than carried, so a relative url() in a
+  // site's stylesheet resolves as its author wrote it.
+  it("links the site's styles where they are published, and carries only canopy-page's own CSS", () => {
     const args = canopyArgs(
       siteWith({ styles: ["brand.css", "theme/layout.css"] }),
       "/out",
@@ -86,13 +87,10 @@ describe("canopyArgs", () => {
       SEARCH_ASSETS,
     );
     const carried = args.flatMap((arg, i) => (arg === "--stylesheet" ? [args[i + 1]] : []));
-    expect(carried).toEqual([
-      SEARCH_ASSETS.stylesheetPath,
-      path.join(SITE_ROOT, "brand.css"),
-      path.join(SITE_ROOT, "theme/layout.css"),
-    ]);
-    expect(args.join(" ")).toContain("--exclude brand.css");
-    expect(args.join(" ")).toContain("--exclude theme/layout.css");
+    const linked = args.flatMap((arg, i) => (arg === "--site-stylesheet" ? [args[i + 1]] : []));
+    expect(carried).toEqual([SEARCH_ASSETS.stylesheetPath]);
+    expect(linked).toEqual(["brand.css", "theme/layout.css"]);
+    expect(args.join(" ")).not.toContain("--exclude brand.css");
   });
 
   it("passes the logo and both halves of the home link", () => {
@@ -225,16 +223,15 @@ describe("buildSite", () => {
     const own = await readFile(path.join(out, "assets", "stylesheet-1.css"), "utf8");
     expect(own.startsWith("@layer canopy-page {")).toBe(true);
     expect(own).toContain(".canopy-search");
-    expect(await readFile(path.join(out, "assets", "stylesheet-2.css"), "utf8")).toContain("--accent: #0a7c5a");
     // canopy's own token file stays canopy's: nothing of canopy-page's rides in it any more.
     expect(await readFile(path.join(out, "tokens.css"), "utf8")).not.toContain(".canopy-search");
     const at = (sheet: string) => home.indexOf(`href="${sheet}"`);
     expect(at("styles.css")).toBeLessThan(at("assets/stylesheet-1.css"));
-    expect(at("assets/stylesheet-1.css")).toBeLessThan(at("assets/stylesheet-2.css"));
+    expect(at("assets/stylesheet-1.css")).toBeLessThan(at("brand.css"));
   });
 
-  it("does not publish the site's styles file as a page asset", () => {
-    expect(published).not.toContain("brand.css");
+  it("publishes the site's styles file at its own path", async () => {
+    expect(await readFile(path.join(out, "brand.css"), "utf8")).toContain("--accent: #0a7c5a");
   });
 
   it("passes the site's own settings through to the published page", () => {
@@ -349,7 +346,6 @@ describe("canopyArgs: where the site is published", () => {
       index,
       nav: translateNav(settings, index),
       unusedExclusions: [],
-      missingStyles: [],
       sources: new Map(),
     };
   }

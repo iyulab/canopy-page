@@ -18,15 +18,11 @@ import type { Settings } from "./settings.js";
  * One list for both `build` and the listing a check runs against, so the two
  * cannot disagree about what ships.
  */
-export function publishingExcludes(settings: Pick<Settings, "exclude" | "styles">): string[] {
+export function publishingExcludes(settings: Pick<Settings, "exclude">): string[] {
   return [
     // The settings file is configuration rather than content, and canopy has no
     // reason to know it exists; excluding it keeps it off the published site.
     SETTINGS_FILENAME,
-    // Configuration, not content — the same reason settings.json is excluded.
-    // Without this each stylesheet ships twice: once carried by --stylesheet,
-    // once copied as a plain asset.
-    ...(settings.styles ?? []),
     ...(settings.exclude ?? []),
   ];
 }

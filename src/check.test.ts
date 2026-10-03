@@ -545,8 +545,25 @@ describe("settingsFindings — styles", { timeout: LOADS_A_SITE }, () => {
     expect(found).toEqual([
       {
         level: "error",
-        message: 'settings: styles "theme/missing.css" names no file. Paths are relative to the settings file',
+        message:
+          'settings: styles "theme/missing.css" is not a published file (missing, or excluded). ' +
+          "Paths are relative to the settings file",
       },
     ]);
+  });
+
+  // A stylesheet is linked where it is published, so one the site leaves
+  // unpublished would be a link to nothing.
+  it("reports a styles path that an exclude pattern leaves unpublished", async () => {
+    const root = await site({
+      "settings.json": JSON.stringify({ styles: "_drafts/brand.css", exclude: ["_drafts"] }),
+      "_drafts/brand.css": ":root {}",
+      "index.md": "# Home\n",
+    });
+    const messages = settingsFindings(await loadSite(root)).map((finding) => finding.message);
+    expect(messages).toContain(
+      'settings: styles "_drafts/brand.css" is not a published file (missing, or excluded). ' +
+        "Paths are relative to the settings file",
+    );
   });
 });

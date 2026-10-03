@@ -91,8 +91,9 @@ export interface Settings {
    * Stylesheets, relative to the settings file, linked after canopy's and
    * canopy-page's own CSS in the order given. Both of those sit in cascade
    * layers, so a rule here wins over them at any specificity — a token
-   * restated or a region restyled alike. Configuration rather than content:
-   * read at build time and left off the published site.
+   * restated or a region restyled alike. Each must be a published file, like
+   * `icon` and `logo`: it is linked where the site publishes it, so a relative
+   * `url()` inside it resolves as written.
    */
   styles?: string[];
   /** Paths to leave unpublished: a directory, an extension (`*.tmp`), or one exact path. */

@@ -109,7 +109,7 @@ stays unpublished.
 Validation is strict: an unknown key is rejected rather than silently ignored (a mistyped key
 that is quietly dropped looks like a tool disobeying its configuration), and every error message
 names the exact position it is about, down to `sections[0].items[1]`. The settings file itself is
-never published, and neither is anything `exclude` names or anything `styles` names.
+never published, and neither is anything `exclude` names.
 
 ```json
 {
@@ -235,9 +235,9 @@ calls "Search"; link text (`home.label`, page titles) follows the same reasoning
 See [Theming](#theming) below for the full token vocabulary. `styles` names one CSS file or a
 list of them, relative to the settings file, linked in order after canopy's and canopy-page's own
 CSS. Both of those sit in cascade layers, so a rule here wins at any specificity — restate one
-custom property and every other default stays, or restyle a region outright. The files are read
-at build time and excluded from the published output automatically, and a path with no file
-behind it is a `check` error.
+custom property and every other default stays, or restyle a region outright. Each file is
+published where it stands and linked there, so a relative `url()` inside it resolves exactly as
+written; a path that is missing or excluded is a `check` error.
 
 ### `rehypePlugins`: extending what a page can render
 
@@ -554,7 +554,13 @@ not just that the build succeeded.
 
 Beyond tokens, any class canopy lists as a hook in its
 [theming contract](https://github.com/iyulab/canopy/blob/main/docs/THEMING.md) is safe to select
-on — `.canopy-sidebar { display: none; }` works as written.
+on with plain selectors:
+
+```css
+/* No sidebar: the layout paints the sidebar column as its own background, so it goes too. */
+.canopy-sidebar { display: none; }
+.canopy-layout { grid-template-columns: 1fr; background: none; }
+```
 
 ## What `check` reports
 
