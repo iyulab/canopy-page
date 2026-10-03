@@ -165,14 +165,16 @@ describe("buildSite", () => {
         description: "How to use it",
         lang: "en-GB",
         exclude: ["_drafts"],
-        sections: [{ path: "release-notes", label: "Release notes", order: "desc" }],
+        siteUrl: "https://example.test/handbook",
+        sections: [{ path: "release-notes", label: "Release notes", order: "desc", feed: true }],
         strings: { searchFailed: "Could not load search." },
       }),
       "index.md": "# Home\n\nSee [[guide/install]].\n",
       "guide/install.md": "# Install\n",
       "about.md": "# About\n",
-      "release-notes/2026-04.md": "# April\n",
-      "release-notes/2026-08.md": "# August\n",
+      "release-notes/index.md": "---\nlisting: true\n---\n# Changes\n",
+      "release-notes/2026-04.md": "---\ndate: 2026-04-01\ndescription: Spring\n---\n# April\n",
+      "release-notes/2026-08.md": "---\ndate: 2026-08-01\n---\n# August\n",
       "_drafts/wip.md": "# Work in progress\n",
       // A settings file *inside* the site is content: only the one at its root
       // configures the build, and the exclusion has to tell the two apart.
@@ -237,6 +239,26 @@ describe("buildSite", () => {
 
   it("leaves excluded folders unpublished", () => {
     expect(published).not.toContain("_drafts");
+  });
+
+  // The settings → canopy wiring end to end: `"feed": true` has to reach canopy
+  // as a flag it understands, or the feed silently never appears.
+  it("publishes a feed section's dated pages as an Atom feed, linked from the section", async () => {
+    const feed = await readFile(path.join(out, "release-notes", "feed.xml"), "utf8");
+    expect(feed).toContain('<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en-GB">');
+    expect(feed).toContain("<id>https://example.test/handbook/release-notes/feed.xml</id>");
+    expect(feed.indexOf("<title>August</title>")).toBeLessThan(feed.indexOf("<title>April</title>"));
+    expect(feed).not.toContain("<title>Changes</title>");
+    const note = await readFile(path.join(out, "release-notes", "2026-04.html"), "utf8");
+    expect(note).toContain('<link rel="alternate" type="application/atom+xml"');
+    expect(note).toContain('<time datetime="2026-04-01">');
+    expect(home).not.toContain("application/atom+xml");
+  });
+
+  it("lists a series on an index page that asks for it", async () => {
+    const index = await readFile(path.join(out, "release-notes", "index.html"), "utf8");
+    expect(index).toContain('<ul class="canopy-listing">');
+    expect(index).toContain("<p>Spring</p>");
   });
 
   // The settings file configures the site; it is not part of its content. A
