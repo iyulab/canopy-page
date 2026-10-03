@@ -1,3 +1,4 @@
+import type { Profile } from "@iyulab/canopy";
 import type { Settings, SettingsNavItem, SettingsSection } from "./settings.js";
 import type { PageIndex } from "./vault.js";
 
@@ -199,6 +200,7 @@ function translateSection(
   section: SettingsSection,
   index: PageIndex,
   report: NavReport,
+  siteProfile: Profile | undefined,
 ): NavSpecItem {
   const sectionIndex = indexOf(section.path, index);
   if (sectionIndex !== undefined) report.place(sectionIndex);
@@ -223,11 +225,12 @@ function translateSection(
     ...(sectionIndex === undefined ? {} : { path: sectionIndex }),
     items,
     // Whatever the section does not list, canopy fills in from its directory.
-    // The order is always by file name — what an author sees in the folder
-    // they are ordering, and what `order` has always meant here — ascending
-    // unless the section asks otherwise.
+    // A stream is ordered by canopy, newest first by each page's date:, so
+    // there is no file-name order to ask for. Anything else is ordered by file
+    // name — what an author sees in the folder they are ordering, and what
+    // `order` has always meant here — ascending unless the section asks otherwise.
     derive: section.path,
-    order: section.order ?? "asc",
+    ...((section.profile ?? siteProfile) === "stream" ? {} : { order: section.order ?? "asc" }),
   };
 }
 
@@ -260,7 +263,7 @@ export function translateNav(settings: Settings, index: PageIndex): NavTranslati
     rawSlugLabels,
   };
 
-  const items = sections.map((section) => translateSection(section, index, report));
+  const items = sections.map((section) => translateSection(section, index, report, settings.profile));
 
   // The root index is the site's home page: it is reached without navigation, so
   // it is neither placed by a section nor counted as something nobody placed.

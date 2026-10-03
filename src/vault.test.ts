@@ -2,6 +2,7 @@ import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { withLayoutFile } from "./layout.js";
 import { indexSite, listSite, publishingExcludes, toPageKey } from "./vault.js";
 
 // listSite spawns canopy (`canopy list`), a fresh Node process per call — the
@@ -74,11 +75,30 @@ describe("listSite", { timeout: SPAWNS_CANOPY }, () => {
       pages: ["guide/install.md", "index.md"],
       assets: ["assets/logo.png"],
       unusedExcludes: [],
+      generated: [],
     });
   });
 
   it("reports a place-naming exclusion that matched nothing", async () => {
     const listing = await listSite(root, ["_archive", "*.bak"]);
     expect(listing.unusedExcludes).toEqual(["_archive"]);
+  });
+
+  it("leaves fragments out and names the index pages a build writes, given a layout", async () => {
+    const layoutRoot = await mkdtemp(path.join(tmpdir(), "canopy-page-vault-layout-"));
+    try {
+      await mkdir(path.join(layoutRoot, "blog"), { recursive: true });
+      await mkdir(path.join(layoutRoot, "partials"), { recursive: true });
+      await writeFile(path.join(layoutRoot, "blog", "a.md"), "# A\n");
+      await writeFile(path.join(layoutRoot, "partials", "header.html"), "<header></header>");
+      const listing = await withLayoutFile(
+        { dirs: { blog: { profile: "stream", regions: { header: "partials/header.html" } } } },
+        (file) => listSite(layoutRoot, [], file),
+      );
+      expect(listing.assets).not.toContain("partials/header.html");
+      expect(listing.generated).toEqual(["blog/index.html"]);
+    } finally {
+      await rm(layoutRoot, { recursive: true, force: true });
+    }
   });
 });

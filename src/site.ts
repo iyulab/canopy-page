@@ -1,5 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { type Layout, layoutFragments } from "@iyulab/canopy";
+import { layoutSpec, withLayoutFile } from "./layout.js";
 import { type NavTranslation, translateNav } from "./nav.js";
 import { parseSettings, SettingsError, type Settings } from "./settings.js";
 import { indexSite, listSite, type PageIndex, publishingExcludes, SETTINGS_FILENAME } from "./vault.js";
@@ -33,6 +35,14 @@ export interface LoadedSite {
    * check see the old version and another the new.
    */
   sources: ReadonlyMap<string, string>;
+  /** The layout these settings make (see layout.ts); `undefined` when they set no profile and no regions. */
+  layout: Layout | undefined;
+  /**
+   * Each fragment the layout names, read once like the pages are, by its path
+   * as the settings write it. A fragment that could not be read is absent, and
+   * `check` says so.
+   */
+  fragments: ReadonlyMap<string, string>;
 }
 
 /** Something worth telling the author about their site. */
@@ -74,7 +84,10 @@ export async function loadSite(dir: string): Promise<LoadedSite> {
     throw error;
   }
 
-  const listing = await listSite(root, publishingExcludes(settings));
+  const layout = layoutSpec(settings);
+  // The listing is the build's: with the layout, canopy leaves the fragments
+  // out of it and names the index pages it will write.
+  const listing = await withLayoutFile(layout, (file) => listSite(root, publishingExcludes(settings), file));
   const index = indexSite(listing);
   // Only the author's own patterns are theirs to be told about: the ones
   // canopy-page adds (the settings file, the styles files) name configuration
@@ -85,6 +98,14 @@ export async function loadSite(dir: string): Promise<LoadedSite> {
       index.pages.map(async (page) => [page, await readFile(path.join(root, page), "utf8")] as const),
     ),
   );
+  const fragments = new Map<string, string>();
+  for (const { path: file } of layoutFragments(layout)) {
+    try {
+      fragments.set(file, await readFile(path.join(root, file), "utf8"));
+    } catch {
+      // Reported by check (regionFindings), naming the regions that wanted it.
+    }
+  }
   return {
     root,
     settings,
@@ -92,6 +113,8 @@ export async function loadSite(dir: string): Promise<LoadedSite> {
     nav: translateNav(settings, index),
     unusedExclusions: listing.unusedExcludes.filter((pattern) => authored.has(pattern)),
     sources,
+    layout,
+    fragments,
   };
 }
 

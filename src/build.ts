@@ -4,6 +4,7 @@ import path from "node:path";
 import { assembleScript, assembleStylesheet } from "./assets-bundle.js";
 import { runCanopy } from "./canopy.js";
 import { siteFindings } from "./check.js";
+import { feedDirs } from "./layout.js";
 import { resolveLastmods } from "./lastmod.js";
 import { listHtmlFiles, robotsTxt, sitemapXml } from "./sitemap.js";
 import { loadSite, reportFindings } from "./site.js";
@@ -47,6 +48,7 @@ export function canopyArgs(
   out: string,
   navPath: string | undefined,
   searchAssets: SearchAssets,
+  layoutPath?: string,
 ): string[] {
   const { settings } = site;
   return [
@@ -78,6 +80,7 @@ export function canopyArgs(
       : ["--home-url", settings.home.url, "--home-label", settings.home.label]),
     ...(settings.strings === undefined ? [] : ["--strings", JSON.stringify(settings.strings)]),
     ...(navPath === undefined ? [] : ["--nav", navPath]),
+    ...(layoutPath === undefined ? [] : ["--layout", layoutPath]),
     // Always on, same reasoning as canopy-page's stylesheet above: a search index and the
     // script that searches it are canopy-page's own contribution, not a site
     // author's choice to make.
@@ -89,9 +92,7 @@ export function canopyArgs(
     // was checked is what ships.
     ...publishingExcludes(settings).flatMap((pattern) => ["--exclude", pattern]),
     ...(settings.rehypePlugins ?? []).flatMap((specifier) => ["--rehype-plugin", specifier]),
-    ...(settings.sections ?? [])
-      .filter((section) => section.feed === true)
-      .flatMap((section) => ["--feed", section.path]),
+    ...feedDirs(settings).flatMap((dir) => ["--feed", dir]),
   ];
 }
 
@@ -116,6 +117,12 @@ export async function buildSite({ dir, out }: BuildOptions): Promise<number> {
       await writeFile(navPath, JSON.stringify(site.nav.spec, null, 2), "utf8");
     }
 
+    let layoutPath: string | undefined;
+    if (site.layout !== undefined) {
+      layoutPath = path.join(workDir, "layout.json");
+      await writeFile(layoutPath, JSON.stringify(site.layout, null, 2), "utf8");
+    }
+
     const stylesheetPath = path.join(workDir, "canopy-page.css");
     await writeFile(stylesheetPath, await assembleStylesheet(), "utf8");
 
@@ -123,7 +130,7 @@ export async function buildSite({ dir, out }: BuildOptions): Promise<number> {
     await writeFile(scriptPath, await assembleScript(site.settings.strings?.searchFailed), "utf8");
 
     const code = await runCanopy(
-      canopyArgs(site, path.resolve(out), navPath, { stylesheetPath, scriptPath }),
+      canopyArgs(site, path.resolve(out), navPath, { stylesheetPath, scriptPath }, layoutPath),
     );
     // Only after canopy succeeded, and only over what it actually wrote: a
     // sitemap listing pages a failed build never produced would be a lie a

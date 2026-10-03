@@ -74,6 +74,8 @@ describe("canopyArgs", () => {
       nav: translateNav(settings, index),
       unusedExclusions: [],
       sources: new Map(),
+      layout: undefined,
+      fragments: new Map(),
     };
   }
 
@@ -300,6 +302,45 @@ describe("buildSite", () => {
   });
 });
 
+describe("buildSite with a layout", () => {
+  afterEach(cleanup);
+
+  it("builds a stream section in a host's own header and footer, keeping the fragments off the site", async () => {
+    const root = await fixture({
+      "settings.json": JSON.stringify({
+        title: "Example",
+        sections: [
+          {
+            path: "blog",
+            label: "Journal",
+            profile: "stream",
+            regions: { header: "partials/header.html", footer: "partials/footer.html" },
+          },
+        ],
+      }),
+      "index.md": "# Home\n",
+      "blog/first.md": "---\ndate: 2026-09-01\n---\n# First\n",
+      "blog/second.md": "---\ndate: 2026-10-01\n---\n# Second\n",
+      "partials/header.html":
+        '<header class="host"><a href="index.html">Host</a><canopy-slot name="back"></canopy-slot></header>',
+      "partials/footer.html": '<footer class="host">Host footer</footer>',
+    });
+    const out = path.join(path.dirname(root), `${path.basename(root)}-out`);
+    temporary.push(out);
+
+    expect(await buildSite({ dir: root, out })).toBe(0);
+
+    const post = await readFile(path.join(out, "blog", "first.html"), "utf8");
+    expect(post).toContain(
+      '<header class="host"><a href="../index.html">Host</a><a class="canopy-back" href="index.html">Journal</a></header>',
+    );
+    expect(post).toContain('<footer class="host">Host footer</footer>');
+    const index = await readFile(path.join(out, "blog", "index.html"), "utf8");
+    expect(index.indexOf("second.html")).toBeLessThan(index.indexOf("first.html"));
+    await expect(readFile(path.join(out, "partials", "header.html"), "utf8")).rejects.toThrow();
+  }, SPAWNS_A_PROCESS);
+});
+
 describe("buildSite failures", () => {
   afterEach(async () => {
     vi.restoreAllMocks();
@@ -335,6 +376,43 @@ describe("buildSite failures", () => {
   });
 });
 
+describe("canopyArgs: layout and feeds", () => {
+  const SEARCH_ASSETS = { stylesheetPath: "/work/canopy-page.css", scriptPath: "/work/script.js" };
+  function siteWith(overrides: Partial<Settings>): LoadedSite {
+    const settings: Settings = { ...overrides };
+    const index = indexSite({ pages: [], assets: [] });
+    return {
+      root: path.join(tmpdir(), "canopy-page-build-args-site"),
+      settings,
+      index,
+      nav: translateNav(settings, index),
+      unusedExclusions: [],
+      sources: new Map(),
+      layout: undefined,
+      fragments: new Map(),
+    };
+  }
+
+  it("hands canopy the layout file when there is one", () => {
+    const args = canopyArgs(siteWith({}), "/out", undefined, SEARCH_ASSETS, "/work/layout.json");
+    expect(args.slice(args.indexOf("--layout"), args.indexOf("--layout") + 2)).toEqual([
+      "--layout",
+      "/work/layout.json",
+    ]);
+    expect(canopyArgs(siteWith({}), "/out", undefined, SEARCH_ASSETS)).not.toContain("--layout");
+  });
+
+  it("asks for a feed for every stream section once there is a siteUrl", () => {
+    const args = canopyArgs(
+      siteWith({ siteUrl: "https://example.test", sections: [{ path: "blog", profile: "stream" }] }),
+      "/out",
+      undefined,
+      SEARCH_ASSETS,
+    );
+    expect(args.slice(args.indexOf("--feed"), args.indexOf("--feed") + 2)).toEqual(["--feed", "blog"]);
+  });
+});
+
 describe("canopyArgs: where the site is published", () => {
   const SEARCH_ASSETS = { stylesheetPath: "/work/canopy-page.css", scriptPath: "/work/script.js" };
   function siteWith(overrides: Partial<Settings>): LoadedSite {
@@ -347,6 +425,8 @@ describe("canopyArgs: where the site is published", () => {
       nav: translateNav(settings, index),
       unusedExclusions: [],
       sources: new Map(),
+      layout: undefined,
+      fragments: new Map(),
     };
   }
 

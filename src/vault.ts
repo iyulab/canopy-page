@@ -35,17 +35,26 @@ export interface SiteListing {
   assets: string[];
   /** Place-naming `exclude` patterns that matched nothing. */
   unusedExcludes: string[];
+  /** Site paths of pages canopy writes that have no source — a stream folder's index. */
+  generated: string[];
 }
 
 /** Ask canopy what a build of `root` with these exclusions would publish. */
-export async function listSite(root: string, exclude: readonly string[] = []): Promise<SiteListing> {
+export async function listSite(
+  root: string,
+  exclude: readonly string[] = [],
+  layoutPath?: string,
+): Promise<SiteListing> {
   const output = await runCanopyForOutput([
     "list",
     root,
     "--json",
     ...exclude.flatMap((pattern) => ["--exclude", pattern]),
+    ...(layoutPath === undefined ? [] : ["--layout", layoutPath]),
   ]);
-  return JSON.parse(output) as SiteListing;
+  // A canopy that predates layouts does not report `generated`.
+  const listing = JSON.parse(output) as SiteListing;
+  return { ...listing, generated: listing.generated ?? [] };
 }
 
 /** The settings file a site is configured by, found at the root of the site. */
@@ -76,13 +85,16 @@ export interface PageIndex {
   resolve(reference: string): string | undefined;
   /** Non-markdown files, sorted — images and anything else copied alongside. */
   readonly assets: readonly string[];
+  /** Site paths of pages canopy writes without a source (a stream's index), sorted. */
+  readonly generated: readonly string[];
 }
 
 /** Index a site's listing into pages, assets, and a resolver over its pages. */
 export function indexSite({
   pages,
   assets,
-}: Pick<SiteListing, "pages" | "assets">): PageIndex {
+  generated = [],
+}: Pick<SiteListing, "pages" | "assets"> & { generated?: readonly string[] }): PageIndex {
   const byKey = new Map<string, string>();
   for (const page of pages) {
     byKey.set(toPageKey(page), page);
@@ -90,6 +102,7 @@ export function indexSite({
   return {
     pages,
     assets,
+    generated,
     resolve: (reference) => byKey.get(toPageKey(reference)),
   };
 }
