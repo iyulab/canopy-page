@@ -84,6 +84,10 @@ section asks for one (`"feed": true`, see [Settings](../../reference/settings.md
 page in [Release notes](../../release-notes/index.md) is dated this way. A page without `date:`
 stays a plain document page, exactly as before.
 
+A folder's index page can list the pages beneath it with `listing: true` in its frontmatter —
+each entry's name, date and own `description:`, in sidebar order, after the page's own text. The
+Release notes index is built that way: nobody maintains its list.
+
 ## What the checker refuses {#what-check-refuses}
 
 - A link or wikilink pointing at nothing published

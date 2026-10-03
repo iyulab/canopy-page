@@ -7,6 +7,18 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [0.19.0] — 2026-10-03
+
+### Added
+
+- **An index page can list its series**, from canopy 0.18.0: `listing: true` in a page's
+  frontmatter ends it with the pages beneath it, in sidebar order, each with its name, `date:` and
+  own `description:`. Nothing to configure in `settings.json`.
+
+### Changed
+
+- Depends on `@iyulab/canopy` `^0.18.0`.
+
 ## [0.18.0] — 2026-10-03
 
 ### Added

@@ -65,7 +65,8 @@ go away.
 - **Sitemap and `robots.txt`**, once `siteUrl` is set
 - **Dated pages** — a page whose frontmatter names a `date:` shows it under its heading and is
   described to search engines as an article (`article:*` times, schema.org `Article`); a section
-  with `"feed": true` can be followed as an Atom feed of those pages
+  with `"feed": true` can be followed as an Atom feed of those pages, and an index page with
+  `listing: true` lists the pages beneath it with their dates and summaries
 
 See it live at <https://iyulab.github.io/canopy-page>, or read
 [What a reader gets](examples/site/guide/reading.md) for how each one behaves.
