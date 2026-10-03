@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { type Layout, layoutFragments } from "@iyulab/canopy";
+import { callerStylesheetPath, type Layout, layoutFragments } from "@iyulab/canopy";
 import { layoutSpec, withLayoutFile } from "./layout.js";
 import { type NavTranslation, translateNav } from "./nav.js";
 import { parseSettings, SettingsError, type Settings } from "./settings.js";
@@ -132,6 +132,15 @@ export function settingsFindings(site: LoadedSite): Finding[] {
   // than first by the build that needed it.
   const published = new Set(site.index.assets);
   return [
+    // canopy-page always carries its own stylesheet into canopy's first caller
+    // stylesheet path. A site file there would fail the build with a message
+    // about a flag the author never wrote, so it is named here instead.
+    ...site.index.assets
+      .filter((asset) => asset.toLowerCase() === callerStylesheetPath(0))
+      .map((asset) => ({
+        level: "error" as const,
+        message: `${asset}: canopy-page writes its own stylesheet to this path, so the site cannot publish a file there — rename or move it`,
+      })),
     ...(site.settings.styles ?? [])
       .filter((style) => !published.has(style))
       .map((style) => ({

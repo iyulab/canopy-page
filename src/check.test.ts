@@ -8,6 +8,7 @@ import {
   descriptionFindings,
   filenameEncodingFindings,
   referenceFindings,
+  regionFindings,
 } from "./check.js";
 import { loadSite, settingsFindings } from "./site.js";
 
@@ -135,7 +136,7 @@ describe("referenceFindings", { timeout: LOADS_A_SITE }, () => {
   // site is mounted — a root-absolute reference that resolves today would
   // still break there, so silence would be wrong precisely because it looks
   // safe.
-  it("warns about a resolvable root-absolute path when siteUrl declares a sub-path mount", async () => {
+  it("warns about a root-absolute path outside a sub-path mount that the site publishes at its own root", async () => {
     const root = await site({
       "settings.json": JSON.stringify({ siteUrl: "https://example.test/help/" }),
       "index.md": "[install](/guide/install)",
@@ -144,8 +145,11 @@ describe("referenceFindings", { timeout: LOADS_A_SITE }, () => {
     const [finding] = referenceFindings(await loadSite(root));
 
     expect(finding?.level).toBe("warning");
-    expect(finding?.message).toContain('"/guide/install"');
-    expect(finding?.message).toContain("/help/");
+    expect(finding?.message).toBe(
+      'index.md:1: link "/guide/install" leaves this site — it is outside settings.siteUrl\'s ' +
+        'path "/help/" — though this site publishes "guide/install"; if that page is meant, write ' +
+        '"/help/guide/install" or a relative link',
+    );
   });
 
   // settings.ts only checks that siteUrl starts with "http(s)://" — "http://"
@@ -352,6 +356,15 @@ describe("checkSite", { timeout: LOADS_A_SITE }, () => {
 });
 
 describe("a target that names a directory", { timeout: LOADS_A_SITE }, () => {
+  it("finds the index page canopy writes for a stream folder", async () => {
+    const root = await site({
+      "settings.json": JSON.stringify({ sections: [{ path: "blog", profile: "stream" }] }),
+      "index.md": "[blog](blog/) and [its index](blog/index.html)\n",
+      "blog/a.md": "---\ndate: 2026-10-01\n---\n# A\n",
+    });
+    expect(referenceFindings(await loadSite(root))).toEqual([]);
+  });
+
   // A directory is served by its index page, so a trailing slash is a working
   // link — reading it as a missing file reports a sound site as broken.
   it("resolves to the page the directory is entered by", async () => {
@@ -495,6 +508,18 @@ describe("dateFindings", { timeout: LOADS_A_SITE }, () => {
     return dateFindings(await loadSite(root)).map((finding) => finding.message);
   }
 
+  it("names the pages of a stream section with no date, which the stream lists last", async () => {
+    const root = await site({
+      "settings.json": JSON.stringify({ sections: [{ path: "blog", profile: "stream" }] }),
+      "blog/index.md": "# Blog\n",
+      "blog/a.md": "---\ndate: 2026-10-01\n---\n# A\n",
+      "blog/b.md": "# B\n",
+    });
+    expect(dateFindings(await loadSite(root)).map((finding) => finding.message)).toEqual([
+      '1 page(s) in a stream section have no "date:", so the stream lists them last, after every dated page:\n  blog/b.md',
+    ]);
+  });
+
   it("says nothing about a site whose dates are all dates", async () => {
     expect(
       await dates({
@@ -535,6 +560,14 @@ describe("dateFindings", { timeout: LOADS_A_SITE }, () => {
 });
 
 describe("settingsFindings — styles", { timeout: LOADS_A_SITE }, () => {
+  it("refuses a site file where canopy-page writes its own stylesheet", async () => {
+    const root = await site({ "settings.json": "{}", "index.md": "# Home\n", "assets/stylesheet-1.css": "a{}" });
+    expect(settingsFindings(await loadSite(root)).map((finding) => finding.message)).toEqual([
+      "assets/stylesheet-1.css: canopy-page writes its own stylesheet to this path, so the site cannot " +
+        "publish a file there — rename or move it",
+    ]);
+  });
+
   it("reports a styles path with no file behind it, without building", async () => {
     const root = await site({
       "settings.json": JSON.stringify({ styles: ["brand.css", "theme/missing.css"] }),
@@ -565,5 +598,115 @@ describe("settingsFindings — styles", { timeout: LOADS_A_SITE }, () => {
       'settings: styles "_drafts/brand.css" is not a published file (missing, or excluded). ' +
         "Paths are relative to the settings file",
     );
+  });
+});
+
+describe("regionFindings", { timeout: LOADS_A_SITE }, () => {
+  async function regionMessages(settings: unknown, files: Record<string, string>): Promise<string[]> {
+    const root = await site({ "settings.json": JSON.stringify(settings), "index.md": "# Home\n", ...files });
+    return regionFindings(await loadSite(root)).map((finding) => `${finding.level}: ${finding.message}`);
+  }
+
+  const settings = {
+    regions: { header: "partials/header.html" },
+    sections: [{ path: "blog", profile: "stream", regions: { afterArticle: "partials/cta.html" } }],
+  };
+
+  it("says nothing when every fragment, slot and link is sound", async () => {
+    expect(
+      await regionMessages(settings, {
+        "partials/header.html":
+          '<header><a href="blog/">Blog</a><img src="assets/logo.svg" alt=""><a href="index.html">Home</a>' +
+          '<canopy-slot name="search"></canopy-slot></header>',
+        "partials/cta.html": '<p><canopy-slot name="page:cta">Try it</canopy-slot></p>',
+        "blog/a.md": "---\ndate: 2026-10-01\ncta: Get it\n---\n# A\n",
+        "assets/logo.svg": "<svg></svg>",
+      }),
+    ).toEqual([]);
+  });
+
+  it("reports a fragment that is not there", async () => {
+    expect(await regionMessages({ regions: { footer: "partials/footer.html" } }, {})).toEqual([
+      'error: settings: region fragment "partials/footer.html" is not a file in the site (footer)',
+    ]);
+  });
+
+  it("reports a slot the build would refuse, before the build does", async () => {
+    const messages = await regionMessages(
+      { regions: { header: "partials/header.html" } },
+      { "partials/header.html": '<nav><canopy-slot name="search"/><a href="index.html">Home</a></nav>' },
+    );
+    expect(messages).toEqual([
+      'error: partials/header.html (header): <canopy-slot name="search"> must be empty — write it as ' +
+        '<canopy-slot name="search"></canopy-slot>; HTML does not close a self-closing custom tag, so it takes in what follows',
+    ]);
+  });
+
+  it("checks fragment links from the site root, and leaves the host's own links alone", async () => {
+    const messages = await regionMessages(
+      { siteUrl: "https://example.test/blog", regions: { header: "partials/header.html" } },
+      {
+        "partials/header.html":
+          '<a href="guide/">Guide</a><a href="/pricing">Pricing</a><a href="/blog/missing.html">Missing</a>' +
+          '<a href="https://example.com/">Elsewhere</a>',
+      },
+    );
+    expect(messages).toEqual([
+      'error: partials/header.html: link "guide/" points at nothing published (fragment links are written from the site root)',
+      'error: partials/header.html: link "/blog/missing.html" points at nothing published — under ' +
+        'settings.siteUrl\'s path "/blog/" it addresses "missing.html"',
+    ]);
+  });
+
+  it("reports a page whose frontmatter cannot fill a page slot that reaches it", async () => {
+    const messages = await regionMessages(settings, {
+      "partials/header.html": "<header></header>",
+      "partials/cta.html": '<canopy-slot name="page:cta">Try it</canopy-slot>',
+      "blog/a.md": "---\ncta:\n  - one\n  - two\n---\n# A\n",
+      "guide/b.md": "---\ncta: 3\n---\n# B\n",
+    });
+    expect(messages).toEqual([
+      'error: blog/a.md: frontmatter "cta" must be text to fill <canopy-slot name="page:cta">, not a list',
+    ]);
+  });
+
+  it("keeps fragments off the published site", async () => {
+    const root = await site({
+      "settings.json": JSON.stringify({ regions: { header: "partials/header.html" } }),
+      "index.md": "# Home\n",
+      "partials/header.html": "<header></header>",
+    });
+    expect((await loadSite(root)).index.assets).not.toContain("partials/header.html");
+  });
+});
+
+describe("root-absolute links and siteUrl's path", { timeout: LOADS_A_SITE }, () => {
+  async function messagesFor(link: string): Promise<string[]> {
+    const root = await site({
+      "settings.json": JSON.stringify({ siteUrl: "https://example.test/help" }),
+      "index.md": `[x](${link})\n`,
+      "guide/install.md": "# Install\n",
+    });
+    return referenceFindings(await loadSite(root)).map((finding) => `${finding.level}: ${finding.message}`);
+  }
+
+  it("checks a link under the site's own path against the site", async () => {
+    expect(await messagesFor("/help/guide/install.md")).toEqual([]);
+    expect(await messagesFor("/help/guide/gone.md")).toEqual([
+      'error: index.md:1: link "/help/guide/gone.md" points at nothing published — under ' +
+        'settings.siteUrl\'s path "/help/" it addresses "guide/gone.md"',
+    ]);
+  });
+
+  it("leaves a link outside the site's path to the host it belongs to", async () => {
+    expect(await messagesFor("/pricing")).toEqual([]);
+  });
+
+  it("warns when a link outside the path names a page this site publishes at its own root", async () => {
+    expect(await messagesFor("/guide/install.md")).toEqual([
+      'warning: index.md:1: link "/guide/install.md" leaves this site — it is outside settings.siteUrl\'s ' +
+        'path "/help/" — though this site publishes "guide/install.md"; if that page is meant, write ' +
+        '"/help/guide/install.md" or a relative link',
+    ]);
   });
 });

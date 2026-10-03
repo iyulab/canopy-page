@@ -1,10 +1,18 @@
 import {
   decodeLinkPath,
+  fragmentLinks,
+  fragmentProblems,
   frontmatterDate,
   isExternalUrl,
+  layoutFragments,
+  pageSlotKeys,
+  pageSlotText,
   parseFrontmatter,
   parseLinkUrl,
+  resolvePageLayout,
   resolveRelative,
+  streamIndexPath,
+  toSitePath,
 } from "@iyulab/canopy";
 import { extractReferences } from "./references.js";
 import {
@@ -69,6 +77,57 @@ function siteBasePath(site: LoadedSite): string | undefined {
 }
 
 /**
+ * What is wrong with a root-absolute path, if anything — the rest of a finding
+ * after `<kind> "<target>"`.
+ *
+ * `siteUrl`'s path says where this site stands on its host. A path inside it is
+ * this site's own page written absolute: resolved against that mount and
+ * checked like any internal link, and a miss is an error, since nothing else
+ * can answer it. A path outside it belongs to the host — the product site a
+ * blog stands inside — which this check cannot see and does not judge; the one
+ * exception is a path this site publishes at its own root, which reads like a
+ * link to this site written without its mount.
+ *
+ * With no mount path (no siteUrl, or one at a domain root) a root-absolute path
+ * resolves against wherever the site is served from, so a miss is a warning:
+ * something else may answer it there.
+ */
+function rootAbsoluteProblem(
+  site: LoadedSite,
+  url: string,
+): { level: "error" | "warning"; message: string } | undefined {
+  const decode = (value: string): string => decodeLinkPath(value) ?? value;
+  const base = siteBasePath(site)?.replace(/\/+$/, "");
+  const atRoot = decode(url.replace(/^\/+/, ""));
+  if (base !== undefined && base !== "") {
+    if (url === base || url.startsWith(`${base}/`)) {
+      const inSite = decode(url.slice(base.length).replace(/^\/+/, ""));
+      if (inSite === "" || existsInSite(site, inSite)) return undefined;
+      return {
+        level: "error",
+        message: `points at nothing published — under settings.siteUrl's path "${base}/" it addresses "${inSite}"`,
+      };
+    }
+    if (atRoot !== "" && existsInSite(site, atRoot)) {
+      return {
+        level: "warning",
+        message:
+          `leaves this site — it is outside settings.siteUrl's path "${base}/" — though this site publishes ` +
+          `"${atRoot}"; if that page is meant, write "${base}/${atRoot}" or a relative link`,
+      };
+    }
+    return undefined;
+  }
+  if (atRoot === "" || existsInSite(site, atRoot)) return undefined;
+  return {
+    level: "warning",
+    message:
+      `— nothing is published at "${atRoot}". A root-absolute path resolves against wherever the ` +
+      "site is served from, so this is right only if something else answers it there",
+  };
+}
+
+/**
  * Does anything published sit at this path — a page, a copied file, or the index
  * page a directory is entered by?
  *
@@ -85,8 +144,11 @@ function existsInSite(site: LoadedSite, sitePath: string): boolean {
   const directory = sitePath.endsWith("/");
   const bare = (directory ? sitePath.replace(/\/+$/, "") : sitePath).toLowerCase();
   const pages = new Set(site.index.pages.map((page) => page.toLowerCase()));
-  if (directory) return pages.has(`${bare}/index.md`);
-  if (pages.has(bare) || pages.has(`${bare}.md`)) return true;
+  // A stream folder's index page canopy writes for it has no source here, but
+  // is published all the same.
+  const generated = new Set(site.index.generated.map((page) => page.toLowerCase()));
+  if (directory) return pages.has(`${bare}/index.md`) || generated.has(`${bare}/index.html`);
+  if (pages.has(bare) || pages.has(`${bare}.md`) || generated.has(bare)) return true;
   if (bare.endsWith(".html") && pages.has(bare.replace(/\.html$/, ".md"))) return true;
   return site.index.assets.some((asset) => asset.toLowerCase() === bare);
 }
@@ -183,22 +245,14 @@ export function referenceFindings(site: LoadedSite): Finding[] {
       const url = parseLinkUrl(reference.target).path;
 
       if (isRootAbsolute(url)) {
-        const atRoot = decodeLinkPath(url.replace(/^\/+/, "")) ?? url.replace(/^\/+/, "");
-        const resolves = atRoot === "" || existsInSite(site, atRoot);
-        const basePath = siteBasePath(site);
-        if (resolves && basePath === undefined) continue;
-        findings.push({
-          page,
-          level: "warning",
-          message: resolves
-            ? `${where}: ${reference.kind} "${reference.target}" resolves only when the ` +
-              `site is served from the domain root, but settings.siteUrl declares it is ` +
-              `mounted under "${basePath}"`
-            : `${where}: ${reference.kind} "${reference.target}" — ` +
-              `nothing is published at "${atRoot}". A root-absolute path resolves ` +
-              "against wherever the site is served from, so this is right only if " +
-              "something else answers it there",
-        });
+        const problem = rootAbsoluteProblem(site, url);
+        if (problem !== undefined) {
+          findings.push({
+            page,
+            level: problem.level,
+            message: `${where}: ${reference.kind} "${reference.target}" ${problem.message}`,
+          });
+        }
         continue;
       }
 
@@ -244,6 +298,77 @@ export function referenceFindings(site: LoadedSite): Finding[] {
   return findings;
 }
 
+/** A fragment link, which is written from the site root, checked the way a build will rewrite it. */
+function fragmentLinkProblem(
+  site: LoadedSite,
+  url: string,
+): { level: "error" | "warning"; message: string } | undefined {
+  const target = parseLinkUrl(url).path;
+  if (isRootAbsolute(target)) {
+    const problem = rootAbsoluteProblem(site, target);
+    return problem === undefined ? undefined : { level: problem.level, message: `link "${url}" ${problem.message}` };
+  }
+  if (isExternalUrl(target)) return undefined;
+  const decoded = (decodeLinkPath(target) ?? target).replace(/^\.\//, "");
+  if (decoded === "" || existsInSite(site, decoded)) return undefined;
+  return {
+    level: "error",
+    message: `link "${url}" points at nothing published (fragment links are written from the site root)`,
+  };
+}
+
+/**
+ * Region fragments and the slots in them, checked the way the build will use
+ * them. Each error here would otherwise fail `build` — or, for a link, reach a
+ * reader as a 404 — so a check finds it first, and says which file to open.
+ * Fragment findings name no page, so `knownBroken` cannot excuse them: a
+ * fragment is on every page of its section, not one page being fixed.
+ */
+export function regionFindings(site: LoadedSite): Finding[] {
+  if (site.layout === undefined) return [];
+  const findings: Finding[] = [];
+  for (const { path: file, regions } of layoutFragments(site.layout)) {
+    const html = site.fragments.get(file);
+    if (html === undefined) {
+      findings.push({
+        level: "error",
+        message: `settings: region fragment "${file}" is not a file in the site (${regions.join(", ")})`,
+      });
+      continue;
+    }
+    for (const region of regions) {
+      for (const problem of fragmentProblems(html, region)) {
+        findings.push({ level: "error", message: `${file} (${region}): ${problem}` });
+      }
+    }
+    for (const url of fragmentLinks(html)) {
+      const problem = fragmentLinkProblem(site, url);
+      if (problem !== undefined) findings.push({ level: problem.level, message: `${file}: ${problem.message}` });
+    }
+  }
+  // A page slot is filled from each page it reaches, so each of those pages
+  // is read with canopy's own rule for what can fill one.
+  for (const page of site.index.pages) {
+    const { regions } = resolvePageLayout(site.layout, toSitePath(page));
+    const keys = new Set(
+      Object.values(regions).flatMap((file) => {
+        const html = site.fragments.get(file);
+        return html === undefined ? [] : pageSlotKeys(html);
+      }),
+    );
+    if (keys.size === 0) continue;
+    const { data } = parseFrontmatter(site.sources.get(page) ?? "");
+    for (const key of keys) {
+      try {
+        pageSlotText(data, key);
+      } catch (error) {
+        findings.push({ page, level: "error", message: `${page}: ${(error as Error).message}` });
+      }
+    }
+  }
+  return findings;
+}
+
 /**
  * Everything worth saying about a site, in the order a reader wants it: what
  * the settings got wrong first, then what the pages point at.
@@ -252,6 +377,7 @@ export function siteFindings(site: LoadedSite): Finding[] {
   return [
     ...settingsFindings(site),
     ...navFindings(site.nav),
+    ...regionFindings(site),
     ...filenameEncodingFindings(site),
     ...knownBrokenFindings(site, referenceFindings(site)),
     ...descriptionFindings(site),
@@ -369,6 +495,7 @@ export function dateFindings(site: LoadedSite): Finding[] {
     .map((section) => section.path.toLowerCase());
   const malformed: string[] = [];
   const undatedInFeed: string[] = [];
+  const undatedInStream: string[] = [];
   for (const page of site.index.pages) {
     const { data } = parseFrontmatter(site.sources.get(page) ?? "");
     for (const key of ["date", "updated"] as const) {
@@ -377,8 +504,15 @@ export function dateFindings(site: LoadedSite): Finding[] {
       }
     }
     const key = page.toLowerCase();
+    const sitePath = toSitePath(page);
+    const { streamDir } = resolvePageLayout(site.layout, sitePath);
+    const inStream =
+      streamDir !== undefined && sitePath.toLowerCase() !== streamIndexPath(streamDir).toLowerCase();
     const inFeed = feedDirs.some((dir) => key.startsWith(`${dir}/`) && key !== `${dir}/index.md`);
-    if (inFeed && data.date === undefined) undatedInFeed.push(`  ${page}`);
+    // One warning per page: a stream's feed (when it has one) leaves the same
+    // pages out, and the stream's ordering is the larger consequence.
+    if (inStream && data.date === undefined) undatedInStream.push(`  ${page}`);
+    else if (inFeed && data.date === undefined) undatedInFeed.push(`  ${page}`);
   }
   const findings: Finding[] = [];
   if (malformed.length > 0) {
@@ -397,6 +531,15 @@ export function dateFindings(site: LoadedSite): Finding[] {
         `${undatedInFeed.length} page(s) in a feed section have no "date:", so the feed leaves ` +
         "them out:\n" +
         undatedInFeed.join("\n"),
+    });
+  }
+  if (undatedInStream.length > 0) {
+    findings.push({
+      level: "warning",
+      message:
+        `${undatedInStream.length} page(s) in a stream section have no "date:", so the stream lists them ` +
+        "last, after every dated page:\n" +
+        undatedInStream.join("\n"),
     });
   }
   return findings;
