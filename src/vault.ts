@@ -97,3 +97,24 @@ export function indexSite({
     resolve: (reference) => byKey.get(toPageKey(reference)),
   };
 }
+
+/**
+ * The pages a settings path pattern names: one page however it is spelled,
+ * `dir/*` for the pages directly in a directory, or `dir/**` for every page
+ * beneath it — the same two glob shapes sections use, compared
+ * case-insensitively like every other page path here.
+ */
+export function pagesMatching(pattern: string, index: PageIndex): string[] {
+  const normalized = pattern.replace(/\\/g, "/").replace(/^\.\//, "").replace(/^\/+/, "");
+  const tree = normalized.endsWith("/**");
+  if (tree || normalized.endsWith("/*")) {
+    const dir = normalized.replace(/\/\*\*?$/, "").toLowerCase();
+    return index.pages.filter((page) => {
+      const key = page.toLowerCase();
+      if (!key.startsWith(`${dir}/`)) return false;
+      return tree || !key.slice(dir.length + 1).includes("/");
+    });
+  }
+  const page = index.resolve(normalized);
+  return page === undefined ? [] : [page];
+}

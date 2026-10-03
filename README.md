@@ -147,6 +147,7 @@ unpublished.
 | `exclude` | Paths to leave unpublished: a directory (`_drafts` or `_drafts/**`), an extension at any depth (`*.tmp`), or one exact path. Patterns are relative to the settings file, and a shape outside that list — `images/*.md` — is refused rather than left to match nothing |
 | `rehypePlugins` | Package names of rehype plugins to run on every page, after canopy's own sanitize step and before syntax highlighting — canopy's fixed extension point for markdown that needs more than CommonMark and GFM, a diagram fence rendered to SVG being the case this exists for. Each entry is an installed package name (`"rehype-declart"`), never a filesystem path — a relative-looking entry is refused, since the directory it would resolve against is wherever the build happens to run from, not this file |
 | `sections` | Ordered regions of the site — see below |
+| `knownBroken` | Pages whose broken links and images are known and being fixed, each `{ path, reason }`: published anyway, with a warning — see [Adopting a site that is already broken](#adopting-a-site-that-is-already-broken) |
 
 `tokens` is two blocks in practice, not one — a bare `:root` and a `prefers-color-scheme: dark`
 override:
@@ -261,6 +262,28 @@ Warnings — reported, and the build continues:
   is a nudge to check whether the encoding was intended, not a defect. Blind to non-ASCII on
   purpose, so a Korean, Japanese, or any other non-English filename is never flagged for being
   itself
+- A `date:` or `updated:` that is not a date, and a page in a `feed` section with no `date:`
+- Broken references on pages `knownBroken` excuses, grouped under the entry and its reason — and
+  an entry with nothing left to excuse (see below)
+
+### Adopting a site that is already broken
+
+A site moving to canopy-page often arrives with broken links and missing screenshots it has been
+publishing for a while — the first `check` is where they surface. Fixing them all can take weeks,
+and until then nothing would build. `knownBroken` lets the rest of the site ship meanwhile:
+
+```json
+"knownBroken": [
+  { "path": "help/statistics/kpi/**", "reason": "Screenshots being retaken" }
+]
+```
+
+`path` names pages — one page, `dir/*` for the pages directly in a directory, or `dir/**` for
+every page beneath it — and `reason` is required. Broken links and images **on those pages** are
+reported as one warning per entry, with its reason, and the build goes ahead; anything broken
+anywhere else is still an error. An entry that matches no page, or whose pages have nothing
+broken left, is reported for removal, so the list only shrinks — a baseline being paid down, not
+a switch that quietly turns the checker off.
 
 Checking reads the settings and each page. It never renders, so it is fast enough to sit at the
 front of a pipeline, at the scale a product manual reaches. References inside fenced

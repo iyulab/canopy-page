@@ -328,6 +328,37 @@ describe("parseSettings: where the site is published", () => {
     );
   });
 
+  it("accepts known-broken pages, each with its reason", () => {
+    expect(
+      parseSettings(
+        JSON.stringify({
+          knownBroken: [
+            { path: "help/kpi/**", reason: "Screenshots being retaken" },
+            { path: "guide\\old.md", reason: " Rewritten next quarter " },
+          ],
+        }),
+      ).knownBroken,
+    ).toEqual([
+      { path: "help/kpi/**", reason: "Screenshots being retaken" },
+      { path: "guide/old.md", reason: "Rewritten next quarter" },
+    ]);
+  });
+
+  it("refuses a known-broken entry without a reason, or with a pattern it cannot match", () => {
+    rejects(JSON.stringify({ knownBroken: [{ path: "a" }] }), /settings\.knownBroken\[0\]: needs a "reason"/);
+    rejects(
+      JSON.stringify({ knownBroken: [{ path: "a", reason: "  " }] }),
+      /settings\.knownBroken\[0\]\.reason: must not be empty/,
+    );
+    rejects(
+      JSON.stringify({ knownBroken: [{ path: "help/*.md", reason: "x" }] }),
+      /settings\.knownBroken\[0\]\.path: "help\/\*\.md" is not a pattern/,
+    );
+    rejects(JSON.stringify({ knownBroken: [{ path: "../x", reason: "x" }] }), /must stay inside the site/);
+    rejects(JSON.stringify({ knownBroken: [{ path: "a", reason: "x", until: "2027" }] }), /unknown key "until"/);
+    rejects(JSON.stringify({ knownBroken: "help/**" }), /settings\.knownBroken: must be an array/);
+  });
+
   it("accepts a section feed alongside a site URL", () => {
     expect(
       parseSettings(

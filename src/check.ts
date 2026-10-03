@@ -17,7 +17,7 @@ import {
   reportFindings,
   settingsFindings,
 } from "./site.js";
-import { toPageKey } from "./vault.js";
+import { pagesMatching, toPageKey } from "./vault.js";
 
 /**
  * Checking a site's references before it is published.
@@ -170,6 +170,7 @@ export async function referenceFindings(site: LoadedSite): Promise<Finding[]> {
       if (reference.kind === "wikilink") {
         if (!wikilinkExists(site, reference.target)) {
           findings.push({
+            page,
             level: "error",
             // Naming the consequence matters: an unresolved wikilink is not left
             // visibly broken, it renders as plain text, so nobody notices.
@@ -189,6 +190,7 @@ export async function referenceFindings(site: LoadedSite): Promise<Finding[]> {
         const basePath = siteBasePath(site);
         if (resolves && basePath === undefined) continue;
         findings.push({
+          page,
           level: "warning",
           message: resolves
             ? `${where}: ${reference.kind} "${reference.target}" resolves only when the ` +
@@ -220,6 +222,7 @@ export async function referenceFindings(site: LoadedSite): Promise<Finding[]> {
 
       if (reference.cutAtSpace) {
         findings.push({
+          page,
           level: "error",
           message:
             `${where}: ${reference.kind} destination stops at a space, so it addresses ` +
@@ -230,6 +233,7 @@ export async function referenceFindings(site: LoadedSite): Promise<Finding[]> {
       }
 
       findings.push({
+        page,
         level: "error",
         message:
           reference.kind === "image"
@@ -251,10 +255,62 @@ export async function siteFindings(site: LoadedSite): Promise<Finding[]> {
     ...settingsFindings(site),
     ...navFindings(site.nav),
     ...filenameEncodingFindings(site),
-    ...(await referenceFindings(site)),
+    ...knownBrokenFindings(site, await referenceFindings(site)),
     ...(await descriptionFindings(site)),
     ...(await dateFindings(site)),
   ];
+}
+
+/**
+ * Apply `settings.knownBroken` to the reference findings: a broken reference on
+ * a page an entry excuses is reported under that entry, with its reason, as a
+ * warning — so the build goes ahead — while a broken reference anywhere else is
+ * still the error it was.
+ *
+ * Each entry also has to keep earning its place. One that names no page, or
+ * whose pages have nothing broken left, is reported for removal: a baseline is
+ * a list of debts being paid down, and an entry nobody is reminded to delete
+ * becomes a permanent exemption — the way an "allow errors" switch ends up
+ * silencing a checker for good.
+ */
+export function knownBrokenFindings(site: LoadedSite, findings: Finding[]): Finding[] {
+  const entries = site.settings.knownBroken ?? [];
+  if (entries.length === 0) return findings;
+
+  const excused = entries.map((entry) => ({
+    entry,
+    pages: new Set(pagesMatching(entry.path, site.index)),
+    held: [] as string[],
+  }));
+  const kept: Finding[] = [];
+  for (const finding of findings) {
+    const by =
+      finding.level === "error" && finding.page !== undefined
+        ? excused.find((candidate) => candidate.pages.has(finding.page as string))
+        : undefined;
+    if (by === undefined) kept.push(finding);
+    else by.held.push(finding.message);
+  }
+
+  for (const { entry, pages, held } of excused) {
+    const where = `settings.knownBroken "${entry.path}"`;
+    if (pages.size === 0) {
+      kept.push({ level: "warning", message: `${where} matches no page — remove the entry` });
+    } else if (held.length === 0) {
+      kept.push({
+        level: "warning",
+        message: `${where}: nothing there is broken any more — remove the entry`,
+      });
+    } else {
+      kept.push({
+        level: "warning",
+        message:
+          `${where} (${entry.reason}): ${held.length} broken reference(s) published anyway:` +
+          held.map((message) => `\n  ${message}`).join(""),
+      });
+    }
+  }
+  return kept;
 }
 
 /**

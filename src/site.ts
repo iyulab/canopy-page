@@ -33,6 +33,8 @@ export interface Finding {
   /** `error` stops a build; `warning` is reported and the build continues. */
   level: "error" | "warning";
   message: string;
+  /** The page the finding is about, when it is about one page's content. */
+  page?: string;
 }
 
 /** Read a site directory into settings, files, and a navigation translation. */

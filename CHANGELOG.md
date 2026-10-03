@@ -7,6 +7,18 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [0.20.0] — 2026-10-03
+
+### Added
+
+- **`knownBroken`** — a baseline for adopting a site that is already broken. Each entry
+  `{ "path": "<page | dir/* | dir/**>", "reason": "…" }` (reason required) lets the pages it names
+  publish with their broken links and images reported as one warning per entry, naming the reason,
+  instead of stopping the build. A broken reference on any other page is still an error. An entry
+  that matches no page, or whose pages have nothing broken left, is reported for removal, so the
+  baseline only shrinks. Previously a site with any broken reference could not be built at all
+  until every one was fixed.
+
 ## [0.19.0] — 2026-10-03
 
 ### Added

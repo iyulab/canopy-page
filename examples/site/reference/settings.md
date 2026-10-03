@@ -59,6 +59,7 @@ This is the file that produced the site you are reading:
 | `exclude` | Paths to leave unpublished |
 | `sections` | Ordered regions of the site |
 | `rehypePlugins` | Package names of rehype plugins to run on every page, such as a diagram renderer |
+| `knownBroken` | Pages whose broken references are known and being fixed, `{ path, reason }` each — see [Exit codes](exit-codes.md#a-site-that-is-already-broken) |
 
 Validation is strict: an unknown key is rejected rather than ignored. A mistyped key that is
 quietly dropped looks like a tool disobeying its configuration, and every message names the

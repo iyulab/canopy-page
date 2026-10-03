@@ -10,7 +10,7 @@ they return.
 
 | Code | Meaning |
 |---|---|
-| `0` | Nothing broken. Warnings may still have been printed |
+| `0` | Nothing broken — or only what `knownBroken` excuses. Warnings may still have been printed |
 | non-zero | At least one error. `build` wrote nothing |
 
 ## Errors stop the build
@@ -24,6 +24,24 @@ its images missing is worse than a site that did not publish, because nobody fin
 reader does.
 
 See [Error messages](<error messages.md>) for what each one says and how to read it.
+
+## A site that is already broken
+
+A site adopted from another tool often arrives already publishing broken links and missing
+images — the first `check` is where they surface, and fixing them can take longer than the rest of
+the site should wait. `knownBroken` in `settings.json` names the pages being fixed and why:
+
+```json
+"knownBroken": [
+  { "path": "help/statistics/kpi/**", "reason": "Screenshots being retaken" }
+]
+```
+
+`path` is one page, `dir/*` (the pages directly in a directory) or `dir/**` (every page beneath
+it). Broken references on those pages become one warning per entry, naming the reason, and the
+build goes ahead. A new break anywhere else is still an error, so the contract above holds for
+everything not on the list. And the list only shrinks: an entry that matches no page, or whose
+pages have nothing broken left, is reported for removal.
 
 ## Warnings do not
 

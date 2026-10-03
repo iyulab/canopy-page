@@ -89,6 +89,27 @@
       "items": { "type": "string", "minLength": 1 },
       "description": "Installed rehype plugin package names to run on every page, after canopy's sanitize step and before syntax highlighting."
     },
+    "knownBroken": {
+      "type": "array",
+      "description": "Pages known to have broken links or images, published anyway while they are fixed: their broken references are warnings naming the reason instead of errors. An entry with nothing left to excuse is flagged for removal.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "reason"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "A page, \"dir/*\" for the pages directly in a directory, or \"dir/**\" for every page beneath it."
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Why these pages are let through."
+          }
+        }
+      }
+    },
     "strings": {
       "type": "object",
       "additionalProperties": false,

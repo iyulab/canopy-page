@@ -54,6 +54,14 @@ export interface SettingsSection {
   feed?: boolean;
 }
 
+/** Pages whose broken references are known and being fixed — see `Settings.knownBroken`. */
+export interface KnownBroken {
+  /** A page, `dir/*` (the pages directly in a directory), or `dir/**` (every page beneath it). */
+  path: string;
+  /** Why these pages are let through. Required: an excuse nobody wrote down is never revisited. */
+  reason: string;
+}
+
 /**
  * One entry in a section's contents: a page, or a group of entries.
  *
@@ -91,6 +99,15 @@ export interface Settings {
   exclude?: string[];
   /** Ordered regions of the site. Without them, navigation follows the folder tree. */
   sections?: SettingsSection[];
+  /**
+   * Pages known to have broken references, published anyway while they are
+   * being fixed — the baseline a site already broken before it adopted
+   * canopy-page starts from. Their broken links and images are reported as
+   * warnings naming the reason instead of stopping the build; anything broken
+   * elsewhere still stops it. An entry with nothing left to excuse is flagged
+   * for removal, so the list only ever shrinks.
+   */
+  knownBroken?: KnownBroken[];
   /** Logo shown beside the site title, relative to the settings file. Must be a published file. */
   logo?: string;
   /**
@@ -197,7 +214,10 @@ export const SETTINGS_KEYS = new Set([
   "alternates",
   "rehypePlugins",
   "strings",
+  "knownBroken",
 ]);
+
+export const KNOWN_BROKEN_KEYS = new Set(["path", "reason"]);
 
 export const SECTION_KEYS = new Set(["path", "label", "order", "items", "feed"]);
 
@@ -296,6 +316,23 @@ function asExclusionPattern(value: unknown, where: string): string {
     );
   }
   return pattern;
+}
+
+function parseKnownBroken(value: unknown, where: string): KnownBroken {
+  const entry = asObject(value, where, 'expected an object with "path" and "reason"');
+  rejectUnknownKeys(entry, KNOWN_BROKEN_KEYS, where);
+  if (entry.path === undefined) fail(`${where}: needs a "path" naming the pages it excuses`);
+  if (entry.reason === undefined) fail(`${where}: needs a "reason" — say why these pages are let through`);
+  const path = asRelativePath(entry.path, `${where}.path`);
+  // The same two glob shapes sections understand, and only as the last segment.
+  if (path.replace(/\/\*\*?$/, "").includes("*")) {
+    fail(
+      `${where}.path: "${path}" is not a pattern canopy-page understands. ` +
+        'Use a page ("guide/install"), "dir/*" for the pages directly in a directory, ' +
+        'or "dir/**" for every page beneath it',
+    );
+  }
+  return { path, reason: asString(entry.reason, `${where}.reason`).trim() };
 }
 
 /**
@@ -418,6 +455,7 @@ export function parseSettings(json: string): Settings {
     alternates,
     rehypePlugins,
     strings,
+    knownBroken,
   } = value;
   if (title !== undefined) asString(title, "settings.title");
   if (description !== undefined) asString(description, "settings.description");
@@ -432,6 +470,9 @@ export function parseSettings(json: string): Settings {
   }
   if (exclude !== undefined && !Array.isArray(exclude)) fail("settings.exclude: must be an array");
   if (sections !== undefined && !Array.isArray(sections)) fail("settings.sections: must be an array");
+  if (knownBroken !== undefined && !Array.isArray(knownBroken)) {
+    fail("settings.knownBroken: must be an array");
+  }
   if (rehypePlugins !== undefined && !Array.isArray(rehypePlugins)) {
     fail("settings.rehypePlugins: must be an array");
   }
@@ -524,6 +565,13 @@ export function parseSettings(json: string): Settings {
       : {
           sections: (sections as unknown[]).map((section, i) =>
             parseSection(section, `settings.sections[${i}]`),
+          ),
+        }),
+    ...(knownBroken === undefined
+      ? {}
+      : {
+          knownBroken: (knownBroken as unknown[]).map((entry, i) =>
+            parseKnownBroken(entry, `settings.knownBroken[${i}]`),
           ),
         }),
     ...(logo === undefined ? {} : { logo: asRelativePath(logo, "settings.logo") }),

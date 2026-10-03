@@ -423,6 +423,72 @@ describe("descriptionFindings", { timeout: LOADS_A_SITE }, () => {
   });
 });
 
+describe("knownBroken", { timeout: LOADS_A_SITE }, () => {
+  const brokenSite = (knownBroken: unknown[]) => ({
+    "settings.json": JSON.stringify({ knownBroken }),
+    "index.md": "# Home\n",
+    "help/kpi/a.md": "# A\n\n![shot](a.assets/1.png)\n",
+    "help/kpi/deep/b.md": "# B\n\n[gone](nowhere.md)\n",
+    "help/other.md": "# Other\n\n![shot](other.assets/1.png)\n",
+  });
+  async function run(files: Record<string, string>): Promise<{ code: number; errors: string; warnings: string }> {
+    const root = await site(files);
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    const code = await checkSite(root);
+    return { code, errors: error.mock.calls.flat().join("\n"), warnings: warn.mock.calls.flat().join("\n") };
+  }
+
+  it("publishes an excused page's broken references as one warning naming the reason", async () => {
+    const result = await run(brokenSite([{ path: "help/kpi/**", reason: "Screenshots being retaken" }]));
+    expect(result.errors).toContain('help/other.md:3: image "other.assets/1.png" is not a published file');
+    expect(result.errors).not.toContain("help/kpi");
+    expect(result.warnings).toContain(
+      'settings.knownBroken "help/kpi/**" (Screenshots being retaken): 2 broken reference(s) published anyway:',
+    );
+    expect(result.warnings).toContain('\n  help/kpi/a.md:3: image "a.assets/1.png" is not a published file');
+    // Something broken outside the baseline still fails the check.
+    expect(result.code).toBe(1);
+  });
+
+  it("passes once everything broken is excused", async () => {
+    const result = await run(
+      brokenSite([
+        { path: "help/kpi/**", reason: "Screenshots being retaken" },
+        { path: "help/other", reason: "Page being rewritten" },
+      ]),
+    );
+    expect(result.code).toBe(0);
+    expect(result.errors).toBe("");
+  });
+
+  it("excuses only the shape a pattern names", async () => {
+    // `help/kpi/*` is the pages directly in help/kpi — not deep/b.md.
+    const result = await run(brokenSite([{ path: "help/kpi/*", reason: "r" }]));
+    expect(result.errors).toContain("help/kpi/deep/b.md:3");
+    expect(result.errors).not.toContain("help/kpi/a.md");
+  });
+
+  it("asks for an entry to be removed once it excuses nothing", async () => {
+    const result = await run({
+      "settings.json": JSON.stringify({
+        knownBroken: [
+          { path: "help/fixed.md", reason: "was missing screenshots" },
+          { path: "gone/**", reason: "folder since deleted" },
+        ],
+      }),
+      "index.md": "# Home\n",
+      "help/fixed.md": "# Fixed\n",
+    });
+    expect(result.code).toBe(0);
+    expect(result.warnings).toContain(
+      'settings.knownBroken "help/fixed.md": nothing there is broken any more — remove the entry',
+    );
+    expect(result.warnings).toContain('settings.knownBroken "gone/**" matches no page — remove the entry');
+  });
+});
+
 describe("dateFindings", { timeout: LOADS_A_SITE }, () => {
   async function dates(files: Record<string, string>): Promise<string[]> {
     const root = await site(files);
