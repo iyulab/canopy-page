@@ -7,6 +7,26 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [0.18.0] — 2026-10-03
+
+### Added
+
+- **`feed` on a section.** `"feed": true` publishes `<path>/feed.xml`, an Atom feed of the
+  section's dated pages (frontmatter `date:`), newest first, linked from the section's pages for
+  autodiscovery. Needs `siteUrl` — rejected without it, since a feed's links are absolute.
+- **Dated pages**, from canopy 0.17.0: a page's `date:` is shown under its heading and stated in
+  `<head>` (`article:published_time`, `article:modified_time` from `updated:`, schema.org
+  `Article`). Undated pages are unchanged.
+- **`check` warns about dates**: a `date:` or `updated:` that is not a date, and a page in a feed
+  section with no `date:` (the section's index page excepted), which the feed would leave out.
+
+### Changed
+
+- Depends on `@iyulab/canopy` `^0.17.0`.
+- A sitemap `<lastmod>` from `updated:` follows canopy's rule for what is a date. A value that
+  merely starts like a date (`2026-09-28 sometime`) or names an impossible day no longer counts;
+  the page falls back to its git date, and `check` names the value.
+
 ## [0.17.0] — 2026-09-28
 
 ### Changed
