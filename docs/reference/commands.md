@@ -75,14 +75,8 @@ or a missing image — without rendering anything, which is what keeps it fast e
 in a pipeline. Each finding is printed as `error: …` or `warning: …`, naming the file and line it
 is about; [What check reports](check.md) lists every one of them.
 
-When nothing is broken it ends with a summary, which counts the warnings so that "nothing broken"
-is never read as "nothing to look at":
-
-```
-canopy-page: 32 page(s) checked, nothing broken, 2 warning(s)
-```
-
-Leaves with `0` when nothing is broken — warnings or not — and `1` when anything is. See
+When nothing is broken it ends with [a summary line](check.md#what-check-reports) counting the
+warnings. Leaves with `0` when nothing is broken — warnings or not — and `1` when anything is. See
 [Exit codes](exit-codes.md) for what a pipeline does with that.
 
 ## `build`
@@ -142,8 +136,14 @@ The server is a preview for one author on one machine: a folder is answered by i
 
 ## When the site cannot be read
 
-Every command but `init` starts by reading `settings.json`. A folder without one stops with
-`error: no settings.json in <folder>`, and a settings file that is not valid stops with the
-file's path and the position of what is wrong in it — `sections[0].items[1]`, say. Both leave
-with `1`, before any page is read.
+Every command but `init` starts by reading `settings.json`, and stops there with exit code `1`
+when it cannot:
+
+- a folder without one stops with `error: no settings.json in <folder>` — run the command on the
+  folder that holds it;
+- a settings file that is not valid JSON, or not a valid settings file, stops with `error:`, the
+  file's path, and what is wrong at which position. [The settings file](settings.md) describes
+  what each field takes, and how strictly it is read.
+
+No page is read, and nothing is checked or built, until the settings file is sound.
 

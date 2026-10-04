@@ -31,17 +31,9 @@ about it.
 
 A site adopted from another tool often arrives already publishing broken links and missing
 images — the first `check` is where they surface, and fixing them can take longer than the rest of
-the site should wait. `knownBroken` in `settings.json` names the pages being fixed and why:
-
-```json
-"knownBroken": [
-  { "path": "help/statistics/kpi/**", "reason": "Screenshots being retaken" }
-]
-```
-
-`path` is one page, `dir/*` (the pages directly in a directory) or `dir/**` (every page beneath
-it), and `reason` is required. Broken links and images on those pages become one warning per
-entry, naming the reason and listing each one, and the build goes ahead. A new break anywhere
+the site should wait. [`knownBroken`](settings.md#knownbroken) in `settings.json` names the pages
+being fixed and why. Broken links and images on those pages become one warning per entry, naming
+the reason and listing each one, and the build goes ahead. A new break anywhere
 else is still an error, so the contract above holds for everything not on the list. And the list
 only shrinks: an entry that matches no page, or whose pages have nothing broken left, is reported
 for removal — a baseline being paid down, not a switch that quietly turns the checker off.

@@ -314,8 +314,8 @@ the build was run from, and get it right by accident or not at all.
 
 ## `knownBroken`
 
-A site moving to canopy-page often arrives already publishing broken links and missing images.
-`knownBroken` names the pages being fixed, so the rest of the site can ship meanwhile:
+The pages whose broken links and images are known and being fixed, so the rest of the site can
+ship meanwhile:
 
 ```json
 { "knownBroken": [{ "path": "help/statistics/kpi/**", "reason": "Screenshots being retaken" }] }

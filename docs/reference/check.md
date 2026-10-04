@@ -50,8 +50,9 @@ the rest as text. The message names that, rather than the truncated path nobody 
 error: index.md:4: image "assets/diagram.png" is not a published file
 ```
 
-Covers three cases that end the same way for a reader: the file does not exist, it is excluded,
-or it sits above the site root.
+Covers both cases that end the same way for a reader: the file does not exist, or it is
+excluded. A path that climbs above the site root is not checked at all — see [What is never
+reported](#what-is-never-reported).
 
 ### A wikilink matches no page
 
@@ -186,6 +187,18 @@ warning: index.md:4: image "/assets/logo.png" — nothing is published at "asset
 
 See [Root-absolute references](#root-absolute-references).
 
+### A root-absolute link leaves the site's own path
+
+```
+warning: blog/2026-10-03-launch.md:9: link "/pricing" leaves this site — it is outside settings.siteUrl's path "/blog/" — though this site publishes "pricing"; if that page is meant, write "/blog/pricing" or a relative link
+```
+
+Only when `siteUrl` places the site under a path. A root-absolute link outside that path is the
+host's, and normally not reported — but this site publishes a page at that same path from its own
+root, so the link reads like one to this site written without its path. If the host's page is
+meant, leave it; otherwise write the path under the site's own, or a relative link. See
+[Root-absolute references](#root-absolute-references).
+
 ### Pages excused by knownBroken
 
 ```
@@ -195,10 +208,9 @@ warning: settings.knownBroken "help/old/**" matches no page — remove the entry
 warning: settings.knownBroken "help/setup.md": nothing there is broken any more — remove the entry
 ```
 
-Broken links and images on pages a [`knownBroken`](exit-codes.md#a-site-that-is-already-broken)
-entry names are reported under that entry and its reason, instead of as errors. An entry that
-matches no page, or whose pages have nothing broken left, is reported for removal, so the list only
-shrinks.
+The first form lists what a [`knownBroken`](settings.md#knownbroken) entry excuses, under its
+reason; the other two ask for an entry to be removed. How the list works is in [Exit
+codes](exit-codes.md#a-site-that-is-already-broken).
 
 ### Pages with no description
 
@@ -236,7 +248,9 @@ written in the built page. Where it lands depends on where the site is served fr
 
 - **No `siteUrl`, or one at a domain root** (`https://help.example.com`). The path is checked
   against the site's own root. When nothing is published there, it is a warning: something else
-  on that host may answer it, which the checker cannot see.
+  on that host may answer it, which the checker cannot see. If nothing does, it is a 404 — and
+  there is no `public/`-style folder mapped onto the root here, as some other generators have:
+  `/assets/logo.png` is answered only by an `assets/logo.png` in the site itself.
 - **`siteUrl` with a path** (`https://example.com/blog`), the site standing inside a larger one. A
   path inside it (`/blog/archive.html`) is this site's own page written absolute, checked like any
   other link, and an error when nothing is there. A path outside it (`/pricing`) is the host's, and
@@ -257,14 +271,10 @@ relative. Prefer one in your own pages, unless the target really is the host's.
   usable for drafts.
 - Whether a `#fragment` matches a heading on the target page — only the page is checked.
 
-## Before anything is checked
+## Outside the findings
 
-The settings file is read first. A folder with no `settings.json` stops with `error: no
-settings.json in <folder>`. A settings file that is not valid stops with the file's path and the
-position of the mistake, down to `sections[0].items[1]` — an unknown key, a value of the wrong
-shape, `order` alongside `items`, half of `home`, a `feed` or `previewImage` without `siteUrl`.
-Validation is strict: a mistyped key quietly dropped would look like the tool disobeying its
-configuration. [The settings file](settings.md) describes what each field takes.
+A missing or invalid settings file is not a finding: nothing can be checked without it, so the
+command stops before reading any page — see [When the site cannot be read](commands.md#when-the-site-cannot-be-read).
 
 `build` also writes two files `check` never sees: with `siteUrl` set, `sitemap.xml` and a
 `robots.txt` pointing at it. Neither is checked, because neither exists until the build has

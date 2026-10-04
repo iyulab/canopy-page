@@ -14,7 +14,10 @@ to it — its fields, its validation, and what the checks reject — are what th
 - **The documentation is the site.** <https://iyulab.github.io/canopy-page> is canopy-page's one
   complete reference — every command and option, every settings field, every `check` finding,
   and the theming contract — built from `docs/` in the repository (previously `examples/site`).
-  `docs/USAGE.md` is gone; everything it said is on the site.
+  `docs/USAGE.md` is gone; everything it said is on the site. The error-messages page is now
+  [What check reports](https://iyulab.github.io/canopy-page/reference/check.html), and its old
+  address (`reference/error%20messages.html`) no longer exists. The npm package's homepage is the
+  site.
 
 ## [0.22.0] — 2026-10-04
 
