@@ -8,7 +8,7 @@ This site is that pipeline's own documentation, and it is built the same way any
 with canopy-page is:
 
 ```sh
-npx canopy-page build examples/site -o dist/demo
+npx canopy-page build docs -o dist/demo
 ```
 
 The [settings file](reference/settings.md) beside these documents is short enough to read in one

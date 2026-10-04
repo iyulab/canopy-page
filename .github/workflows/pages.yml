@@ -1,6 +1,6 @@
 name: Demo site
 
-# The example site under examples/ is built with this package and published to
+# The documentation site under docs/ is built with this package and published to
 # GitHub Pages. It is the demo, and it is also the widest end-to-end test there
 # is: settings parsing, reference checks, navigation, and rendering all have to
 # agree for the deploy to happen at all.
@@ -10,7 +10,7 @@ on:
     # Nothing else changes what the site contains. A README edit should not
     # spend a deploy.
     paths:
-      - "examples/**"
+      - "docs/**"
       - "src/**"
       - "package.json"
       - "package-lock.json"
@@ -59,10 +59,10 @@ jobs:
       # points at nothing this fails in seconds and says which line — rather
       # than failing inside the build with the same message buried in output.
       - name: Check the demo site
-        run: node dist/cli.js check examples/site
+        run: node dist/cli.js check docs
 
       - name: Build the demo site
-        run: node dist/cli.js build examples/site -o dist-demo
+        run: node dist/cli.js build docs -o dist-demo
 
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5

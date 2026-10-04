@@ -224,7 +224,7 @@ export interface Settings {
 const IGNORED_KEYS = new Set(["$schema"]);
 
 /**
- * Exported so `settings.schema.json` (`examples/site/`) can be tested against
+ * Exported so `settings.schema.json` (`docs/`) can be tested against
  * the parser's own allowlists rather than a hand-copied duplicate — the two
  * are otherwise free to drift silently apart as fields are added.
  */

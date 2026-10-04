@@ -180,7 +180,7 @@ const ASCII_URI_SAFE = /^[A-Za-z0-9\-_.!~*'()]$/;
  * character outside the unreserved set, which means *any* non-English
  * filename — a Korean directory name, an emoji — would otherwise trip this,
  * and canopy-page's own demo site intentionally ships one (see
- * `examples/site/guide/한국어-예시/`) as a *supported* pattern, not a mistake
+ * `docs/guide/한국어-예시/`) as a *supported* pattern, not a mistake
  * to flag. An ASCII character in the escaped set, on the other hand, is
  * consistently a slip — nobody names a file "error#messages.md" on purpose.
  */

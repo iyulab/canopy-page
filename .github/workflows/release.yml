@@ -43,7 +43,7 @@ jobs:
       # The example site is built by the very package being released, so a
       # release that cannot build it is a release that does not work. Cheap
       # here, and the failure names the page and line.
-      - run: node dist/cli.js build examples/site -o dist-demo
+      - run: node dist/cli.js build docs -o dist-demo
 
   publish:
     needs: verify

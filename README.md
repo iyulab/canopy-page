@@ -9,7 +9,7 @@ together. The rendering itself is [canopy](https://github.com/iyulab/canopy)'s j
 canopy-page drives it.
 
 **Live docs**: <https://iyulab.github.io/canopy-page> — built with canopy-page itself, from the
-[`examples/site`](examples/site) in this repository, republished on every push to `main`.
+[`docs/`](docs) in this repository, republished on every push to `main`.
 
 **Complete reference**: [`docs/USAGE.md`](docs/USAGE.md) — every command, every
 `settings.json` field, every markdown feature, and everything a published site ships with, in
@@ -73,7 +73,7 @@ go away.
   ([guide](https://iyulab.github.io/canopy-page/guide/host-site.html)).
 
 See it live at <https://iyulab.github.io/canopy-page>, or read
-[What a reader gets](examples/site/guide/reading.md) for how each one behaves.
+[What a reader gets](docs/guide/reading.md) for how each one behaves.
 
 ## Install
 

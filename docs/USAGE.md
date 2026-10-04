@@ -12,7 +12,7 @@ itself — HTML, the site shell, navigation, backlinks, search — is
 feature is described below, it is canopy-page's own unless the text says otherwise.
 
 **Live reference build**: <https://iyulab.github.io/canopy-page> — built with canopy-page
-itself, from [`examples/site`](../examples/site) in this repository.
+itself, from the [`docs/`](.) folder in this repository.
 
 ## Contents
 

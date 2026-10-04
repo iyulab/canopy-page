@@ -4,19 +4,13 @@ import { describe, expect, it } from "vitest";
 import { HOME_KEYS, NAV_ITEM_KEYS, SECTION_KEYS, SETTINGS_KEYS, STRINGS_KEYS } from "./settings.js";
 
 /**
- * `examples/site/settings.schema.json` is hand-maintained separately from the
+ * `docs/settings.schema.json` is hand-maintained separately from the
  * parser's own allowlists in `settings.ts` — the two describe the same
  * contract from different angles (editor completion vs. runtime rejection)
  * and have no other link keeping them in step. This is the drift check: every
  * key the parser accepts must appear in the schema, and vice versa.
  */
-const SCHEMA_PATH = path.join(
-  import.meta.dirname,
-  "..",
-  "examples",
-  "site",
-  "settings.schema.json",
-);
+const SCHEMA_PATH = path.join(import.meta.dirname, "..", "docs", "settings.schema.json");
 
 /** Only the shape this file's assertions read — not a general JSON Schema type. */
 interface SchemaNode {
@@ -38,7 +32,7 @@ function keysOf(properties: Record<string, SchemaNode> | undefined): Set<string>
   return new Set(Object.keys(properties ?? {}));
 }
 
-describe("examples/site/settings.schema.json", () => {
+describe("docs/settings.schema.json", () => {
   it("is valid JSON declaring the 2020-12 draft", async () => {
     const schema = await loadSchema();
     expect(schema.$schema).toBe("https://json-schema.org/draft/2020-12/schema");
@@ -77,12 +71,9 @@ describe("examples/site/settings.schema.json", () => {
     expect(keysOf(objectBranch?.properties)).toEqual(NAV_ITEM_KEYS);
   });
 
-  it("is the schema examples/site's own settings.json declares", async () => {
+  it("is the schema the documentation site's own settings.json declares", async () => {
     const settings = JSON.parse(
-      await readFile(
-        path.join(import.meta.dirname, "..", "examples", "site", "settings.json"),
-        "utf8",
-      ),
+      await readFile(path.join(import.meta.dirname, "..", "docs", "settings.json"), "utf8"),
     );
     const schema = await loadSchema();
     expect(settings.$schema).toBe(schema.$id);
