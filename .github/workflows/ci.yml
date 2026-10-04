@@ -38,4 +38,5 @@ jobs:
       # inspects the real `npm pack` output, which does not exist until dist/
       # is built.
       - run: npm run build
+      - run: node dist/cli.js check docs
       - run: npm test

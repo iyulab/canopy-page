@@ -34,8 +34,10 @@ it). A release adds a release note on top, as below.
 `src/docs-site.test.ts` holds the site to the code where the two can be compared: every settings
 key needs a row in the settings reference, every command and option in the usage text a mention
 in the commands reference, every region, profile, slot and theming hook a mention in the theming
-reference, and the newest CHANGELOG release a dated file in `docs/release-notes/`. It also fails
-on a link to a separate usage document or a reference to the site's old location. Prose it
+reference, the settings example in the settings reference the site's own `settings.json`, and
+the newest minor CHANGELOG release a note in `docs/release-notes/` naming its version. It also
+fails on a link to a separate usage document or a reference to the site's old location. CI runs
+`check docs` as well, so a broken link in the site fails a pull request rather than the deploy. Prose it
 cannot compare — what a finding means, how a feature behaves — is the reviewer's to check.
 
 ## Releasing
@@ -45,13 +47,13 @@ documentation (<https://iyulab.github.io/canopy-page>), and it goes stale the mo
 reader-facing change ships without a matching edit there. Do all of this in the same PR:
 
 1. Move `CHANGELOG.md`'s `[Unreleased]` section under a new `## [x.y.z] — YYYY-MM-DD` heading.
-2. **For every entry under Added/Changed that a reader (not just a consumer reading
-   `package.json`) would notice, add a dated file under `docs/release-notes/`** describing it in
-   reader-facing language (see the existing files there for the tone: short, one heading per
-   change, link to the page that covers it in full). That page was updated with the change
-   itself (see [Documentation](#documentation)); confirm it says what shipped. A dependency bump
-   alone (no visible behavior change) does not need a release-notes entry. The release note's
-   filename starts with the CHANGELOG heading's date — the test suite checks for it.
+2. **Every minor release (`x.Y.0`) gets a release note** — a dated file under
+   `docs/release-notes/` that names its version (`0.22.0`) and describes what a reader would
+   notice, in reader-facing language (see the existing files there for the tone: short, one
+   heading per change, link to the page that covers it in full). A patch release (`x.y.Z`) may go
+   without one. The pages a release note links to were updated with each change itself (see
+   [Documentation](#documentation)); confirm they say what shipped. The test suite fails when the
+   newest minor release in the CHANGELOG has no note naming its version.
 3. Bump the `version` in `package.json` to match the CHANGELOG heading.
 4. Commit, push to `main`, then tag `vx.y.z` and push the tag.
 

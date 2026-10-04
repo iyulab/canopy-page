@@ -38,10 +38,34 @@ function undocumented(text: string, names: Iterable<string>): string[] {
   return [...names].filter((name) => !spans.has(name));
 }
 
-/** The names among `names` that head no table row of `text` — a field documented is a field with a row. */
-function withoutRow(text: string, names: Iterable<string>): string[] {
-  const rows = new Set([...text.matchAll(/^\|\s*`([^`\n]+)`\s*\|/gm)].map((match) => match[1] as string));
+/**
+ * The text under `heading` (written exactly, `## Sections`), up to the next
+ * heading of any level — so a table read from it is that section's own, and a
+ * key documented in one table cannot stand in for the same name in another.
+ * Fenced code is left out first, since a `#` line inside one is not a heading.
+ */
+function sectionOf(text: string, heading: string): string {
+  const prose = text.replace(/^```[\s\S]*?^```/gm, "");
+  const start = prose.split("\n").findIndex((line) => line.trimEnd() === heading);
+  if (start === -1) throw new Error(`no "${heading}" heading`);
+  const rest = prose.split("\n").slice(start + 1);
+  const end = rest.findIndex((line) => /^#{1,6} /.test(line));
+  return rest.slice(0, end === -1 ? undefined : end).join("\n");
+}
+
+/** The names among `names` that head no row of the table under `heading` — a field documented is a field with a row. */
+function withoutRow(text: string, heading: string, names: Iterable<string>): string[] {
+  const rows = new Set(
+    [...sectionOf(text, heading).matchAll(/^\|\s*`([^`\n]+)`\s*\|/gm)].map((match) => match[1] as string),
+  );
   return [...names].filter((name) => !rows.has(name));
+}
+
+/** The first fenced JSON block of `text`, parsed. */
+function firstJsonBlock(text: string): unknown {
+  const block = /```json\r?\n([\s\S]*?)```/.exec(text);
+  if (block === null) throw new Error("no ```json block");
+  return JSON.parse(block[1] as string);
 }
 
 /** The names among `names` that appear in no code span of `text`, even as part of a longer one. */
@@ -59,7 +83,7 @@ function usageVocabulary(): { commands: string[]; options: string[] } {
   const commands: string[] = [];
   const options = new Set<string>();
   for (const line of USAGE.split("\n")) {
-    const command = /^ {2}([a-z]+)\s/.exec(line);
+    const command = /^ {2}([a-z][a-z-]*)\s/.exec(line);
     if (command !== null) commands.push(command[1] as string);
     for (const option of line.matchAll(/(?<![\w-])(--?[a-z][a-z-]*)/g)) options.add(option[1] as string);
   }
@@ -92,13 +116,19 @@ describe("the documentation site", () => {
   it("documents every settings key in reference/settings.md", async () => {
     const text = await page("reference/settings.md");
     expect({
-      settings: withoutRow(text, SETTINGS_KEYS),
-      sections: withoutRow(text, SECTION_KEYS),
-      strings: withoutRow(text, STRINGS_KEYS),
-      home: withoutRow(text, HOME_KEYS),
-      navItems: withoutRow(text, NAV_ITEM_KEYS),
-      knownBroken: withoutRow(text, KNOWN_BROKEN_KEYS),
-    }).toEqual({ settings: [], sections: [], strings: [], home: [], navItems: [], knownBroken: [] });
+      settings: withoutRow(text, "## Top-level fields", SETTINGS_KEYS),
+      sections: withoutRow(text, "## Sections", SECTION_KEYS),
+      navItems: withoutRow(text, "### Items", NAV_ITEM_KEYS),
+      strings: withoutRow(text, "## Strings", STRINGS_KEYS),
+      home: withoutRow(text, "### `home`", HOME_KEYS),
+      knownBroken: withoutRow(text, "## `knownBroken`", KNOWN_BROKEN_KEYS),
+    }).toEqual({ settings: [], sections: [], navItems: [], strings: [], home: [], knownBroken: [] });
+  });
+
+  it("shows, as this site's own settings file, the one docs/settings.json actually holds", async () => {
+    const shown = firstJsonBlock(await page("reference/settings.md"));
+    const actual = JSON.parse(await readFile(path.join(DOCS, "settings.json"), "utf8"));
+    expect(shown).toEqual(actual);
   });
 
   it("documents every region, profile, slot and theming hook in reference/theming.md", async () => {
@@ -125,15 +155,21 @@ describe("the documentation site", () => {
     });
   });
 
-  it("has a release note for the newest release in the changelog", async () => {
+  it("has a release note naming the newest minor release in the changelog", async () => {
+    // Every minor release gets a note that names its version; a patch release
+    // may go without one (CONTRIBUTING, Releasing). Matched by version, not by
+    // date: several releases often share a day.
     const changelog = await readFile(path.join(REPO, "CHANGELOG.md"), "utf8");
-    const newest = /^## \[(\d+\.\d+\.\d+)\] — (\d{4}-\d{2}-\d{2})/m.exec(changelog);
-    expect(newest, "CHANGELOG.md has no released version heading").not.toBeNull();
-    const [, version, date] = newest as RegExpExecArray;
-    const notes = (await readdir(path.join(DOCS, "release-notes"))).filter(
-      (file) => file.startsWith(date as string) && file.endsWith(".md"),
-    );
-    expect(notes, `${version} (${date}) has no docs/release-notes/${date}*.md`).not.toEqual([]);
+    const newest = /^## \[(\d+\.\d+\.0)\]/m.exec(changelog);
+    expect(newest, "CHANGELOG.md has no released minor version heading").not.toBeNull();
+    const version = (newest as RegExpExecArray)[1] as string;
+    const named = new RegExp(`(?<![\\d.])${version.replace(/\./g, "\\.")}(?![\\d.]*\\d)`);
+    const dir = path.join(DOCS, "release-notes");
+    const notes: string[] = [];
+    for (const file of (await readdir(dir)).filter((name) => name.endsWith(".md") && name !== "index.md")) {
+      if (named.test(await readFile(path.join(dir, file), "utf8"))) notes.push(file);
+    }
+    expect(notes, `no note in docs/release-notes/ names ${version}`).not.toEqual([]);
   });
 
   it("is the only reference — no separate usage document, and nothing points at one", () => {
