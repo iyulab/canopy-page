@@ -52,9 +52,7 @@ export async function listSite(
     ...exclude.flatMap((pattern) => ["--exclude", pattern]),
     ...(layoutPath === undefined ? [] : ["--layout", layoutPath]),
   ]);
-  // A canopy that predates layouts does not report `generated`.
-  const listing = JSON.parse(output) as SiteListing;
-  return { ...listing, generated: listing.generated ?? [] };
+  return JSON.parse(output) as SiteListing;
 }
 
 /** The settings file a site is configured by, found at the root of the site. */
