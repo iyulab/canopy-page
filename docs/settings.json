@@ -21,7 +21,8 @@
         },
         "guide/reading",
         { "path": "guide/localizing", "items": ["guide/한국어-예시/index"] },
-        "guide/host-site"
+        "guide/host-site",
+        "guide/deploying"
       ]
     },
     { "path": "reference", "label": "Reference" },

@@ -7,6 +7,15 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [Unreleased]
+
+### Changed
+
+- **The documentation is the site.** <https://iyulab.github.io/canopy-page> is canopy-page's one
+  complete reference — every command and option, every settings field, every `check` finding,
+  and the theming contract — built from `docs/` in the repository (previously `examples/site`).
+  `docs/USAGE.md` is gone; everything it said is on the site.
+
 ## [0.22.0] — 2026-10-04
 
 ### Added

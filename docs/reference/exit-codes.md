@@ -16,14 +16,16 @@ they return.
 ## Errors stop the build
 
 An error means a reader would hit something that is not there — a link to a page that was never
-published, an image that does not exist, a wikilink matching nothing. When any is present,
-`build` writes no output at all.
+published, an image that does not exist, a wikilink matching nothing — or that the build itself
+could not go ahead, such as a region fragment that is missing. When any is present, `build` writes
+no output at all.
 
 That is a deliberate contract rather than an implementation detail: a site published with half
 its images missing is worse than a site that did not publish, because nobody finds out until a
 reader does.
 
-See [Error messages](<error messages.md>) for what each one says and how to read it.
+[What check reports](check.md) lists every error and warning, what each one says, and what to do
+about it.
 
 ## A site that is already broken
 
@@ -38,19 +40,18 @@ the site should wait. `knownBroken` in `settings.json` names the pages being fix
 ```
 
 `path` is one page, `dir/*` (the pages directly in a directory) or `dir/**` (every page beneath
-it). Broken references on those pages become one warning per entry, naming the reason, and the
-build goes ahead. A new break anywhere else is still an error, so the contract above holds for
-everything not on the list. And the list only shrinks: an entry that matches no page, or whose
-pages have nothing broken left, is reported for removal.
+it), and `reason` is required. Broken links and images on those pages become one warning per
+entry, naming the reason and listing each one, and the build goes ahead. A new break anywhere
+else is still an error, so the contract above holds for everything not on the list. And the list
+only shrinks: an entry that matches no page, or whose pages have nothing broken left, is reported
+for removal — a baseline being paid down, not a switch that quietly turns the checker off.
 
 ## Warnings do not
 
-A warning is something that depends on context the checker does not always have. A root-absolute
-reference like `/assets/logo.png` is right if the site is mounted at the root of a domain and
-wrong if it is served from a sub-path. Ordinarily the checker cannot tell which — but when
-`siteUrl` already declares a sub-path mount, it warns about a root-absolute reference even if the
-reference resolves today, since that is the one case it can actually judge. It reports and
-continues either way.
+A warning is something that depends on context the checker does not always have, or a nudge
+rather than a defect. A root-absolute reference like `/assets/logo.png` is right if something on
+the host answers it, which the checker cannot see; a page with no `description:` is fine on a site
+nobody searches. It reports and continues, and the exit code stays `0`.
 
 ## In a pipeline
 

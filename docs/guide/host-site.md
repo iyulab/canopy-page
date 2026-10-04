@@ -48,8 +48,8 @@ canopy-page's controls where you want them with slots:
 </header>
 ```
 
-Slots are `site-title`, `home`, `back`, `breadcrumb`, `language`, `search`, `theme-toggle`, and
-`page:<key>` — a page's own frontmatter text. Always write the closing tag: HTML does not close
+[Slots](../reference/theming.md#slots) lists every one, and `page:<key>` — a page's own
+frontmatter text. Always write the closing tag: HTML does not close
 `<canopy-slot name="search"/>`, and `check` says so.
 
 A call to action that is the same box on every post but says something different on each:
@@ -69,7 +69,8 @@ every page. A link to the rest of your product (`/pricing`) is left alone in the
 `siteUrl` at the domain root, as above, `check` warns when this site publishes nothing at that
 path — expected when your product answers it. If `siteUrl` names a path instead
 (`https://example.com/blog`, for a site that is the whole blog), `check` treats a root-absolute
-link outside that path as your product's and does not report it, and checks the ones inside it.
+link outside that path as your product's and does not report it, and checks the ones inside it
+(see [Root-absolute references](../reference/check.md#root-absolute-references)).
 
 ## The bridge
 
@@ -87,6 +88,5 @@ your tokens:
 }
 ```
 
-If your tokens change for dark mode, the bridge follows them. The rest of canopy-page's hooks
-are listed in canopy's
-[theming contract](https://github.com/iyulab/canopy/blob/main/docs/THEMING.md).
+If your tokens change for dark mode, the bridge follows them. [Theming](../reference/theming.md)
+lists every token and every class name that is safe to select on.

@@ -26,26 +26,25 @@ English.
 { "strings": { "search": "검색", "toggleTheme": "테마 전환" } }
 ```
 
-Eight keys exist, and every one is optional — a key left out keeps its English default:
-
-| Key | English default |
-|---|---|
-| `search` | Search |
-| `toggleTheme` | Toggle color theme |
-| `siteNav` | Site navigation |
-| `pageNav` | Page navigation |
-| `onThisPage` | On this page |
-| `indexTitle` | Contents |
-| `backlinks` | Linked references |
-| `searchFailed` | Search failed to load. |
-
-There is no built-in translation table — canopy-page has no way to guess what your language calls
-"Search", the same reasoning [`home.label`](../reference/settings.md) already follows.
+Every key is optional — a key left out keeps its English default.
+[Strings](../reference/settings.md#strings) in the settings reference lists each one, its default,
+and where it appears. There is no built-in
+translation table — canopy-page has no way to guess what your language calls "Search", the same
+reasoning [`home.label`](../reference/settings.md#home) already follows.
 
 ## A complete example
 
 [`ko-settings.json`](localizing.assets/ko-settings.json) is a full `lang` + `strings` pair for a
-Korean site — every key above filled in, ready to paste into your own `settings.json`.
+Korean site — every key filled in, ready to paste into your own `settings.json`.
+
+## More than one edition
+
+A site published in several languages is several sites, one settings file each, mirroring each
+other's structure. [`alternates`](../reference/settings.md#where-the-site-stands) tells each
+edition where the others stand, so every page links its counterparts for search engines. To offer
+them to readers too, place a [`language` slot](../reference/theming.md#slots) in a `header`
+region of your own: it becomes a link to this page in each other edition, named in that
+edition's own language.
 
 ## Proving it resolves
 

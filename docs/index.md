@@ -16,7 +16,11 @@ sitting. Everything else — the sidebar, the contents list on each long page, t
 foot of this one, the links between pages, search, and the pages that come before and after this
 one — is derived from the documents themselves, not hand-maintained.
 
-Start with [Installing canopy-page](guide/install.md).
+Start with [Installing canopy-page](guide/install.md). The [Guide](guide/index.md) walks from
+an empty folder to a deployed site; the Reference has every [setting](reference/settings.md),
+[command](reference/commands.md), [check finding](reference/check.md),
+[exit code](reference/exit-codes.md) and [theming hook](reference/theming.md) in full. This site is
+the whole of canopy-page's documentation.
 
 ## What canopy-page derives for you
 

@@ -19,7 +19,7 @@
   "bugs": {
     "url": "https://github.com/iyulab/canopy-page/issues"
   },
-  "homepage": "https://github.com/iyulab/canopy-page#readme",
+  "homepage": "https://iyulab.github.io/canopy-page",
   "engines": {
     "node": ">=22"
   },
