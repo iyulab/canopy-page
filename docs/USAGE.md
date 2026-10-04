@@ -582,7 +582,7 @@ lists every post, and is written for you when the section has none. `regions` na
 
 ```json
 {
-  "siteUrl": "https://example.com/blog",
+  "siteUrl": "https://example.com",
   "sections": [{
     "path": "blog",
     "profile": "stream",
@@ -597,7 +597,7 @@ lists every post, and is written for you when the section has none. `regions` na
 ```
 
 **The fragments.** The regions are `head`, `header`, `beforeArticle`, `afterArticle` and `footer`.
-`header` and `footer` **replace** canopy-page's own with your markup, as written. Inside a
+`header` **replaces** canopy-page's top bar with your markup, as written; `footer` ends the page as written. Inside a
 fragment, `<canopy-slot name="search"></canopy-slot>` puts one of canopy-page's pieces where you
 want it — `site-title`, `home`, `back`, `breadcrumb`, `language`, `search`, `theme-toggle`, or
 `page:<key>`, a page's own frontmatter text with the slot's content as the default. Always write

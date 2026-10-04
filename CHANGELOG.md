@@ -33,8 +33,9 @@ to it — its fields, its validation, and what the checks reject — are what th
   (`https://example.com/blog`), a root-absolute link inside it (`/blog/a.html`) is checked as
   this site's own page and is an error when nothing is there; a link outside it (`/pricing`) is
   the host's and is no longer reported, unless this site publishes that path at its own root.
-- The site title link carries `class="canopy-site-title"`; nothing renders differently on a site
-  with no profile or regions.
+- The site title link carries `class="canopy-site-title"`. A site with no profile or regions
+  looks the same; the only differences in its HTML are `data-canopy-profile` on `<html>` and
+  that class.
 - Upgraded to canopy 0.20.0.
 
 ## [0.21.0] — 2026-10-03

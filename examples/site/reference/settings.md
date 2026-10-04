@@ -178,9 +178,9 @@ fragment is a file in the site, and is not published itself.
 |---|---|
 | `head` | Inside `<head>`, after the site's stylesheets — the place to link a design system's CSS |
 | `header` | **Replaces** canopy-page's top bar, as written. The sidebar is not part of it: a manual section keeps its own, and a stream section has none because of its profile |
-| `beforeArticle` | Above the article |
-| `afterArticle` | Below the article |
-| `footer` | **Replaces** canopy-page's footer, as written |
+| `beforeArticle` | At the start of the article, inside it |
+| `afterArticle` | At the end of the article, inside it |
+| `footer` | At the end of the page, as written — canopy-page draws no footer of its own |
 
 Inside a fragment, `<canopy-slot name="…"></canopy-slot>` puts one of canopy-page's own pieces
 where you want it: `site-title`, `home`, `back`, `breadcrumb`, `language`, `search`,

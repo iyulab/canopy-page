@@ -14,7 +14,7 @@ The [showcase](../showcase/host-blog/index.md) is built exactly this way, for a 
 
 ```json
 {
-  "siteUrl": "https://example.com/blog",
+  "siteUrl": "https://example.com",
   "sections": [
     {
       "path": "blog",
@@ -36,7 +36,7 @@ lists every post; canopy-page writes that index if the section has none.
 
 ## The fragments
 
-`header` and `footer` **replace** canopy-page's own with your markup, as you wrote it. Put
+`header` **replaces** canopy-page's top bar with your markup, as you wrote it, and `footer` ends the page as written. Put
 canopy-page's controls where you want them with slots:
 
 ```html
@@ -65,9 +65,11 @@ A post with `cta: Try the new export.` in its frontmatter shows that; a post wit
 the default.
 
 Links in a fragment are written from the site root — `blog/`, `assets/logo.svg` — and work from
-every page. A link to the rest of your product (`/pricing`) is left alone: when `siteUrl` says
-the blog stands at `/blog`, `check` treats a root-absolute link outside `/blog/` as your
-product's, and checks the ones inside it.
+every page. A link to the rest of your product (`/pricing`) is left alone in the built page. With
+`siteUrl` at the domain root, as above, `check` warns when this site publishes nothing at that
+path — expected when your product answers it. If `siteUrl` names a path instead
+(`https://example.com/blog`, for a site that is the whole blog), `check` treats a root-absolute
+link outside that path as your product's and does not report it, and checks the ones inside it.
 
 ## The bridge
 
