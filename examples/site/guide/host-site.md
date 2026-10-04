@@ -86,4 +86,5 @@ your tokens:
 ```
 
 If your tokens change for dark mode, the bridge follows them. The rest of canopy-page's hooks
-are listed in [Settings](../reference/settings.md) and in canopy's theming contract.
+are listed in canopy's
+[theming contract](https://github.com/iyulab/canopy/blob/main/docs/THEMING.md).

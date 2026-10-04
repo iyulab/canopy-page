@@ -628,17 +628,18 @@ when your tokens change with it.
 - A link in a fragment that points at nothing published
 - A page whose frontmatter cannot fill a `page:<key>` slot
 - A site file at `assets/stylesheet-1.css`, where canopy-page writes its own stylesheet
-- When `siteUrl` places the site under a path, a root-absolute link inside that path
-  (`/blog/a.html`) that resolves to no page of this site. One outside it (`/pricing`) is the
-  host's own and is not reported, unless this site publishes that path at its own root
+- When `siteUrl` places the site under a path (`https://example.com/blog`), a root-absolute link
+  inside that path (`/blog/a.html`) that resolves to no page of this site
 
 **Warnings — reported, and the build continues:**
 
 - Pages no section covers (placed anyway; see [`sections`](#sections))
-- A root-absolute reference (`/assets/logo.png`) with nothing published at that path — right if
-  the site is served from a domain root, wrong from a sub-path, which the checker cannot always
-  tell; when `siteUrl` already declares a sub-path mount, it warns even if the reference resolves
-  today, since that is the one case it actually can judge
+- A root-absolute reference (`/assets/logo.png`), by where `siteUrl` says the site stands. With no
+  path in `siteUrl`, it warns when nothing is published at that path — right if something else
+  answers it there, which the checker cannot tell. When `siteUrl` places the site under a path,
+  a link outside that path (`/pricing`) is the host's own and is not reported, except that it
+  warns when this site publishes that path at its own root (`/pricing` where `pricing.md`
+  exists) — probably meant as this site's page
 - An `exclude` pattern that matched nothing — usually a path written from the wrong place.
   Extension patterns (`*.tmp`) are exempted: a rule about what may never ship is not a claim that
   something is there right now

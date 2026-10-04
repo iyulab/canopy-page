@@ -2,10 +2,11 @@
 
 > One settings file, one command, one documentation site.
 
-**canopy-page** turns a folder of markdown into a published site — documentation, a blog, a release log. It owns the
-authoring pipeline around the rendering: the settings a site is configured by, the checks that
-keep broken references from shipping, and the build that ties them together. The rendering
-itself is [canopy](https://github.com/iyulab/canopy)'s job, and canopy-page drives it.
+**canopy-page** turns a folder of markdown into a published site — documentation, a blog, a
+release log. It owns the authoring pipeline around the rendering: the settings a site is
+configured by, the checks that keep broken references from shipping, and the build that ties them
+together. The rendering itself is [canopy](https://github.com/iyulab/canopy)'s job, and
+canopy-page drives it.
 
 **Live docs**: <https://iyulab.github.io/canopy-page> — built with canopy-page itself, from the
 [`examples/site`](examples/site) in this repository, republished on every push to `main`.
@@ -67,7 +68,9 @@ go away.
   described to search engines as an article (`article:*` times, schema.org `Article`); a section
   with `"feed": true` can be followed as an Atom feed of those pages, and an index page with
   `listing: true` lists the pages beneath it with their dates and summaries
-- **A blog in your own site** — a `stream` section in your site's own header, footer and colors, from four HTML fragments and one stylesheet ([guide](https://iyulab.github.io/canopy-page/guide/host-site.html)).
+- **A blog in your own site** — a `stream` section in your site's own header, footer and
+  colors, from four HTML fragments and one stylesheet
+  ([guide](https://iyulab.github.io/canopy-page/guide/host-site.html)).
 
 See it live at <https://iyulab.github.io/canopy-page>, or read
 [What a reader gets](examples/site/guide/reading.md) for how each one behaves.
@@ -139,7 +142,7 @@ unpublished.
 | `title` | Site name. Defaults to the folder's name |
 | `description` | Fills `<meta name="description">`, which is what link previews show |
 | `lang` | BCP 47 tag for `<html lang>`. Worth setting for any non-English site: assistive technology reads pronunciation from it |
-| `strings` | Overrides for the reader chrome's own text — `search`, `toggleTheme`, `siteNav`, `pageNav`, `onThisPage`, `indexTitle` (the auto-generated contents page's title/heading), `backlinks` (a page's "linked references" heading), `breadcrumb` (the topbar's ancestor-trail nav's label), `searchFailed` (the client search's failure message). `lang` only changes what `<html lang>` declares; this text is canopy's own UI or canopy-page's own search script, not vault content, so it stays English otherwise. No built-in translation table — the same reasoning `home.label` already follows: link text has to be written in the site's own language. Keys left out keep their English default |
+| `strings` | Overrides for the reader chrome's own text — `search`, `toggleTheme`, `siteNav`, `pageNav`, `onThisPage`, `indexTitle` (the auto-generated contents page's title/heading), `backlinks` (a page's "linked references" heading), `breadcrumb` (the topbar's ancestor-trail nav's label), `searchFailed` (the client search's failure message), `readingTime` (a stream page's reading time; `{n}` is required, default `{n} min read`), `language` (the language links' label, default `Languages`). `lang` only changes what `<html lang>` declares; this text is canopy's own UI or canopy-page's own search script, not vault content, so it stays English otherwise. No built-in translation table — the same reasoning `home.label` already follows: link text has to be written in the site's own language. Keys left out keep their English default |
 | `icon` | Favicon, relative to the settings file. Must be a published file |
 | `styles` | Stylesheets, relative to the settings file — one path or a list, linked in that order after canopy's and canopy-page's own CSS. Those sit in cascade layers, so a rule here wins at any specificity: restate a design token, or restyle a whole region. Like `icon` and `logo`, each must be a published file: it is linked where the site publishes it, so a relative `url()` inside it — a font, a background image — resolves exactly as written. A missing or excluded file is a `check` error. Absent: canopy's default look |
 | `logo` | Image shown beside the site title, relative to the settings file. Must be a published file. Rendered with an empty `alt`, deliberately: the site title beside it already names the site, so there is no separate text to give it. Absent: the sidebar header shows the title text alone |
@@ -264,13 +267,14 @@ and leaves the rest as text — so the target the message would otherwise name i
 Warnings — reported, and the build continues:
 
 - Pages no section covers
-- A root-absolute reference (`/assets/logo.png`) with nothing published at that path. Where such a
-  path resolves depends on what the site is served from, which is not a checker's to know — but a
-  site served from its own root is the ordinary case, and a `public/`-style folder that other
-  generators map onto the root does not exist here, so these silently 404. A warning rather than
-  an error, because mounting the site elsewhere would make it right. When `siteUrl` already
-  declares a sub-path mount, a root-absolute reference warns even if it resolves today, since that
-  is the one case the checker can actually judge
+- A root-absolute reference (`/assets/logo.png`) with nothing published at that path, when
+  `siteUrl` names no path. Where such a path resolves depends on what the site is served from,
+  which is not a checker's to know — but a site served from its own root is the ordinary case,
+  and a `public/`-style folder that other generators map onto the root does not exist here, so
+  these silently 404. A warning rather than an error, because something else may answer it. When
+  `siteUrl` places the site under a path, a link inside it is checked as this site's own page
+  (an error when nothing is there), and one outside it is the host's and not reported — unless
+  this site publishes that path at its own root, which warns
 - An `exclude` pattern that matched nothing, which usually means a path written from the wrong
   place. Extension patterns are left alone: `*.tmp` in a site with no scratch files is a rule
   about what may never ship, not a claim that something is there

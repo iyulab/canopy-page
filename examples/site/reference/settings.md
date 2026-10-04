@@ -177,7 +177,7 @@ fragment is a file in the site, and is not published itself.
 | Region | Where it goes |
 |---|---|
 | `head` | Inside `<head>`, after the site's stylesheets — the place to link a design system's CSS |
-| `header` | **Replaces** canopy-page's top bar and sidebar, as written |
+| `header` | **Replaces** canopy-page's top bar, as written. The sidebar is not part of it: a manual section keeps its own, and a stream section has none because of its profile |
 | `beforeArticle` | Above the article |
 | `afterArticle` | Below the article |
 | `footer` | **Replaces** canopy-page's footer, as written |
