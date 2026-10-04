@@ -1,0 +1,104 @@
+/* Lumenfold's own design system — a made-up product's tokens, header and footer.
+   On a real site this file already exists; only the bridge at the end is new. */
+:root {
+  --lf-ink: #1d2433;
+  --lf-paper: #fbfaf7;
+  --lf-muted: #5b6475;
+  --lf-line: #e4e1da;
+  --lf-accent: #c2410c;
+  --lf-on-accent: #ffffff;
+  --lf-font: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --lf-ink: #ece8df;
+    --lf-paper: #15171c;
+    --lf-muted: #a3a9b6;
+    --lf-line: #2a2e37;
+    --lf-accent: #fb923c;
+    --lf-on-accent: #15171c;
+  }
+}
+:root[data-theme="dark"] {
+  --lf-ink: #ece8df;
+  --lf-paper: #15171c;
+  --lf-muted: #a3a9b6;
+  --lf-line: #2a2e37;
+  --lf-accent: #fb923c;
+  --lf-on-accent: #15171c;
+}
+
+.lf-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--lf-line);
+  background: var(--lf-paper);
+  font-family: var(--lf-font);
+}
+.lf-brand { color: var(--lf-ink); font-size: 1.15rem; font-weight: 700; text-decoration: none; }
+.lf-nav { display: flex; flex-wrap: wrap; gap: 1rem; }
+.lf-nav a { color: var(--lf-muted); text-decoration: none; }
+.lf-nav a:hover { color: var(--lf-accent); }
+.lf-controls { display: flex; align-items: center; gap: 0.75rem; margin-left: auto; }
+.lf-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding: 1.25rem 1.5rem;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--lf-accent) 10%, var(--lf-paper));
+}
+.lf-cta p { margin: 0; }
+.lf-button {
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  background: var(--lf-accent);
+  color: var(--lf-on-accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+.lf-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 1.5rem;
+  padding: 2rem 1.5rem;
+  border-top: 1px solid var(--lf-line);
+  color: var(--lf-muted);
+  font-family: var(--lf-font);
+  font-size: 0.9rem;
+}
+.lf-footer p { margin: 0; }
+
+/* The bridge: canopy's vocabulary in Lumenfold's values. Everything canopy
+   draws — the article, the list, the contents, the controls in the header —
+   reads these, so it wears the host's design without a rule of its own. */
+:root {
+  --bg-primary: var(--lf-paper);
+  --bg-secondary: var(--lf-paper);
+  --text-normal: var(--lf-ink);
+  --text-muted: var(--lf-muted);
+  --border: var(--lf-line);
+  --accent: var(--lf-accent);
+  --accent-hover: var(--lf-accent);
+  --font-ui: var(--lf-font);
+}
+/* This demo site also links its own brand.css, which states a dark accent under these two
+   selectors; the bridge states them too, so the host's accent wins there as well. A site whose
+   only stylesheet is the host's needs just the block above. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --accent: var(--lf-accent);
+    --accent-hover: var(--lf-accent);
+  }
+}
+:root[data-theme="dark"] {
+  --accent: var(--lf-accent);
+  --accent-hover: var(--lf-accent);
+}

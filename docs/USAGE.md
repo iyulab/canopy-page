@@ -39,6 +39,7 @@ itself, from [`examples/site`](../examples/site) in this repository.
   - [Raw HTML](#raw-html)
 - [What ships in every site](#what-ships-in-every-site)
 - [Theming](#theming)
+  - [A blog in your own site](#a-blog-in-your-own-site)
 - [What `check` reports](#what-check-reports)
   - [Adopting a site that is already broken](#adopting-a-site-that-is-already-broken)
 - [Exit codes and CI](#exit-codes-and-ci)
@@ -156,6 +157,8 @@ completion and inline validation for every field below as you type.
 | `exclude` | Paths to leave unpublished, relative to the settings file: a directory (`"_drafts"` or `"_drafts/**"`), an extension at any depth (`"*.tmp"`), or one exact path. A shape outside that list (e.g. `"images/*.md"`) is rejected rather than silently matching nothing |
 | `rehypePlugins` | Installed npm package names of rehype plugins to run on every page — see [Diagrams](#diagrams-via-rehypeplugins) |
 | `strings` | Overrides for the reader chrome's own text — see [`strings` and `lang`](#strings-and-lang-non-english-sites) |
+| `profile` | `"manual"` (default: a tree to browse) or `"stream"` (dated pages, newest first); each section can choose its own |
+| `regions` | HTML fragments that fill the site's regions; see [A blog in your own site](#a-blog-in-your-own-site) |
 | `sections` | Ordered regions of the site — see [`sections`](#sections) |
 | `knownBroken` | Pages whose broken links and images are known and being fixed, `[{ "path", "reason" }]` — published anyway, with a warning. See [Adopting a site that is already broken](#adopting-a-site-that-is-already-broken) |
 
@@ -172,7 +175,9 @@ Two genuinely independent sites are two settings files.
 | `label` | Heading shown for the section. Defaults to the name the section's own index page gives itself (frontmatter `title`, else its opening heading), then the directory name as a last resort |
 | `order` | `"asc"` or `"desc"` for the pages inside, when they are not listed one by one. `"desc"` is what a release log wants — newest first. Cannot be combined with `items`: a list is already an order |
 | `items` | Explicit contents, in display order |
-| `feed` | `true` publishes `<path>/feed.xml`, an Atom feed of the section's dated pages (frontmatter `date:`), newest first, linked from every page in the section (`<link rel="alternate" type="application/atom+xml">`) so browsers and feed readers find it. Entries carry each page's name, `date:`/`updated:`, own `description:` as the summary, and `author:`; the section's index page is not an entry. Needs `siteUrl` (a feed's links are absolute). A section with no dated page publishes no feed. Independent of `order` |
+| `feed` | `true` publishes `<path>/feed.xml`, an Atom feed of the section's dated pages (frontmatter `date:`), newest first, linked from every page in the section (`<link rel="alternate" type="application/atom+xml">`) so browsers and feed readers find it. Entries carry each page's name, `date:`/`updated:`, own `description:` as the summary, and `author:`; the section's index page is not an entry. Needs `siteUrl` (a feed's links are absolute). A section with no dated page publishes no feed. Independent of `order`. A stream section has one by default once `siteUrl` is set; `false` turns it off |
+| `profile` | `"manual"` or `"stream"` for this section; the site's `profile` applies where it is not set. A stream section takes neither `order` nor `items`: it is ordered newest first by each page's `date:`, with undated pages last — and `check` names them |
+| `regions` | Overrides the site's `regions` key by key; `""` turns one off in this section |
 
 An entry in `items` is a page path (`"guide/install"`), or a group with its own nested `items`:
 
@@ -213,7 +218,7 @@ vault content, so it stays in English regardless of `lang` unless overridden wit
 }
 ```
 
-Nine keys exist; every one is optional and keeps its English default when left out:
+Eleven keys exist; every one is optional and keeps its English default when left out:
 
 | Key | English default | Where it appears |
 |---|---|---|
@@ -226,6 +231,8 @@ Nine keys exist; every one is optional and keeps its English default when left o
 | `backlinks` | `Linked references` | Heading above a page's list of pages that link to it |
 | `breadcrumb` | `Breadcrumb` | Accessible label for the topbar's ancestor-trail nav |
 | `searchFailed` | `Search failed to load.` | Message shown in the results list when the client search index fails to load |
+| `readingTime` | `{n} min read` | A stream page's reading time under its heading; `{n}` is required |
+| `language` | `Languages` | The language links' accessible label |
 
 There is no built-in translation table — canopy-page has no way to guess what your language
 calls "Search"; link text (`home.label`, page titles) follows the same reasoning.
@@ -562,6 +569,47 @@ on with plain selectors:
 .canopy-layout { grid-template-columns: 1fr; background: none; }
 ```
 
+### A blog in your own site
+
+A product site usually has a design system already, and a blog inside it should wear that design.
+A `stream` section does this with four HTML fragments and one stylesheet; the list, dates,
+reading time, contents, search and feed stay canopy-page's. Full walk-through:
+[Hosting a blog in your own site](https://iyulab.github.io/canopy-page/guide/host-site.html).
+
+**The section.** `profile: "stream"` reads it as dated pages, newest first — one column, the
+page's `description:` as a lead, the date and reading time, then the contents. The section's index
+lists every post, and is written for you when the section has none. `regions` names the fragments:
+
+```json
+{
+  "siteUrl": "https://example.com/blog",
+  "sections": [{
+    "path": "blog",
+    "profile": "stream",
+    "regions": {
+      "head": "partials/head.html",
+      "header": "partials/header.html",
+      "afterArticle": "partials/cta.html",
+      "footer": "partials/footer.html"
+    }
+  }]
+}
+```
+
+**The fragments.** The regions are `head`, `header`, `beforeArticle`, `afterArticle` and `footer`.
+`header` and `footer` **replace** canopy-page's own with your markup, as written. Inside a
+fragment, `<canopy-slot name="search"></canopy-slot>` puts one of canopy-page's pieces where you
+want it — `site-title`, `home`, `back`, `breadcrumb`, `language`, `search`, `theme-toggle`, or
+`page:<key>`, a page's own frontmatter text with the slot's content as the default. Always write
+the closing tag. Links in a fragment are written from the site root and work from every page; a
+root-absolute link is the host's own and is left alone, except inside the path `siteUrl` places
+the site at. Fragments are not published.
+
+**The bridge.** `head` links your design system's stylesheet, and one file in it maps canopy's
+vocabulary to your tokens — `--bg-primary`, `--text-normal`, `--text-muted`, `--border`,
+`--accent`, `--font-ui` — so everything canopy draws wears the host's values, dark mode included
+when your tokens change with it.
+
 ## What `check` reports
 
 **Errors — these stop a build:**
@@ -574,6 +622,15 @@ on with plain selectors:
 - A link whose destination stops at a space, reported as exactly that rather than as the
   truncated path it becomes — `[x](../a b/c.md)` (unbracketed) links `../a` and leaves the rest
   as text, so wrap the path in `<>` or write the space as `%20`
+- A `regions` fragment that is not a file in the site
+- A slot the build would refuse: an unknown name, or a self-closing one (`<canopy-slot
+  name="search"/>`, which HTML does not close)
+- A link in a fragment that points at nothing published
+- A page whose frontmatter cannot fill a `page:<key>` slot
+- A site file at `assets/stylesheet-1.css`, where canopy-page writes its own stylesheet
+- When `siteUrl` places the site under a path, a root-absolute link inside that path
+  (`/blog/a.html`) that resolves to no page of this site. One outside it (`/pricing`) is the
+  host's own and is not reported, unless this site publishes that path at its own root
 
 **Warnings — reported, and the build continues:**
 
@@ -600,6 +657,7 @@ on with plain selectors:
 - A `date:` or `updated:` that is not a date (the page would render as undated), and a page in a
   `feed` section with no `date:`, which the feed would silently leave out (the section's index
   page is exempt)
+- A page without a `date:` in a `stream` section, which is ordered last
 - Broken references on pages `knownBroken` excuses — one warning per entry, naming its reason —
   and an entry that matches no page or has nothing broken left, so it gets removed
 

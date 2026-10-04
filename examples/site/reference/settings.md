@@ -31,11 +31,23 @@ This is the file that produced the site you are reading:
           "items": ["guide/writing/code-and-math", "guide/writing/diagrams"]
         },
         "guide/reading",
-        { "path": "guide/localizing", "items": ["guide/한국어-예시/index"] }
+        { "path": "guide/localizing", "items": ["guide/한국어-예시/index"] },
+        "guide/host-site"
       ]
     },
     { "path": "reference", "label": "Reference" },
-    { "path": "release-notes", "order": "desc", "feed": true }
+    { "path": "release-notes", "order": "desc", "feed": true },
+    {
+      "path": "showcase/host-blog",
+      "label": "Showcase: a blog in a host site",
+      "profile": "stream",
+      "regions": {
+        "head": "showcase/host-blog/_host/head.html",
+        "header": "showcase/host-blog/_host/header.html",
+        "afterArticle": "showcase/host-blog/_host/cta.html",
+        "footer": "showcase/host-blog/_host/footer.html"
+      }
+    }
   ]
 }
 ```
@@ -48,7 +60,7 @@ This is the file that produced the site you are reading:
 | `title` | Site name. Defaults to the folder's name |
 | `description` | Fills `<meta name="description">`, which is what a link preview shows |
 | `lang` | BCP 47 tag for `<html lang>`. Assistive technology reads pronunciation from it |
-| `strings` | Overrides for the reader chrome's own text (`search`, `toggleTheme`, `siteNav`, `pageNav`, `onThisPage`, `indexTitle`, `backlinks`, `searchFailed`) — `lang` alone does not translate it, since it is canopy's UI (or canopy-page's own search script) rather than vault content |
+| `strings` | Overrides for the reader chrome's own text (`search`, `toggleTheme`, `siteNav`, `pageNav`, `onThisPage`, `indexTitle`, `backlinks`, `searchFailed`, `readingTime` — `{n}` is required, default `"{n} min read"` — and `language`, default `"Languages"`) — `lang` alone does not translate it, since it is canopy's UI (or canopy-page's own search script) rather than vault content |
 | `icon` | Favicon, relative to the settings file. Must be a published file |
 | `styles` | CSS files, relative to the settings file, linked after canopy's own |
 | `logo` | Image shown beside the site title in the sidebar header, relative to the settings file. Must be a published file |
@@ -57,6 +69,8 @@ This is the file that produced the site you are reading:
 | `previewImage` | Image link previews show, relative to the settings file, for pages with no `image:` of their own. Must be a published file. Needs `siteUrl` |
 | `alternates` | The site's other language editions, `hreflang` → that edition's site URL. Needs `siteUrl` |
 | `exclude` | Paths to leave unpublished |
+| `profile` | `"manual"` (default: a tree to browse) or `"stream"` (dated pages, newest first); each section can choose its own |
+| `regions` | HTML fragments that fill the site's regions; see [Regions](#regions) below |
 | `sections` | Ordered regions of the site |
 | `rehypePlugins` | Package names of rehype plugins to run on every page, such as a diagram renderer |
 | `knownBroken` | Pages whose broken references are known and being fixed, `{ path, reason }` each — see [Exit codes](exit-codes.md#a-site-that-is-already-broken) |
@@ -73,7 +87,9 @@ position it is about, down to `sections[0].items[1]`.
 | `label` | Heading shown for it. Defaults to the name the section's index page gives itself, then the directory name |
 | `order` | `asc` or `desc` for the pages inside |
 | `items` | Explicit contents, in display order. Cannot be combined with `order` — a list *is* an order |
-| `feed` | `true` publishes an Atom feed of the section's dated pages. Needs `siteUrl` |
+| `feed` | `true` publishes an Atom feed of the section's dated pages. Needs `siteUrl`. A stream section has one by default once `siteUrl` is set; `false` turns it off |
+| `profile` | `"manual"` or `"stream"` for this section; the site's `profile` applies where it is not set |
+| `regions` | Overrides the site's `regions` key by key; `""` turns one off in this section |
 
 Note what the demo's settings do **not** contain: a label for `guide` or for `release-notes`.
 Those sections have index pages, and a page that opens with a heading has already said what it is
@@ -93,6 +109,8 @@ page, not a directory, so an index page is written out.
 Globs are the other way to fill a section: `dir/*` is the pages directly in a directory, `dir/**`
 is every page beneath it. A glob means the pages there **that are not placed already**, which is
 what makes `["guide/install", "guide/*"]` read the way it looks — this page first, then the rest.
+
+A stream section takes neither `order` nor `items`: it is ordered newest first by each page's `date:`, with undated pages last — and `check` names them.
 
 ### Feeds
 
@@ -149,6 +167,32 @@ it already names the site, so there is no separate text for a screen reader to a
 `home` takes both `url` and `label` or neither — never one alone, and a settings file with only one
 is rejected rather than built with a guess at the other. There is no default label: link text has
 to be written in the site's own language, and canopy has no way to know what that is.
+
+## Regions
+
+`regions` fills the parts of a page around the article with HTML fragments from the site — on the
+site as a whole, or per section, where a key overrides the site's and `""` turns it off. A
+fragment is a file in the site, and is not published itself.
+
+| Region | Where it goes |
+|---|---|
+| `head` | Inside `<head>`, after the site's stylesheets — the place to link a design system's CSS |
+| `header` | **Replaces** canopy-page's top bar and sidebar, as written |
+| `beforeArticle` | Above the article |
+| `afterArticle` | Below the article |
+| `footer` | **Replaces** canopy-page's footer, as written |
+
+Inside a fragment, `<canopy-slot name="…"></canopy-slot>` puts one of canopy-page's own pieces
+where you want it: `site-title`, `home`, `back`, `breadcrumb`, `language`, `search`,
+`theme-toggle`, or `page:<key>` — the text of that key in the page's frontmatter, with the
+slot's own content as the default for a page that has none. Always write the closing tag. Links in
+a fragment are written from the site root and work from every page; a scheme, `//`, `#` or a
+root-absolute path is left as written.
+
+`check` reports a fragment that is not there, a slot name the build would refuse, a fragment
+link that points at nothing published, and a page whose frontmatter cannot fill a `page:` slot.
+
+[Hosting a blog in your own site](../guide/host-site.md) walks through one end to end.
 
 ## Where the site stands
 

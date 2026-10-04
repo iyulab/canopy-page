@@ -20,10 +20,22 @@
           "items": ["guide/writing/code-and-math", "guide/writing/diagrams"]
         },
         "guide/reading",
-        { "path": "guide/localizing", "items": ["guide/한국어-예시/index"] }
+        { "path": "guide/localizing", "items": ["guide/한국어-예시/index"] },
+        "guide/host-site"
       ]
     },
     { "path": "reference", "label": "Reference" },
-    { "path": "release-notes", "order": "desc", "feed": true }
+    { "path": "release-notes", "order": "desc", "feed": true },
+    {
+      "path": "showcase/host-blog",
+      "label": "Showcase: a blog in a host site",
+      "profile": "stream",
+      "regions": {
+        "head": "showcase/host-blog/_host/head.html",
+        "header": "showcase/host-blog/_host/header.html",
+        "afterArticle": "showcase/host-blog/_host/cta.html",
+        "footer": "showcase/host-blog/_host/footer.html"
+      }
+    }
   ]
 }

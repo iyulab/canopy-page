@@ -2,7 +2,7 @@
 
 > One settings file, one command, one documentation site.
 
-**canopy-page** turns a folder of markdown into a published documentation site. It owns the
+**canopy-page** turns a folder of markdown into a published site — documentation, a blog, a release log. It owns the
 authoring pipeline around the rendering: the settings a site is configured by, the checks that
 keep broken references from shipping, and the build that ties them together. The rendering
 itself is [canopy](https://github.com/iyulab/canopy)'s job, and canopy-page drives it.
@@ -67,6 +67,7 @@ go away.
   described to search engines as an article (`article:*` times, schema.org `Article`); a section
   with `"feed": true` can be followed as an Atom feed of those pages, and an index page with
   `listing: true` lists the pages beneath it with their dates and summaries
+- **A blog in your own site** — a `stream` section in your site's own header, footer and colors, from four HTML fragments and one stylesheet ([guide](https://iyulab.github.io/canopy-page/guide/host-site.html)).
 
 See it live at <https://iyulab.github.io/canopy-page>, or read
 [What a reader gets](examples/site/guide/reading.md) for how each one behaves.
@@ -146,6 +147,8 @@ unpublished.
 | `siteUrl` | Absolute URL naming where the built site will stand. Every link canopy writes is relative, which is what lets a site be served from any sub-path — and exactly why a sitemap, whose entries must be absolute, needs this separately. **Only** when it is set does `build` write `sitemap.xml` and a `robots.txt` pointing at it. Absent: neither file is written |
 | `exclude` | Paths to leave unpublished: a directory (`_drafts` or `_drafts/**`), an extension at any depth (`*.tmp`), or one exact path. Patterns are relative to the settings file, and a shape outside that list — `images/*.md` — is refused rather than left to match nothing |
 | `rehypePlugins` | Package names of rehype plugins to run on every page, after canopy's own sanitize step and before syntax highlighting — canopy's fixed extension point for markdown that needs more than CommonMark and GFM, a diagram fence rendered to SVG being the case this exists for. Each entry is an installed package name (`"rehype-declart"`), never a filesystem path — a relative-looking entry is refused, since the directory it would resolve against is wherever the build happens to run from, not this file |
+| `profile` | `"manual"` (default: a tree to browse) or `"stream"` (dated pages, newest first). Each section can choose its own |
+| `regions` | HTML fragments that fill the site's regions — `head`, `header`, `beforeArticle`, `afterArticle`, `footer`; see [A blog in your own site](docs/USAGE.md#a-blog-in-your-own-site) |
 | `sections` | Ordered regions of the site — see below |
 | `knownBroken` | Pages whose broken links and images are known and being fixed, each `{ path, reason }`: published anyway, with a warning — see [Adopting a site that is already broken](#adopting-a-site-that-is-already-broken) |
 
@@ -213,7 +216,9 @@ two settings files.
 | `label` | Heading shown for it. Defaults to the directory name |
 | `order` | `asc` or `desc` for the pages inside. `desc` is what a release log wants |
 | `items` | Explicit contents, in display order. Cannot be combined with `order` — a list *is* an order |
-| `feed` | `true` publishes an Atom feed of the section's dated pages at `<path>/feed.xml`, linked from its pages. Needs `siteUrl` |
+| `feed` | `true` publishes an Atom feed of the section's dated pages at `<path>/feed.xml`, linked from its pages. Needs `siteUrl`. A stream section has one by default once `siteUrl` is set; `false` turns it off |
+| `profile` | `"manual"` or `"stream"`, for this section; the site's `profile` applies where it is not set. A stream section takes neither `order` nor `items` |
+| `regions` | Overrides the site's `regions` key by key; `""` turns one off in this section |
 
 An entry in `items` is a page path, or a group:
 

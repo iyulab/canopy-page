@@ -7,6 +7,36 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [0.22.0] — 2026-10-04
+
+### Added
+
+- **Stream sections.** `"profile": "stream"`, on a section or on the whole site, reads pages as
+  dated posts, newest first by `date:` — one column, a lead from `description:`, the date and
+  reading time, the contents open before the body — with an index listing them, written for the
+  section when it has none. A stream section publishes a feed by default once `siteUrl` is set;
+  `"feed": false` turns it off. A stream section takes no `order` or `items`.
+- **Regions.** `regions` — on the site, or per section (`""` turns one off) — fills `head`,
+  `header`, `beforeArticle`, `afterArticle` and `footer` with HTML fragments from the site.
+  `header` and `footer` replace canopy-page's own with your markup; `<canopy-slot>` places the
+  site title, home and back links, breadcrumb, language links, search and the theme toggle
+  inside it, and `page:<key>` a page's own frontmatter text. Fragments are not published.
+- `strings.readingTime` (`"{n} min read"`) and `strings.language`.
+- `check` reports a missing fragment, a slot the build would refuse (including a self-closing
+  one), a fragment link to nothing published, a page whose frontmatter cannot fill a page slot,
+  undated pages in a stream section, and a site file at `assets/stylesheet-1.css`, where
+  canopy-page writes its own stylesheet.
+
+### Changed
+
+- **Root-absolute links and `siteUrl`'s path.** When `siteUrl` places the site under a path
+  (`https://example.com/blog`), a root-absolute link inside it (`/blog/a.html`) is checked as
+  this site's own page and is an error when nothing is there; a link outside it (`/pricing`) is
+  the host's and is no longer reported, unless this site publishes that path at its own root.
+- The site title link carries `class="canopy-site-title"`; nothing renders differently on a site
+  with no profile or regions.
+- Upgraded to canopy 0.20.0.
+
 ## [0.21.0] — 2026-10-03
 
 ### Changed
