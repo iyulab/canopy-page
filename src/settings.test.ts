@@ -473,6 +473,14 @@ describe("parseSettings: profiles and regions", () => {
     [{ regions: { footer: "../x.html" } }, /settings\.regions\.footer: must stay inside the site/],
     [{ regions: [] }, /settings\.regions: expected an object of region → fragment path/],
     [
+      { regions: { header: "parts/*.html" } },
+      /settings\.regions\.header: names one file, so it cannot contain any of \* \? \[ \]/,
+    ],
+    [
+      { sections: [{ path: "blog", regions: { footer: "parts/[a].html" } }] },
+      /settings\.sections\[0\]\.regions\.footer: names one file/,
+    ],
+    [
       { sections: [{ path: "blog", profile: "stream", order: "desc" }] },
       /settings\.sections\[0\]\.order: a stream section is ordered newest first by its pages' date:/,
     ],
@@ -486,6 +494,10 @@ describe("parseSettings: profiles and regions", () => {
     ],
     [{ sections: [{ path: "blog", regions: { aside: "x.html" } }] }, /settings\.sections\[0\]\.regions: unknown region "aside"/],
     [{ strings: { readingTime: "min read" } }, /settings\.strings\.readingTime: needs "\{n\}"/],
+    [
+      { sections: [{ path: "blog" }, { path: "guide" }, { path: "Blog/" }] },
+      /settings\.sections\[2\]\.path: "Blog" is already settings\.sections\[0\] — a folder is one section/,
+    ],
   ])("rejects %j", (settings, message) => {
     rejects(JSON.stringify(settings), message);
   });

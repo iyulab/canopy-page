@@ -95,7 +95,7 @@ builds:
 
 | Field | Meaning |
 |---|---|
-| `path` | The directory this section covers, relative to the settings file |
+| `path` | The directory this section covers, relative to the settings file. A directory is one section: naming it twice (in any letter case) is an error |
 | `label` | Heading shown for the section. Defaults to the name the section's own index page gives itself (its `title:`, else its opening heading), then the directory name — which `check` warns about |
 | `order` | `"asc"` or `"desc"` for the pages inside. `"desc"` is what a release log wants — newest first |
 | `items` | Explicit contents, in display order — see [Items](#items). Cannot be combined with `order`: a list *is* an order |
@@ -255,7 +255,8 @@ section, where a key overrides the site's and `""` turns it off:
 { "regions": { "header": "partials/header.html", "footer": "partials/footer.html" } }
 ```
 
-A fragment is a file in the site, read by the build and not published itself. Where each region
+A fragment is a file in the site, read by the build and not published itself — one file, so a
+path with `*`, `?`, `[` or `]` in it is refused rather than read as a pattern. Where each region
 goes, how links in a fragment are written, and the `<canopy-slot>` elements that place
 canopy-page's own controls inside one are in [Theming](theming.md#regions).
 [Hosting a blog in your own site](../guide/host-site.md) walks through one end to end.

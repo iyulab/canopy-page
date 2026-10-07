@@ -361,9 +361,16 @@ function asRegions(value: unknown, where: string, allowOff: boolean): RegionPath
     if (!(REGIONS as readonly string[]).includes(name)) {
       fail(`${where}: unknown region "${name}" (regions: ${REGIONS.join(", ")})`);
     }
-    regions[name as RegionName] = allowOff && file === "" ? "" : asRelativePath(file, `${where}.${name}`);
+    regions[name as RegionName] = allowOff && file === "" ? "" : asFragmentPath(file, `${where}.${name}`);
   }
   return regions;
+}
+
+/** A region's fragment: one file, so a wildcard in it is a mistake rather than a pattern to expand. */
+function asFragmentPath(value: unknown, where: string): string {
+  const path = asRelativePath(value, where);
+  if (/[*?[\]]/.test(path)) fail(`${where}: names one file, so it cannot contain any of * ? [ ] — not "${value}"`);
+  return path;
 }
 
 /**
@@ -515,6 +522,23 @@ function parseSection(value: unknown, where: string, siteProfile: Profile | unde
     ...(ownProfile === undefined ? {} : { profile: ownProfile }),
     ...(regions === undefined ? {} : { regions: asRegions(regions, `${where}.regions`, true) }),
   };
+}
+
+/**
+ * The sections, each folder once. Two sections over one folder would put it in
+ * the sidebar twice, and the two can disagree about its label, order and
+ * profile; folders are compared ignoring case, since that is how a site's paths
+ * are matched.
+ */
+function asSections(values: unknown[], siteProfile: Profile | undefined): SettingsSection[] {
+  const sections = values.map((value, i) => parseSection(value, `settings.sections[${i}]`, siteProfile));
+  sections.forEach((section, i) => {
+    const first = sections.findIndex((other) => other.path.toLowerCase() === section.path.toLowerCase());
+    if (first !== i) {
+      fail(`settings.sections[${i}].path: "${section.path}" is already settings.sections[${first}] — a folder is one section`);
+    }
+  });
+  return sections;
 }
 
 /**
@@ -674,11 +698,7 @@ export function parseSettings(json: string): Settings {
         }),
     ...(sections === undefined
       ? {}
-      : {
-          sections: (sections as unknown[]).map((section, i) =>
-            parseSection(section, `settings.sections[${i}]`, siteProfile),
-          ),
-        }),
+      : { sections: asSections(sections as unknown[], siteProfile) }),
     ...(knownBroken === undefined
       ? {}
       : {

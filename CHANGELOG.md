@@ -7,6 +7,15 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [Unreleased]
+
+### Fixed
+
+- **A section naming a directory another section already names is refused.** The directory
+  appeared in the sidebar twice, the second time empty. Directories are compared ignoring case.
+- **A region fragment path with `*`, `?`, `[` or `]` is a settings error.** `check` used to stop with
+  an error from the renderer, naming a temporary file instead of the setting.
+
 ## [0.23.0] — 2026-10-07
 
 Depends on canopy ^0.21.0. Upgrading: a site file at a path the build writes is now an error —
