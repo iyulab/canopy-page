@@ -611,6 +611,22 @@ describe("settingsFindings — styles", { timeout: LOADS_A_SITE }, () => {
     ]);
   });
 
+  // A stream section with no index page of its own gets one written, so a
+  // hand-written index.html there would be replaced by it, or replace it.
+  it("refuses a site file where the build writes a stream section's index page", async () => {
+    const root = await site({
+      "settings.json": JSON.stringify({ sections: [{ path: "blog", profile: "stream" }] }),
+      "index.md": "# Home\n",
+      "blog/a.md": "---\ndate: 2026-10-01\n---\n# A\n",
+      "blog/index.html": "<p>hand-written</p>",
+    });
+    const messages = settingsFindings(await loadSite(root)).map((finding) => finding.message);
+    expect(messages).toEqual([
+      'blog/index.html: the build writes the index page of stream section "blog" at this path, so the site cannot ' +
+        "publish a file there — rename or move it",
+    ]);
+  });
+
   it("reports a styles path with no file behind it, without building", async () => {
     const root = await site({
       "settings.json": JSON.stringify({ styles: ["brand.css", "theme/missing.css"] }),
