@@ -105,7 +105,7 @@ release. Select on them freely.
 |---|---|
 | Top bar and controls | `.canopy-topbar` `.canopy-topbar-controls` `.canopy-site-title` `.canopy-logo` `.canopy-home` `.canopy-home-external` `.canopy-back` `.canopy-breadcrumb` `.canopy-language` `.canopy-search` `.canopy-theme-toggle` `.canopy-skip-link` |
 | Layout and navigation | `.canopy-layout` `.canopy-sidebar` `.canopy-nav` `.canopy-nav-group` `.canopy-main` |
-| Article | `.canopy-content` `.canopy-contents` `.canopy-before-article` `.canopy-after-article` `.canopy-lead` `.canopy-byline` `.canopy-author` `.canopy-date` `.canopy-reading-time` `.canopy-cover` `.canopy-toc` `.canopy-listing` `.canopy-listing-title` `.canopy-table` |
+| Article | `.canopy-content` `.canopy-contents` `.canopy-before-article` `.canopy-after-article` `.canopy-lead` `.canopy-byline` `.canopy-author` `.canopy-date` `.canopy-reading-time` `.canopy-cover` `.canopy-toc` `.canopy-listing` `.canopy-listing-title` `.canopy-pagination` `.canopy-table` |
 | Callouts | `.callout` `.callout-note` `.callout-tip` `.callout-warning` `.callout-danger` `.callout-quote` `.callout-title` |
 | Around the article | `.canopy-outline` `.canopy-backlinks` `.canopy-page-nav` `.canopy-page-nav-label` `.canopy-prev` `.canopy-next` |
 
@@ -151,7 +151,9 @@ it and the one after (`.canopy-page-nav`, each with `.canopy-page-nav-label` say
 section's index (`.canopy-back`) where a manual page shows its breadcrumb.
 
 The section's index page lists its pages newest first (`.canopy-listing`), each with its cover,
-date, reading time and summary — and is written for the section when it has none. A stream section
+date, reading time and summary — and is written for the section when it has none. It lists ten
+(`pageSize` changes that); the rest continue on `page/2.html`, `page/3.html` … in the section,
+each page ending with the way to the pages beside it (`.canopy-pagination`). A stream section
 is ordered by each page's `date:`, so it takes no `order` or `items`; an undated page is listed
 last, and `check` names it. Once `siteUrl` is set, a stream section publishes a feed unless
 `"feed": false` says otherwise.

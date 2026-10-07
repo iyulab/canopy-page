@@ -502,3 +502,35 @@ describe("parseSettings: profiles and regions", () => {
     rejects(JSON.stringify(settings), message);
   });
 });
+
+describe("parseSettings: a stream's list in pages", () => {
+  it("takes pageSize on a site or section whose own profile is stream", () => {
+    expect(parseSettings('{"profile":"stream","pageSize":5}').pageSize).toBe(5);
+    expect(
+      parseSettings('{"sections":[{"path":"blog","profile":"stream","pageSize":3}]}').sections?.[0]?.pageSize,
+    ).toBe(3);
+  });
+
+  it("refuses a pageSize that is not a whole number of at least 1", () => {
+    for (const size of ["0", "1.5", '"10"']) {
+      expect(() => parseSettings(`{"profile":"stream","pageSize":${size}}`)).toThrow(
+        "settings.pageSize: must be a whole number of at least 1",
+      );
+    }
+  });
+
+  it("refuses a pageSize where there is no list of its own to page", () => {
+    expect(() => parseSettings('{"pageSize":5}')).toThrow(
+      'settings.pageSize: only a site with "profile": "stream" has a list to page',
+    );
+    // A section that only inherits the site's stream is part of the site's one list.
+    expect(() => parseSettings('{"profile":"stream","sections":[{"path":"blog","pageSize":5}]}')).toThrow(
+      'settings.sections[0].pageSize: only a section with its own "profile": "stream" has a list to page',
+    );
+  });
+
+  it("needs {n} in strings.pageOf", () => {
+    expect(() => parseSettings('{"strings":{"pageOf":"Page"}}')).toThrow("settings.strings.pageOf");
+    expect(parseSettings('{"strings":{"pageOf":"{n}/{total}"}}').strings?.pageOf).toBe("{n}/{total}");
+  });
+});

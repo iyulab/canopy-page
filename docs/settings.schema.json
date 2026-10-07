@@ -50,6 +50,11 @@
       "enum": ["manual", "stream"],
       "description": "How the site reads by default. \"manual\": a tree to look things up in. \"stream\": dated pages, newest first, one column, with an index listing them. Sections can set their own."
     },
+    "pageSize": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "With \"profile\": \"stream\", how many posts the front page lists; the rest continue on page/2.html on. Defaults to 10."
+    },
     "regions": {
       "$ref": "#/$defs/regions",
       "description": "HTML fragments, relative to this file, that fill the site's regions. header and footer replace canopy's own with the fragment's markup; head, beforeArticle and afterArticle add to the page. canopy's controls go where <canopy-slot name=\"…\"></canopy-slot> elements say."
@@ -174,6 +179,21 @@
           "minLength": 1,
           "description": "Over the link at a stream post's end to the post published before it. Defaults to \"Older post\"."
         },
+        "pageOf": {
+          "type": "string",
+          "pattern": "\\{n\\}",
+          "description": "Where a page of a stream's list is, with {n} for its number and {total} for how many there are. Defaults to \"Page {n} of {total}\"."
+        },
+        "newerPosts": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The link to the page of a stream's list before this one, with newer posts. Defaults to \"Newer posts\"."
+        },
+        "olderPosts": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The link to the page of a stream's list after this one, with older posts. Defaults to \"Older posts\"."
+        },
         "searchFailed": {
           "type": "string",
           "minLength": 1,
@@ -215,6 +235,11 @@
         "profile": {
           "enum": ["manual", "stream"],
           "description": "How this section reads; defaults to the site's profile. A stream section takes no order or items: it is ordered newest first by its pages' date:."
+        },
+        "pageSize": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "With this section's own \"profile\": \"stream\", how many posts its index lists; the rest continue on <path>/page/2.html on. Defaults to 10."
         },
         "regions": {
           "$ref": "#/$defs/sectionRegions",

@@ -45,6 +45,7 @@ This is the file that produced the site you are reading:
       "path": "showcase/host-blog",
       "label": "Showcase: a blog in a host site",
       "profile": "stream",
+      "pageSize": 2,
       "regions": {
         "head": "showcase/host-blog/_host/head.html",
         "header": "showcase/host-blog/_host/header.html",
@@ -84,6 +85,7 @@ The settings file itself is never published, and neither is anything `exclude` n
 | `exclude` | Paths to leave unpublished — see [What `exclude` takes](#what-exclude-takes) |
 | `rehypePlugins` | Installed npm package names of rehype plugins to run on every page — see [Extending what a page can render](#extending-what-a-page-can-render) |
 | `profile` | `"manual"` (the default: a tree to browse) or `"stream"` (dated pages, newest first), for the whole site; each section can choose its own. See [Profiles](theming.md#profiles) |
+| `pageSize` | With `"profile": "stream"`, how many posts the front page lists; the rest continue on `page/2.html`, `page/3.html` …. Defaults to 10 |
 | `regions` | HTML fragments that fill the parts of a page around the article — see [Regions](#regions) |
 | `sections` | Ordered regions of the site — see [Sections](#sections) |
 | `knownBroken` | Pages whose broken links and images are known and being fixed — see [`knownBroken`](#knownbroken) |
@@ -101,6 +103,7 @@ builds:
 | `items` | Explicit contents, in display order — see [Items](#items). Cannot be combined with `order`: a list *is* an order |
 | `feed` | `true` publishes an Atom feed of the section's dated pages at `<path>/feed.xml` — see [Feeds](#feeds). Needs `siteUrl` |
 | `profile` | `"manual"` or `"stream"` for this section; the site's `profile` applies where it is not set. A stream section takes neither `order` nor `items` |
+| `pageSize` | With this section's own `"profile": "stream"`, how many posts its index lists; the rest continue on `<path>/page/2.html` on. Defaults to 10 |
 | `regions` | Overrides the site's `regions` key by key; `""` turns one off in this section |
 
 Note what this site's settings do **not** contain: a label for `guide` or for `release-notes`.
@@ -204,6 +207,9 @@ Every key is optional, and keeps its English default when left out:
 | `skipToContent` | `Skip to content` | The link every page opens with for keyboard readers, past the header and navigation |
 | `newerPost` | `Newer post` | Over the link at a stream post's end to the post published after it |
 | `olderPost` | `Older post` | Over the link at a stream post's end to the post published before it |
+| `pageOf` | `Page {n} of {total}` | Where a page of a stream's list is. `{n}`, its number, is required; `{total}`, how many, is optional |
+| `newerPosts` | `Newer posts` | The link to the page of a stream's list with newer posts |
+| `olderPosts` | `Older posts` | The link to the page of a stream's list with older posts |
 
 There is no built-in translation table — canopy-page has no way to guess what your language calls
 "Search". [Publishing a non-English site](../guide/localizing.md) has a complete set for Korean.

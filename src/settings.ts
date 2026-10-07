@@ -72,6 +72,12 @@ export interface SettingsSection {
   profile?: Profile;
   /** Fragments for this section, over the site's `regions` key by key. `""` turns one off here. */
   regions?: RegionPaths;
+  /**
+   * How many posts a stream section's index lists — the rest continue on
+   * `<path>/page/2.html` on. Only with this section's own `"profile": "stream"`.
+   * Defaults to 10.
+   */
+  pageSize?: number;
 }
 
 /** Pages whose broken references are known and being fixed — see `Settings.knownBroken`. */
@@ -127,6 +133,8 @@ export interface Settings {
   exclude?: string[];
   /** How the site reads by default: `manual` (a tree to look things up in) or `stream` (dated pages, newest first). */
   profile?: Profile;
+  /** With `profile: "stream"`, how many posts the site's front page lists before `page/2.html`. Defaults to 10. */
+  pageSize?: number;
   /** Fragments that fill the site's regions — a host site's own header, footer and stylesheet links. */
   regions?: RegionPaths;
   /** Ordered regions of the site. Without them, navigation follows the folder tree. */
@@ -216,6 +224,12 @@ export interface Settings {
     newerPost?: string;
     /** Over the link at a stream post's end to the post published before it: "Older post". */
     olderPost?: string;
+    /** Where a page of a stream's list is, with `{n}` and `{total}`: "Page {n} of {total}". */
+    pageOf?: string;
+    /** The link to the page of a stream's list before this one, with newer posts: "Newer posts". */
+    newerPosts?: string;
+    /** The link to the page of a stream's list after this one, with older posts: "Older posts". */
+    olderPosts?: string;
     /**
      * Message shown in place of results when the client search index fails to
      * load. This key rides the same JSON `--strings` flag as every other one
@@ -249,6 +263,7 @@ export const SETTINGS_KEYS = new Set([
   "icon",
   "styles",
   "profile",
+  "pageSize",
   "regions",
   "exclude",
   "sections",
@@ -264,7 +279,7 @@ export const SETTINGS_KEYS = new Set([
 
 export const KNOWN_BROKEN_KEYS = new Set(["path", "reason"]);
 
-export const SECTION_KEYS = new Set(["path", "label", "order", "items", "feed", "profile", "regions"]);
+export const SECTION_KEYS = new Set(["path", "label", "order", "items", "feed", "profile", "regions", "pageSize"]);
 
 export const HOME_KEYS = new Set(["url", "label"]);
 
@@ -282,6 +297,9 @@ export const STRINGS_KEYS = new Set([
   "skipToContent",
   "newerPost",
   "olderPost",
+  "pageOf",
+  "newerPosts",
+  "olderPosts",
   "searchFailed",
 ]);
 
@@ -486,7 +504,7 @@ function parseSection(value: unknown, where: string, siteProfile: Profile | unde
   const section = asObject(value, where, 'expected an object with a "path"');
   rejectUnknownKeys(section, SECTION_KEYS, where);
 
-  const { path, label, order, items, feed, profile, regions } = section;
+  const { path, label, order, items, feed, profile, regions, pageSize } = section;
   if (feed !== undefined && typeof feed !== "boolean") fail(`${where}.feed: must be true or false`);
   if (path === undefined) fail(`${where}: needs a "path" naming the directory it covers`);
   if (label !== undefined) asString(label, `${where}.label`);
@@ -501,6 +519,14 @@ function parseSection(value: unknown, where: string, siteProfile: Profile | unde
   }
 
   const ownProfile = profile === undefined ? undefined : asProfile(profile, `${where}.profile`);
+  if (pageSize !== undefined) {
+    asPageSize(pageSize, `${where}.pageSize`);
+    // A section that only inherits the site's stream is part of the site's one
+    // list, paged by settings.pageSize; it has no list of its own to page.
+    if (ownProfile !== "stream") {
+      fail(`${where}.pageSize: only a section with its own "profile": "stream" has a list to page`);
+    }
+  }
   // A stream is ordered by its pages' own dates. An order written here would
   // either be ignored or fight that, and neither should happen silently.
   if ((ownProfile ?? siteProfile) === "stream") {
@@ -527,7 +553,16 @@ function parseSection(value: unknown, where: string, siteProfile: Profile | unde
     ...(feed === undefined ? {} : { feed: feed as boolean }),
     ...(ownProfile === undefined ? {} : { profile: ownProfile }),
     ...(regions === undefined ? {} : { regions: asRegions(regions, `${where}.regions`, true) }),
+    ...(pageSize === undefined ? {} : { pageSize: pageSize as number }),
   };
+}
+
+/** A count of posts to a page: a whole number of at least 1. */
+function asPageSize(value: unknown, where: string): number {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 1) {
+    fail(`${where}: must be a whole number of at least 1`);
+  }
+  return value;
 }
 
 /**
@@ -577,6 +612,7 @@ export function parseSettings(json: string): Settings {
     icon,
     styles,
     profile,
+    pageSize,
     regions,
     exclude,
     sections,
@@ -601,6 +637,10 @@ export function parseSettings(json: string): Settings {
     }
   }
   const siteProfile = profile === undefined ? undefined : asProfile(profile, "settings.profile");
+  if (pageSize !== undefined) {
+    asPageSize(pageSize, "settings.pageSize");
+    if (siteProfile !== "stream") fail('settings.pageSize: only a site with "profile": "stream" has a list to page');
+  }
   if (exclude !== undefined && !Array.isArray(exclude)) fail("settings.exclude: must be an array");
   if (sections !== undefined && !Array.isArray(sections)) fail("settings.sections: must be an array");
   if (knownBroken !== undefined && !Array.isArray(knownBroken)) {
@@ -678,6 +718,9 @@ export function parseSettings(json: string): Settings {
         `settings.strings.${key}`,
       );
     }
+    if (parsedStrings.pageOf !== undefined && !parsedStrings.pageOf.includes("{n}")) {
+      fail('settings.strings.pageOf: needs "{n}" where the page number goes, as in "Page {n} of {total}"');
+    }
     if (parsedStrings.readingTime !== undefined && !parsedStrings.readingTime.includes("{n}")) {
       fail('settings.strings.readingTime: needs "{n}" where the number of minutes goes, as in "{n} min read"');
     }
@@ -691,6 +734,7 @@ export function parseSettings(json: string): Settings {
     ...(icon === undefined ? {} : { icon: asRelativePath(icon, "settings.icon") }),
     ...(styles === undefined ? {} : { styles: asStylesList(styles) }),
     ...(siteProfile === undefined ? {} : { profile: siteProfile }),
+    ...(pageSize === undefined ? {} : { pageSize: pageSize as number }),
     ...(regions === undefined ? {} : { regions: asRegions(regions, "settings.regions", false) }),
     ...(exclude === undefined
       ? {}

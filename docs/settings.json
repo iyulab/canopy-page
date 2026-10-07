@@ -31,6 +31,7 @@
       "path": "showcase/host-blog",
       "label": "Showcase: a blog in a host site",
       "profile": "stream",
+      "pageSize": 2,
       "regions": {
         "head": "showcase/host-blog/_host/head.html",
         "header": "showcase/host-blog/_host/header.html",

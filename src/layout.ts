@@ -20,6 +20,7 @@ export function layoutSpec(settings: Settings): Layout | undefined {
     // A whole-site stream with no front page of its own gets one from canopy,
     // and the site's own name is what that page should be called.
     ...(settings.profile === "stream" && settings.title !== undefined ? { title: settings.title } : {}),
+    ...(settings.pageSize === undefined ? {} : { pageSize: settings.pageSize }),
     ...(settings.regions === undefined ? {} : { regions: settings.regions }),
   };
   const dirs: Record<string, LayoutRule> = {};
@@ -29,6 +30,7 @@ export function layoutSpec(settings: Settings): Layout | undefined {
       ...(section.profile === undefined ? {} : { profile: section.profile }),
       ...(section.label === undefined ? {} : { title: section.label }),
       ...(section.regions === undefined ? {} : { regions: section.regions }),
+      ...(section.pageSize === undefined ? {} : { pageSize: section.pageSize }),
     };
   }
   const hasSiteRule = Object.keys(siteRule).length > 0;

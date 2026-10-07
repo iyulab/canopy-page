@@ -7,6 +7,20 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [Unreleased]
+
+Depends on canopy ^0.25.0. Upgrading: a stream section with more than ten posts now lists the newest
+ten on its index and the rest on `<path>/page/2.html` on — set `pageSize` for another count. A page
+at one of those paths is refused.
+
+### Added
+
+- **A stream's list in pages.** `pageSize` on a section with its own `"profile": "stream"` (or on a
+  site whose `profile` is `stream`) sets how many posts its index lists, default 10; the rest
+  continue on `page/2.html`, `page/3.html` …, each ending with the way to the pages beside it.
+  New `strings` keys `pageOf` (needs `{n}`), `newerPosts`, `olderPosts`; new theming hook
+  `.canopy-pagination`. `check` knows the pages, so a link to `blog/page/2.html` is not broken.
+
 ## [0.24.0] — 2026-10-07
 
 Depends on canopy ^0.24.0. Upgrading: a page whose `image:` is not a published file (or is spelled

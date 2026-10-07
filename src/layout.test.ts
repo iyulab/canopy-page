@@ -29,6 +29,15 @@ describe("layoutSpec", () => {
   });
 });
 
+describe("layoutSpec — pageSize", () => {
+  it("carries a stream's pageSize into its rule", () => {
+    expect(layoutSpec({ profile: "stream", pageSize: 4 })).toEqual({ default: { profile: "stream", pageSize: 4 } });
+    expect(layoutSpec({ sections: [{ path: "blog", profile: "stream", pageSize: 2 }] })).toEqual({
+      dirs: { blog: { profile: "stream", pageSize: 2 } },
+    });
+  });
+});
+
 describe("feedDirs", () => {
   const siteUrl = "https://example.test";
 
