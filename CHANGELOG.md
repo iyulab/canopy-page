@@ -7,7 +7,7 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
-## [Unreleased]
+## [0.26.0] — 2026-10-07
 
 Depends on canopy ^0.26.0. Upgrading: a stream section's posts' `tags:` now show and get pages under
 `<path>/tags/`; a tag that can have no page (no letters or digits, or named "index") is a `check`
