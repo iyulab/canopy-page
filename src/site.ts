@@ -60,8 +60,51 @@ export interface LoadedSite {
   fragments: ReadonlyMap<string, string>;
 }
 
+/**
+ * Every kind of finding `check` reports. Each is the anchor of the section of
+ * the documentation site's `reference/check.md` that explains it — the id its
+ * heading renders with — so a kind names where to read about the finding, and
+ * a kind with no section there fails the documentation test.
+ */
+export const FINDING_KINDS = [
+  // Errors
+  "a-link-points-at-nothing-published",
+  "a-link-stops-at-a-space",
+  "an-image-is-not-a-published-file",
+  "a-link-or-image-reaches-its-file-only-by-ignoring-letter-case",
+  "a-tag-can-have-no-page",
+  "what-to-read-next-leads-nowhere",
+  "a-featured-post-is-not-a-post-of-its-section",
+  "a-wikilink-matches-no-page",
+  "a-settings-reference-matches-no-page-or-places-one-twice",
+  "a-stylesheet-is-not-published",
+  "a-file-sits-where-the-build-writes-a-file-of-its-own",
+  "a-region-fragment-is-missing",
+  "a-slot-the-build-would-refuse",
+  "a-fragment-link-points-at-nothing-published",
+  "a-page-cannot-fill-a-page-slot",
+  "a-root-absolute-link-inside-the-sites-own-path",
+  // Warnings
+  "pages-no-section-covers",
+  "a-section-is-named-after-its-folder",
+  "an-exclude-pattern-matched-nothing",
+  "a-setting-with-no-slot-to-show-it",
+  "a-slot-with-nothing-to-show",
+  "a-published-url-needs-percent-encoding",
+  "a-root-absolute-reference-resolves-against-nothing",
+  "a-root-absolute-link-leaves-the-sites-own-path",
+  "pages-excused-by-knownbroken",
+  "pages-with-no-description",
+  "dates-that-are-not-dates-disagree-or-are-missing-where-one-is-needed",
+] as const;
+
+/** What a finding is about — see {@link FINDING_KINDS}. */
+export type FindingKind = (typeof FINDING_KINDS)[number];
+
 /** Something worth telling the author about their site. */
 export interface Finding {
+  /** Which kind of finding this is: the anchor of its section in `reference/check.md`. */
+  kind: FindingKind;
   /** `error` stops a build; `warning` is reported and the build continues. */
   level: "error" | "warning";
   message: string;
@@ -180,14 +223,16 @@ export function settingsFindings(site: LoadedSite): Finding[] {
     ...outputFindings(site),
     ...(site.settings.styles ?? [])
       .filter((style) => !published.has(style))
-      .map((style) => ({
-        level: "error" as const,
+      .map((style): Finding => ({
+        kind: "a-stylesheet-is-not-published",
+        level: "error",
         message:
           `settings: styles "${style}" is not a published file (missing, or excluded). ` +
           "Paths are relative to the settings file",
       })),
-    ...site.unusedExclusions.map((pattern) => ({
-      level: "warning" as const,
+    ...site.unusedExclusions.map((pattern): Finding => ({
+      kind: "an-exclude-pattern-matched-nothing",
+      level: "warning",
       message:
         `settings: exclude "${pattern}" matched nothing, so everything it names is published. ` +
         "Patterns are relative to the settings file",
@@ -212,7 +257,9 @@ function taggedPages(site: LoadedSite): TaggedPage[] {
  * refuses to build them, so `check` names them first, by the post's source.
  */
 export function tagFindings(site: LoadedSite): Finding[] {
-  return tagProblems(site.layout, taggedPages(site)).map((problem) => bySource(site, problem));
+  return tagProblems(site.layout, taggedPages(site)).map((problem) =>
+    bySource(site, "a-tag-can-have-no-page", problem),
+  );
 }
 
 /**
@@ -224,7 +271,9 @@ export function tagFindings(site: LoadedSite): Finding[] {
 export function readNextFindings(site: LoadedSite): Finding[] {
   const sitePaths = site.index.pages.map(toSitePath);
   const index = buildLinkIndex([...sitePaths, ...syntheticIndexPaths(site.layout, sitePaths)]);
-  return readNextProblems(taggedPages(site), index).map((problem) => bySource(site, problem));
+  return readNextProblems(taggedPages(site), index).map((problem) =>
+    bySource(site, "what-to-read-next-leads-nowhere", problem),
+  );
 }
 
 /**
@@ -232,17 +281,21 @@ export function readNextFindings(site: LoadedSite): Finding[] {
  * it, so `check` names it first, by the setting that wrote it.
  */
 export function featuredFindings(site: LoadedSite): Finding[] {
-  return featuredProblems(site.layout, site.index.pages).map(({ dir, path: file, message }) => {
+  return featuredProblems(site.layout, site.index.pages).map(({ dir, path: file, message }): Finding => {
     const at = (site.settings.sections ?? []).findIndex((section) => section.path.toLowerCase() === dir.toLowerCase());
     const where = dir === "" || at === -1 ? "settings.featured" : `settings.sections[${at}].featured`;
-    return { level: "error" as const, message: `${where}: "${file}" ${message}. Paths are relative to the settings file` };
+    return {
+      kind: "a-featured-post-is-not-a-post-of-its-section",
+      level: "error",
+      message: `${where}: "${file}" ${message}. Paths are relative to the settings file`,
+    };
   });
 }
 
-/** A problem canopy names by a page's site path, as an error on the page's source. */
-function bySource(site: LoadedSite, { sitePath, message }: PageProblem): Finding {
+/** A problem canopy names by a page's site path, as an error of `kind` on the page's source. */
+function bySource(site: LoadedSite, kind: FindingKind, { sitePath, message }: PageProblem): Finding {
   const page = site.index.pages.find((candidate) => toSitePath(candidate) === sitePath) ?? sitePath;
-  return { page, level: "error", message: `${page}: ${message}` };
+  return { kind, page, level: "error", message: `${page}: ${message}` };
 }
 
 /**
@@ -272,8 +325,9 @@ function outputFindings(site: LoadedSite): Finding[] {
       if (file.toLowerCase() === "sitemap.xml") collisions.push({ file, what: "the sitemap" });
     }
   }
-  return collisions.map(({ file, what }) => ({
-    level: "error" as const,
+  return collisions.map(({ file, what }): Finding => ({
+    kind: "a-file-sits-where-the-build-writes-a-file-of-its-own",
+    level: "error",
     message: `${file}: the build writes ${what} at this path, so the site cannot publish a file there — rename or move it`,
   }));
 }
@@ -317,16 +371,25 @@ function describeOutput(owner: OutputOwner): string {
 export function navFindings(nav: NavTranslation): Finding[] {
   const findings: Finding[] = [];
   for (const reference of nav.missing) {
-    findings.push({ level: "error", message: `settings: "${reference}" matches no page` });
+    findings.push({
+      kind: "a-settings-reference-matches-no-page-or-places-one-twice",
+      level: "error",
+      message: `settings: "${reference}" matches no page`,
+    });
   }
   for (const page of nav.duplicates) {
-    findings.push({ level: "error", message: `settings: "${page}" is placed more than once` });
+    findings.push({
+      kind: "a-settings-reference-matches-no-page-or-places-one-twice",
+      level: "error",
+      message: `settings: "${page}" is placed more than once`,
+    });
   }
   if (nav.orphans.length > 0) {
     // One page per line. A real site's uncovered pages run to dozens, and a list
     // joined onto one line is a wall nobody reads to the end of — which loses
     // the whole point of naming them.
     findings.push({
+      kind: "pages-no-section-covers",
       level: "warning",
       message:
         `${nav.orphans.length} page(s) no section covers, placed at the end of their section:\n` +
@@ -341,6 +404,7 @@ export function navFindings(nav: NavTranslation): Finding[] {
     // top-level heading is about to read that way instead of a name they chose.
     const slug = path.split("/").pop() ?? path;
     findings.push({
+      kind: "a-section-is-named-after-its-folder",
       level: "warning",
       message:
         `settings: section "${path}" has no "label" and no index page, ` +

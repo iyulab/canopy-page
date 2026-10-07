@@ -254,6 +254,17 @@ that leaves a setting shown on no page at all, place the slot or remove the sett
 some pages show — the docs in canopy-page's top bar, beside a blog section in a site's own
 header — is not reported: leaving it out of that header was the header's choice.
 
+### A slot with nothing to show
+
+```
+warning: partials/header.html: places <canopy-slot name="theme-toggle">, but settings.colorScheme gives the site one scheme, so there is no toggle — the slot shows nothing
+```
+
+The mirror of the one above. With [`colorScheme`](settings.md#top-level-fields) set, every page
+is drawn in that one scheme and there is no [dark/light toggle](theming.md#dark-mode), so a
+`theme-toggle` slot is an empty space in the header that looks like a missing control. Take the
+slot out of the fragment, or remove `colorScheme` if readers should be able to switch.
+
 ### A published URL needs percent-encoding
 
 ```

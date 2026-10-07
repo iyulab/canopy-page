@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import { CONTROL_SLOTS, PROFILES, REGIONS, THEME_HOOKS } from "@iyulab/canopy";
+import { CONTROL_SLOTS, PROFILES, REGIONS, renderDocument, THEME_HOOKS } from "@iyulab/canopy";
 import { describe, expect, it } from "vitest";
 import { USAGE } from "./cli-args.js";
 import {
@@ -13,6 +13,7 @@ import {
   SETTINGS_KEYS,
   STRINGS_KEYS,
 } from "./settings.js";
+import { FINDING_KINDS } from "./site.js";
 
 /**
  * The documentation site under `docs/` is the documentation — there is no
@@ -78,6 +79,22 @@ function unmentioned(text: string, names: Iterable<string>): string[] {
   });
 }
 
+/**
+ * The anchors of the `###` headings under each `##` heading among `sections`
+ * (by the id that heading renders with). Rendered by canopy itself, so an
+ * anchor here is exactly the one the published page gives that heading.
+ */
+async function subheadingIds(markdown: string, sections: readonly string[]): Promise<string[]> {
+  const { html } = await renderDocument(markdown);
+  const ids: string[] = [];
+  let within = false;
+  for (const [, level, id] of html.matchAll(/<h([23])\b[^>]*\bid="([^"]*)"/g)) {
+    if (level === "2") within = sections.includes(id as string);
+    else if (within) ids.push(id as string);
+  }
+  return ids;
+}
+
 /** The commands and options canopy-page's own usage text offers. */
 function usageVocabulary(): { commands: string[]; options: string[] } {
   const commands: string[] = [];
@@ -123,6 +140,18 @@ describe("the documentation site", () => {
       home: withoutRow(text, "### `home`", HOME_KEYS),
       knownBroken: withoutRow(text, "## `knownBroken`", KNOWN_BROKEN_KEYS),
     }).toEqual({ settings: [], sections: [], navItems: [], strings: [], home: [], knownBroken: [] });
+  });
+
+  it("documents every check finding kind in reference/check.md", async () => {
+    // A finding's kind is the anchor of the section explaining it, so every
+    // kind needs a section under Errors or Warnings, and every section there
+    // has to be a kind the checker reports.
+    const documented = new Set(await subheadingIds(await page("reference/check.md"), ["errors", "warnings"]));
+    const kinds = new Set<string>(FINDING_KINDS);
+    expect({
+      undocumented: [...kinds].filter((kind) => !documented.has(kind)),
+      neverReported: [...documented].filter((id) => !kinds.has(id)),
+    }).toEqual({ undocumented: [], neverReported: [] });
   });
 
   it("shows, as this site's own settings file, the one docs/settings.json actually holds", async () => {

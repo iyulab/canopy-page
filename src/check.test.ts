@@ -684,6 +684,7 @@ describe("settingsFindings — styles", { timeout: LOADS_A_SITE }, () => {
     const found = settingsFindings(await loadSite(root));
     expect(found).toEqual([
       {
+        kind: "a-stylesheet-is-not-published",
         level: "error",
         message:
           'settings: styles "theme/missing.css" is not a published file (missing, or excluded). ' +

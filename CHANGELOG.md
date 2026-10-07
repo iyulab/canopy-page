@@ -7,6 +7,18 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [Unreleased]
+
+### Added
+
+- Every finding `check` reports names its `kind` — the anchor of the section of What `check`
+  reports that explains it. `Finding` gains a required `kind`, and `FINDING_KINDS` lists them all.
+
+### Documentation
+
+- What `check` reports names the warning for a `theme-toggle` slot on a site with one colour
+  scheme, and a test keeps every kind of finding documented there.
+
 ## [0.27.1] — 2026-10-07
 
 Depends on canopy ^0.28.1.

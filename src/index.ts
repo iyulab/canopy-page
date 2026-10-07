@@ -14,11 +14,13 @@ export { checkSite, referenceFindings, siteFindings } from "./check.js";
 export { initSite, InitError, type InitResult } from "./init.js";
 export { extractReferences, type Reference } from "./references.js";
 export {
+  FINDING_KINDS,
   loadSite,
   navFindings,
   reportFindings,
   SiteError,
   type Finding,
+  type FindingKind,
   type LoadedSite,
 } from "./site.js";
 export {

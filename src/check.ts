@@ -84,6 +84,9 @@ function siteBasePath(site: LoadedSite): string | undefined {
   return pathname === "/" ? undefined : pathname;
 }
 
+/** A finding before it is placed: what a caller prefixes with where it was found. */
+type Problem = Pick<Finding, "kind" | "level" | "message">;
+
 /**
  * What is wrong with a root-absolute path, if anything — the rest of a finding
  * after `<kind> "<target>"`.
@@ -100,10 +103,7 @@ function siteBasePath(site: LoadedSite): string | undefined {
  * resolves against wherever the site is served from, so a miss is a warning:
  * something else may answer it there.
  */
-function rootAbsoluteProblem(
-  site: LoadedSite,
-  url: string,
-): { level: "error" | "warning"; message: string } | undefined {
+function rootAbsoluteProblem(site: LoadedSite, url: string): Problem | undefined {
   const decode = (value: string): string => decodeLinkPath(value) ?? value;
   const base = siteBasePath(site)?.replace(/\/+$/, "");
   const atRoot = decode(url.replace(/^\/+/, ""));
@@ -112,12 +112,14 @@ function rootAbsoluteProblem(
       const inSite = decode(url.slice(base.length).replace(/^\/+/, ""));
       if (inSite === "" || existsInSite(site, inSite)) return undefined;
       return {
+        kind: "a-root-absolute-link-inside-the-sites-own-path",
         level: "error",
         message: `points at nothing published — under settings.siteUrl's path "${base}/" it addresses "${inSite}"`,
       };
     }
     if (atRoot !== "" && existsInSite(site, atRoot)) {
       return {
+        kind: "a-root-absolute-link-leaves-the-sites-own-path",
         level: "warning",
         message:
           `leaves this site — it is outside settings.siteUrl's path "${base}/" — though this site publishes ` +
@@ -128,6 +130,7 @@ function rootAbsoluteProblem(
   }
   if (atRoot === "" || existsInSite(site, atRoot)) return undefined;
   return {
+    kind: "a-root-absolute-reference-resolves-against-nothing",
     level: "warning",
     message:
       `— nothing is published at "${atRoot}". A root-absolute path resolves against wherever the ` +
@@ -271,6 +274,7 @@ export function filenameEncodingFindings(site: LoadedSite): Finding[] {
     if (!segments.some(hasAsciiEncodingIssue)) continue;
     const href = segments.map((segment) => encodeURIComponent(segment)).join("/");
     findings.push({
+      kind: "a-published-url-needs-percent-encoding",
       level: "warning",
       message: `${file}: published URL is "${href}" (rename to avoid the encoding, or ignore if intentional)`,
     });
@@ -290,6 +294,7 @@ export function referenceFindings(site: LoadedSite): Finding[] {
       if (reference.kind === "wikilink") {
         if (!wikilinkExists(site, reference.target)) {
           findings.push({
+            kind: "a-wikilink-matches-no-page",
             page,
             level: "error",
             // Naming the consequence matters: an unresolved wikilink is not left
@@ -308,8 +313,8 @@ export function referenceFindings(site: LoadedSite): Finding[] {
         const problem = rootAbsoluteProblem(site, url);
         if (problem !== undefined) {
           findings.push({
+            ...problem,
             page,
-            level: problem.level,
             message: `${where}: ${reference.kind} "${reference.target}" ${problem.message}`,
           });
         }
@@ -334,6 +339,7 @@ export function referenceFindings(site: LoadedSite): Finding[] {
       if (published !== undefined) {
         if (!published.exact && !(reference.kind === "link" && writtenAsPage(site, page, reference.target))) {
           findings.push({
+            kind: "a-link-or-image-reaches-its-file-only-by-ignoring-letter-case",
             page,
             level: "error",
             message: `${where}: ${caseOnlyMessage(reference.kind, reference.target, published.file)}`,
@@ -344,6 +350,7 @@ export function referenceFindings(site: LoadedSite): Finding[] {
 
       if (reference.cutAtSpace) {
         findings.push({
+          kind: "a-link-stops-at-a-space",
           page,
           level: "error",
           message:
@@ -354,14 +361,21 @@ export function referenceFindings(site: LoadedSite): Finding[] {
         continue;
       }
 
-      findings.push({
-        page,
-        level: "error",
-        message:
-          reference.kind === "image"
-            ? `${where}: image "${reference.target}" is not a published file`
-            : `${where}: link "${reference.target}" points at nothing published`,
-      });
+      findings.push(
+        reference.kind === "image"
+          ? {
+              kind: "an-image-is-not-a-published-file",
+              page,
+              level: "error",
+              message: `${where}: image "${reference.target}" is not a published file`,
+            }
+          : {
+              kind: "a-link-points-at-nothing-published",
+              page,
+              level: "error",
+              message: `${where}: link "${reference.target}" points at nothing published`,
+            },
+      );
     }
   }
 
@@ -369,23 +383,27 @@ export function referenceFindings(site: LoadedSite): Finding[] {
 }
 
 /** A fragment link, which is written from the site root, checked the way a build will rewrite it. */
-function fragmentLinkProblem(
-  site: LoadedSite,
-  url: string,
-): { level: "error" | "warning"; message: string } | undefined {
+function fragmentLinkProblem(site: LoadedSite, url: string): Problem | undefined {
   const target = parseLinkUrl(url).path;
   if (isRootAbsolute(target)) {
     const problem = rootAbsoluteProblem(site, target);
-    return problem === undefined ? undefined : { level: problem.level, message: `link "${url}" ${problem.message}` };
+    return problem === undefined ? undefined : { ...problem, message: `link "${url}" ${problem.message}` };
   }
   if (isExternalUrl(target)) return undefined;
   const decoded = (decodeLinkPath(target) ?? target).replace(/^\.\//, "");
   if (decoded === "") return undefined;
   const published = findPublished(site, decoded);
   if (published !== undefined) {
-    return published.exact ? undefined : { level: "error", message: caseOnlyMessage("link", url, published.file) };
+    return published.exact
+      ? undefined
+      : {
+          kind: "a-link-or-image-reaches-its-file-only-by-ignoring-letter-case",
+          level: "error",
+          message: caseOnlyMessage("link", url, published.file),
+        };
   }
   return {
+    kind: "a-fragment-link-points-at-nothing-published",
     level: "error",
     message: `link "${url}" points at nothing published (fragment links are written from the site root)`,
   };
@@ -405,6 +423,7 @@ export function regionFindings(site: LoadedSite): Finding[] {
     const html = site.fragments.get(file);
     if (html === undefined) {
       findings.push({
+        kind: "a-region-fragment-is-missing",
         level: "error",
         message: `settings: region fragment "${file}" is not a file in the site (${regions.join(", ")})`,
       });
@@ -412,12 +431,16 @@ export function regionFindings(site: LoadedSite): Finding[] {
     }
     for (const region of regions) {
       for (const problem of fragmentProblems(html, region)) {
-        findings.push({ level: "error", message: `${file} (${region}): ${problem}` });
+        findings.push({
+          kind: "a-slot-the-build-would-refuse",
+          level: "error",
+          message: `${file} (${region}): ${problem}`,
+        });
       }
     }
     for (const url of fragmentLinks(html)) {
       const problem = fragmentLinkProblem(site, url);
-      if (problem !== undefined) findings.push({ level: problem.level, message: `${file}: ${problem.message}` });
+      if (problem !== undefined) findings.push({ ...problem, message: `${file}: ${problem.message}` });
     }
   }
   // A page slot is filled from each page it reaches, so each of those pages
@@ -436,7 +459,12 @@ export function regionFindings(site: LoadedSite): Finding[] {
       try {
         pageSlotText(data, key);
       } catch (error) {
-        findings.push({ page, level: "error", message: `${page}: ${(error as Error).message}` });
+        findings.push({
+          kind: "a-page-cannot-fill-a-page-slot",
+          page,
+          level: "error",
+          message: `${page}: ${(error as Error).message}`,
+        });
       }
     }
   }
@@ -448,6 +476,7 @@ export function regionFindings(site: LoadedSite): Finding[] {
     for (const [file, html] of site.fragments) {
       if (fragmentControls(html).includes("theme-toggle")) {
         findings.push({
+          kind: "a-slot-with-nothing-to-show",
           level: "warning",
           message:
             `${file}: places <canopy-slot name="theme-toggle">, but settings.colorScheme gives the site one ` +
@@ -497,8 +526,9 @@ function slotOutletFindings(site: LoadedSite): Finding[] {
   }
   return wanted
     .filter(({ slot }) => !shown.has(slot))
-    .map(({ key, slot, what }) => ({
-      level: "warning" as const,
+    .map(({ key, slot, what }): Finding => ({
+      kind: "a-setting-with-no-slot-to-show-it",
+      level: "warning",
       message:
         `settings: ${key} is set, but ${what} shows on no page — every page has a header region ` +
         `(${[...(headers.get(slot) ?? [])].map((file) => `"${file}"`).join(", ")}) and no fragment of it places ` +
@@ -555,17 +585,22 @@ export function knownBrokenFindings(site: LoadedSite, findings: Finding[]): Find
     else by.held.push(finding.message);
   }
 
+  // An entry's excused findings are reported under it, so whatever kind each
+  // was, together they are this one.
+  const kind = "pages-excused-by-knownbroken";
   for (const { entry, pages, held } of excused) {
     const where = `settings.knownBroken "${entry.path}"`;
     if (pages.size === 0) {
-      kept.push({ level: "warning", message: `${where} matches no page — remove the entry` });
+      kept.push({ kind, level: "warning", message: `${where} matches no page — remove the entry` });
     } else if (held.length === 0) {
       kept.push({
+        kind,
         level: "warning",
         message: `${where}: nothing there is broken any more — remove the entry`,
       });
     } else {
       kept.push({
+        kind,
         level: "warning",
         message:
           `${where} (${entry.reason}): ${held.length} broken reference(s) published anyway:` +
@@ -604,6 +639,7 @@ export function descriptionFindings(site: LoadedSite): Finding[] {
   if (missing.length === 0) return [];
   return [
     {
+      kind: "pages-with-no-description",
       level: "warning",
       message:
         `${missing.length} page(s) have no "description:" in their frontmatter, so search ` +
@@ -633,16 +669,26 @@ export function imageFindings(site: LoadedSite): Finding[] {
     const where = `${page}: image: "${image}"`;
     if (isRootAbsolute(image)) {
       const problem = rootAbsoluteProblem(site, image);
-      if (problem !== undefined) findings.push({ page, level: problem.level, message: `${where} ${problem.message}` });
+      if (problem !== undefined) findings.push({ ...problem, page, message: `${where} ${problem.message}` });
       continue;
     }
     if (isExternalUrl(image)) continue;
     const target = (decodeLinkPath(image) ?? image).replace(/^\.\//, "");
     const published = findPublished(site, target);
     if (published === undefined) {
-      findings.push({ page, level: "error", message: `${where} is not a published file (it is a path from the site root)` });
+      findings.push({
+        kind: "an-image-is-not-a-published-file",
+        page,
+        level: "error",
+        message: `${where} is not a published file (it is a path from the site root)`,
+      });
     } else if (!published.exact) {
-      findings.push({ page, level: "error", message: `${page}: ${caseOnlyMessage("image:", image, published.file)}` });
+      findings.push({
+        kind: "a-link-or-image-reaches-its-file-only-by-ignoring-letter-case",
+        page,
+        level: "error",
+        message: `${page}: ${caseOnlyMessage("image:", image, published.file)}`,
+      });
     }
   }
   return findings;
@@ -703,6 +749,7 @@ export function dateFindings(site: LoadedSite): Finding[] {
   const findings: Finding[] = [];
   if (malformed.length > 0) {
     findings.push({
+      kind: "dates-that-are-not-dates-disagree-or-are-missing-where-one-is-needed",
       level: "warning",
       message:
         `${malformed.length} frontmatter date(s) are not dates (expected YYYY-MM-DD, optionally ` +
@@ -712,6 +759,7 @@ export function dateFindings(site: LoadedSite): Finding[] {
   }
   if (disagreeing.length > 0) {
     findings.push({
+      kind: "dates-that-are-not-dates-disagree-or-are-missing-where-one-is-needed",
       level: "warning",
       message:
         `${disagreeing.length} page(s) say a different day in "date:" than their file name does; ` +
@@ -721,6 +769,7 @@ export function dateFindings(site: LoadedSite): Finding[] {
   }
   if (undatedInFeed.length > 0) {
     findings.push({
+      kind: "dates-that-are-not-dates-disagree-or-are-missing-where-one-is-needed",
       level: "warning",
       message:
         `${undatedInFeed.length} page(s) in a feed section have no "date:" (nor a day in their file name), so the feed leaves ` +
@@ -730,6 +779,7 @@ export function dateFindings(site: LoadedSite): Finding[] {
   }
   if (undatedInStream.length > 0) {
     findings.push({
+      kind: "dates-that-are-not-dates-disagree-or-are-missing-where-one-is-needed",
       level: "warning",
       message:
         `${undatedInStream.length} page(s) in a stream section have no "date:" (nor a day in their file name), so the stream lists them ` +
