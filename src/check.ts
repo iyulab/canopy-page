@@ -13,6 +13,7 @@ import {
   pageSlotText,
   parseFrontmatter,
   parseLinkUrl,
+  resolveMarkdownLink,
   resolvePageLayout,
   resolveRelative,
   streamIndexPath,
@@ -151,9 +152,9 @@ function existsInSite(site: LoadedSite, sitePath: string): boolean {
  * Matched the way the renderer matches a link target against its pages: the
  * exact path, case-insensitively — not through `toPageKey`, whose forgiveness
  * (a backslash read as a separator) is for settings references and would pass
- * a link the renderer leaves broken. But the renderer writes a link as it was
- * written, so a target that matches only by ignoring case is published in a
- * spelling most hosts serve nothing at; `exact` says which it is.
+ * a link the renderer leaves broken. The renderer writes a link to anything but a
+ * page as it was written, so such a target that matches only by ignoring case is
+ * published in a spelling most hosts serve nothing at; `exact` says which it is.
  */
 function findPublished(site: LoadedSite, sitePath: string): { file: string; exact: boolean } | undefined {
   const directory = sitePath.endsWith("/");
@@ -176,6 +177,29 @@ function findPublished(site: LoadedSite, sitePath: string): { file: string; exac
   if (rendered !== undefined) return found(rendered, `${rendered.slice(0, -".md".length)}.html`);
   const asset = site.index.assets.find((candidate) => candidate.toLowerCase() === key);
   return asset === undefined ? undefined : found(asset, asset);
+}
+
+/**
+ * The page published at a site path, in the build's spelling — the lookup the
+ * renderer matches a markdown link against, over this site's pages and the
+ * index pages canopy writes for them.
+ */
+function sitePage(site: LoadedSite, sitePath: string): string | undefined {
+  if (!/\.html$/i.test(sitePath)) return undefined;
+  const key = sitePath.toLowerCase();
+  const source = site.index.pages.find((candidate) => toSitePath(candidate).toLowerCase() === key);
+  return source !== undefined ? toSitePath(source) : site.index.generated.find((candidate) => candidate.toLowerCase() === key);
+}
+
+/**
+ * Does the renderer match this markdown link to a page? Then it writes the link
+ * in the page's own spelling, whatever case it was written in — asked through
+ * canopy's own `resolveMarkdownLink`, so the two cannot disagree.
+ */
+function writtenAsPage(site: LoadedSite, page: string, target: string): boolean {
+  const lookup = (sitePath: string) => sitePage(site, sitePath);
+  const written = resolveMarkdownLink(toSitePath(page), target, lookup);
+  return written !== undefined && lookup(written) === written;
 }
 
 /** Why a target that reaches its file only by ignoring letter case is still broken. */
@@ -305,7 +329,7 @@ export function referenceFindings(site: LoadedSite): Finding[] {
       // and with it the fact that the target named a directory.
       const published = findPublished(site, decoded.endsWith("/") ? `${resolved}/` : resolved);
       if (published !== undefined) {
-        if (!published.exact) {
+        if (!published.exact && !(reference.kind === "link" && writtenAsPage(site, page, reference.target))) {
           findings.push({
             page,
             level: "error",

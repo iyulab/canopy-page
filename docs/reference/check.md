@@ -57,13 +57,17 @@ reported](#what-is-never-reported).
 ### A link or image reaches its file only by ignoring letter case
 
 ```
-error: index.md:3: link "Guide/Install.md" reaches "guide/install.md" only by ignoring letter case — the built page keeps "Guide/Install.md" as written, which leads nowhere on a host that tells letter case apart
+error: index.md:3: image "IMG/Logo.svg" reaches "img/logo.svg" only by ignoring letter case — the built page keeps "IMG/Logo.svg" as written, which leads nowhere on a host that tells letter case apart
 ```
 
-On your own machine the link works: Windows and macOS find `guide/install.md` from `Guide/Install.md`.
-The built link keeps the spelling you wrote, though, and GitHub Pages — like most hosts — serves
-nothing at `Guide/Install.html`. Write the path as the file is spelled. A wikilink is not affected:
-it is written from the page it finds. The same applies to a link in a region fragment.
+On your own machine the link works: Windows and macOS find `img/logo.svg` from `IMG/Logo.svg`.
+The built page keeps the spelling you wrote for an image or any other file that is not a page, and
+for a link to a folder (`Guide/`), and GitHub Pages — like most hosts — serves nothing at it. Write
+the path as the file is spelled.
+
+A link to a page is not affected: `[x](Guide/Install.md)`, `Guide/Install`, `Guide/Install.html` and
+`[[Guide/Install]]` are all written as the page is spelled (`guide/install.html`). Links in a region
+fragment are kept exactly as written, links to pages included, so every one of them is checked this way.
 
 ### A wikilink matches no page
 

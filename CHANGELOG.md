@@ -9,12 +9,18 @@ to it — its fields, its validation, and what the checks reject — are what th
 
 ## [Unreleased]
 
+Depends on canopy ^0.22.0. Upgrading: a link to an image or other file, or to a folder, written in
+another letter case than the file is now a `check` error — write it as the file is spelled.
+
 ### Fixed
 
-- **`check` reports a link or image that reaches its file only by ignoring letter case**
-  (`Guide/Install.md` for `guide/install.md`), in a page or a region fragment. The built link keeps the
-  spelling as written, which most hosts serve nothing at, while `check` said nothing was broken.
-  Wikilinks are not affected.
+- **A markdown link to a page in another letter case than the page's file works on the built site**
+  (`[x](Guide/Install.md)` for `guide/install.md` is written `guide/install.html`, as `[[Guide/Install]]`
+  already was), and the page lists it among its backlinks. It kept the spelling as written, which most
+  hosts serve nothing at.
+- **`check` reports a link or image that reaches its file only by ignoring letter case and is kept as
+  written** — an image or any other file that is not a page, a folder link (`Guide/`), and any link in
+  a region fragment. It said nothing was broken.
 
 ## [0.23.1] — 2026-10-07
 

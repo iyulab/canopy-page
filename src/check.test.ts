@@ -62,13 +62,15 @@ describe("referenceFindings", { timeout: LOADS_A_SITE }, () => {
     expect(messages).toEqual(["index.md:3: link \"guide/gone.md\" points at nothing published"]);
   });
 
-  // The built link keeps the letter case it was written in, and most hosts
-  // tell "Guide" from "guide" apart — so a link that only reaches its file by
-  // ignoring case leads nowhere once deployed. A wikilink is spelled from the
-  // page it resolves to, so it is not one of them.
+  // A file the renderer does not match keeps the letter case it was written in,
+  // and most hosts tell "Guide" from "guide" apart — so such a link leads
+  // nowhere once deployed. A link the renderer matches to a page (a `.md`, an
+  // `.html` or an extension-less path naming a page, or a wikilink) is written
+  // in the page's own spelling, so it is not one of them.
   it("names a link or image that reaches its file only by ignoring letter case", async () => {
     const messages = await findings({
-      "index.md": "# Home\n\n[a](Guide/Install.md) [b](guide/INSTALL.html) [c](Guide/) ![d](IMG/logo.png) [[Guide/Install]]\n",
+      "index.md":
+        "# Home\n\n[a](Guide/Install.md) [b](guide/INSTALL.html) [c](Guide/) ![d](IMG/logo.png) [e](IMG/Logo.png)\n",
       "guide/index.md": "# Guide",
       "guide/install.md": "# Install",
       "img/logo.png": "binary",
@@ -77,11 +79,20 @@ describe("referenceFindings", { timeout: LOADS_A_SITE }, () => {
       `index.md:3: ${kind} "${target}" reaches "${file}" only by ignoring letter case — the built page keeps ` +
       `"${target}" as written, which leads nowhere on a host that tells letter case apart`;
     expect(messages).toEqual([
-      differs("link", "Guide/Install.md", "guide/install.md"),
-      differs("link", "guide/INSTALL.html", "guide/install.md"),
       differs("link", "Guide/", "guide/index.md"),
       differs("image", "IMG/logo.png", "img/logo.png"),
+      differs("link", "IMG/Logo.png", "img/logo.png"),
     ]);
+  });
+
+  it("says nothing about a page link the renderer writes in the page's own spelling", async () => {
+    expect(
+      await findings({
+        "index.md":
+          "[a](Guide/Install.md) [b](guide/INSTALL.html) [c](GUIDE/install) [d][r] [[Guide/Install]]\n\n[r]: Guide/Install.md#top\n",
+        "guide/install.md": "# Install",
+      }),
+    ).toEqual([]);
   });
 
   it("catches an image that is not a published file", async () => {
