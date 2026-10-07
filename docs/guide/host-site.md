@@ -41,6 +41,7 @@ canopy-page's controls where you want them with slots:
 
 ```html
 <header class="site-header">
+  <canopy-slot name="skip-link"></canopy-slot>
   <a href="https://example.com/">Example</a>
   <canopy-slot name="back"></canopy-slot>
   <canopy-slot name="search"></canopy-slot>
@@ -51,6 +52,11 @@ canopy-page's controls where you want them with slots:
 [Slots](../reference/theming.md#slots) lists every one, and `page:<key>` — a page's own
 frontmatter text. Always write the closing tag: HTML does not close
 `<canopy-slot name="search"/>`, and `check` says so.
+
+`skip-link` is the "Skip to content" link keyboard readers use to get past your header. Every page
+opens with one even if you leave the slot out; placing it puts it inside your header, where your
+own stylesheet can dress it (`.canopy-skip-link`). If your header already has a skip link of its
+own, point it at `#canopy-main` and leave the slot out instead — one link, not two.
 
 A call to action that is the same box on every post but says something different on each:
 
@@ -90,3 +96,18 @@ your tokens:
 
 If your tokens change for dark mode, the bridge follows them. [Theming](../reference/theming.md)
 lists every token and every class name that is safe to select on.
+
+### A site with one colour scheme
+
+Many product sites are dark only, or light only. Say so in the settings rather than in the
+bridge:
+
+```json
+{ "colorScheme": "dark" }
+```
+
+Every page is then drawn dark for every reader — canopy-page's own colours, the code blocks, and
+the bridge — whatever their system prefers or whatever they chose on another site of yours, and
+there is no theme toggle to place (drop the `theme-toggle` slot; `check` warns if it stays). The
+bridge maps your tokens once, unconditionally, as above; there is nothing of canopy-page's to
+restate for the other scheme.
