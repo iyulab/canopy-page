@@ -202,6 +202,8 @@ Every key is optional, and keeps its English default when left out:
 | `readingTime` | `{n} min read` | A stream page's reading time under its heading. `{n}`, where the minutes go, is required |
 | `language` | `Languages` | The language links' accessible label |
 | `skipToContent` | `Skip to content` | The link every page opens with for keyboard readers, past the header and navigation |
+| `newerPost` | `Newer post` | Over the link at a stream post's end to the post published after it |
+| `olderPost` | `Older post` | Over the link at a stream post's end to the post published before it |
 
 There is no built-in translation table — canopy-page has no way to guess what your language calls
 "Search". [Publishing a non-English site](../guide/localizing.md) has a complete set for Korean.

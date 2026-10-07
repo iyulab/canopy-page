@@ -164,6 +164,16 @@
           "minLength": 1,
           "description": "The link every page opens with for keyboard readers, past the header and navigation to the content. Defaults to \"Skip to content\"."
         },
+        "newerPost": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Over the link at a stream post's end to the post published after it. Defaults to \"Newer post\"."
+        },
+        "olderPost": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Over the link at a stream post's end to the post published before it. Defaults to \"Older post\"."
+        },
         "searchFailed": {
           "type": "string",
           "minLength": 1,

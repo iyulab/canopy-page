@@ -7,6 +7,7 @@ import {
   dateFindings,
   descriptionFindings,
   filenameEncodingFindings,
+  imageFindings,
   referenceFindings,
   regionFindings,
 } from "./check.js";
@@ -932,5 +933,39 @@ describe("loadSite", { timeout: LOADS_A_SITE }, () => {
     const root = await site({ "settings.json": "{}", "index.md": "# Home", "site/index.html": "<p>a previous build</p>" });
     expect((await loadSite(root)).index.assets).toEqual(["site/index.html"]);
     expect((await loadSite(root, path.join(root, "site"))).index.assets).toEqual([]);
+  });
+});
+
+describe("imageFindings", { timeout: LOADS_A_SITE }, () => {
+  async function imageMessages(files: Record<string, string>): Promise<string[]> {
+    const root = await site({ "settings.json": "{}", ...files });
+    return imageFindings(await loadSite(root)).map((finding) => `${finding.level}: ${finding.message}`);
+  }
+
+  // A page's `image:` is its cover on a stream page and its link-preview image
+  // everywhere: a site path that is not published is a broken image a reader sees.
+  it("says nothing about an image that is published, or one at an absolute URL", async () => {
+    expect(
+      await imageMessages({
+        "index.md": "---\nimage: img/cover.png\n---\n# Home",
+        "guide/a.md": "---\nimage: https://cdn.example.com/c.png\n---\n# A",
+        "img/cover.png": "binary",
+      }),
+    ).toEqual([]);
+  });
+
+  it("names a page whose image is not a published file", async () => {
+    expect(await imageMessages({ "guide/a.md": "---\nimage: img/gone.png\n---\n# A" })).toEqual([
+      'error: guide/a.md: image: "img/gone.png" is not a published file (it is a path from the site root)',
+    ]);
+  });
+
+  it("names an image that reaches its file only by ignoring letter case", async () => {
+    expect(
+      await imageMessages({ "index.md": "---\nimage: IMG/Cover.png\n---\n# Home", "img/cover.png": "binary" }),
+    ).toEqual([
+      'error: index.md: image: "IMG/Cover.png" reaches "img/cover.png" only by ignoring letter case — the built page ' +
+        'keeps "IMG/Cover.png" as written, which leads nowhere on a host that tells letter case apart',
+    ]);
   });
 });

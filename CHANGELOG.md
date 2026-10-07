@@ -7,6 +7,24 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [Unreleased]
+
+Depends on canopy ^0.24.0. Upgrading: a page whose `image:` is not a published file (or is spelled
+in another letter case than its file) is now a `check` error — fix the path, or remove the line.
+
+### Added
+
+- **A stream post names its `author:` and shows its `image:` as a cover** — under the byline, and on
+  the section's list — **and ends with the posts published before and after it.** New `strings`
+  keys `olderPost` and `newerPost` label those two links; new theming hooks `.canopy-author`,
+  `.canopy-cover`, `.canopy-page-nav-label`.
+
+### Fixed
+
+- **`check` reports a page's `image:` that will not show**: a site path that is not a published
+  file, or one that reaches its file only by ignoring letter case. It is the picture link previews
+  show, and now a stream post's cover; nothing said it was missing.
+
 ## [0.23.3] — 2026-10-07
 
 Depends on canopy ^0.23.0. Upgrading: nothing to do.

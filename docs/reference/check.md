@@ -54,6 +54,18 @@ Covers both cases that end the same way for a reader: the file does not exist, o
 excluded. A path that climbs above the site root is not checked at all — see [What is never
 reported](#what-is-never-reported).
 
+A page's own `image:` is checked the same way — it is the picture link previews show and, on a
+`stream` page, the cover under the byline and on the section's list:
+
+```
+error: blog/launch.md: image: "img/launch.png" is not a published file (it is a path from the site root)
+```
+
+Unlike a link in the text, `image:` is a path from the site root, not from the page. An absolute
+URL (`https://…`) is not checked; a root-absolute one (`/img/x.png`) is held to the rule for
+[root-absolute links](#a-root-absolute-reference-resolves-against-nothing). One spelled in another
+letter case than its file is reported as below.
+
 ### A link or image reaches its file only by ignoring letter case
 
 ```

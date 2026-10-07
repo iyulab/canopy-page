@@ -212,6 +212,10 @@ export interface Settings {
     readingTime?: string;
     /** The link every page opens with, past the header and navigation to the content. */
     skipToContent?: string;
+    /** Over the link at a stream post's end to the post published after it: "Newer post". */
+    newerPost?: string;
+    /** Over the link at a stream post's end to the post published before it: "Older post". */
+    olderPost?: string;
     /**
      * Message shown in place of results when the client search index fails to
      * load. This key rides the same JSON `--strings` flag as every other one
@@ -276,6 +280,8 @@ export const STRINGS_KEYS = new Set([
   "language",
   "readingTime",
   "skipToContent",
+  "newerPost",
+  "olderPost",
   "searchFailed",
 ]);
 

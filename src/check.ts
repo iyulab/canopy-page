@@ -513,7 +513,7 @@ export function siteFindings(site: LoadedSite): Finding[] {
     ...navFindings(site.nav),
     ...regionFindings(site),
     ...filenameEncodingFindings(site),
-    ...knownBrokenFindings(site, referenceFindings(site)),
+    ...knownBrokenFindings(site, [...referenceFindings(site), ...imageFindings(site)]),
     ...descriptionFindings(site),
     ...dateFindings(site),
   ];
@@ -606,6 +606,41 @@ export function descriptionFindings(site: LoadedSite): Finding[] {
         missing.map((page) => `  ${page}`).join("\n"),
     },
   ];
+}
+
+/**
+ * Pages whose `image:` will not show.
+ *
+ * A page's `image:` is the picture link previews show for it and, on a stream
+ * page, its cover under the byline and on the stream's listing. A site path —
+ * from the site root, as canopy reads it — that is not published is a broken
+ * image a reader sees; one that reaches its file only by ignoring letter case
+ * is kept as written, like any file that is not a page. A root-absolute path is
+ * held to the same rule as a root-absolute link; any other absolute URL is the
+ * author's to vouch for. Read with canopy's own frontmatter parser.
+ */
+export function imageFindings(site: LoadedSite): Finding[] {
+  const findings: Finding[] = [];
+  for (const page of site.index.pages) {
+    const { data } = parseFrontmatter(site.sources.get(page) ?? "");
+    const image = typeof data.image === "string" ? data.image.trim() : "";
+    if (image === "") continue;
+    const where = `${page}: image: "${image}"`;
+    if (isRootAbsolute(image)) {
+      const problem = rootAbsoluteProblem(site, image);
+      if (problem !== undefined) findings.push({ page, level: problem.level, message: `${where} ${problem.message}` });
+      continue;
+    }
+    if (isExternalUrl(image)) continue;
+    const target = (decodeLinkPath(image) ?? image).replace(/^\.\//, "");
+    const published = findPublished(site, target);
+    if (published === undefined) {
+      findings.push({ page, level: "error", message: `${where} is not a published file (it is a path from the site root)` });
+    } else if (!published.exact) {
+      findings.push({ page, level: "error", message: `${page}: ${caseOnlyMessage("image:", image, published.file)}` });
+    }
+  }
+  return findings;
 }
 
 /**
