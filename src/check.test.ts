@@ -521,6 +521,19 @@ describe("dateFindings", { timeout: LOADS_A_SITE }, () => {
     ]);
   });
 
+  it("warns once about an undated page in a stream section that also has a feed", async () => {
+    const messages = await dates({
+      "settings.json": JSON.stringify({
+        siteUrl: "https://example.test",
+        sections: [{ path: "blog", profile: "stream", feed: true }],
+      }),
+      "blog/index.md": "# Blog\n",
+      "blog/b.md": "# B\n",
+    });
+    expect(messages).toHaveLength(1);
+    expect(messages[0]).toMatch(/^1 page\(s\) in a stream section have no "date:"/);
+  });
+
   it("says nothing about a site whose dates are all dates", async () => {
     expect(
       await dates({
@@ -682,6 +695,29 @@ describe("regionFindings", { timeout: LOADS_A_SITE }, () => {
         "assets/logo.svg": "<svg></svg>",
       }),
     ).toEqual([]);
+  });
+
+  // Without a path in siteUrl there is no telling where "/" is, so a
+  // root-absolute link to nothing the site publishes is a warning, not an error.
+  it("warns about a root-absolute fragment link when siteUrl has no path to check it against", async () => {
+    expect(
+      await regionMessages({ regions: { footer: "partials/footer.html" } }, {
+        "partials/footer.html": '<footer><a href="/pricing">Pricing</a></footer>',
+      }),
+    ).toEqual([
+      'warning: partials/footer.html: link "/pricing" — nothing is published at "pricing". A root-absolute path ' +
+        "resolves against wherever the site is served from, so this is right only if something else answers it there",
+    ]);
+  });
+
+  it("reports a slot problem once for each region a fragment fills", async () => {
+    expect(
+      await regionMessages({ regions: { head: "partials/both.html", footer: "partials/both.html" } }, {
+        "partials/both.html": '<canopy-slot name="search"></canopy-slot>',
+      }),
+    ).toEqual([
+      expect.stringMatching(/^error: partials\/both\.html \(head\): <canopy-slot name="search"> cannot sit in the head region/),
+    ]);
   });
 
   it("reports a fragment that is not there", async () => {

@@ -62,6 +62,18 @@ describe("translateNav", () => {
     expect(translate({ title: "Docs" }).spec).toBeUndefined();
   });
 
+  // canopy orders a stream by its pages' dates; a file-name order asked for it
+  // would only be overridden, so none is asked — whether the section says it is
+  // a stream or the site does.
+  it("asks no order for a stream section, its own or the site's", () => {
+    const own = translate({ sections: [{ path: "release-notes", profile: "stream" }] }).spec;
+    expect(own?.items.find((item) => item.derive === "release-notes")).not.toHaveProperty("order");
+    const inherited = translate({ profile: "stream", sections: [{ path: "release-notes" }] }).spec;
+    expect(inherited?.items.find((item) => item.derive === "release-notes")).not.toHaveProperty("order");
+    const manual = translate({ sections: [{ path: "release-notes" }] }).spec;
+    expect(manual?.items.find((item) => item.derive === "release-notes")).toMatchObject({ order: "asc" });
+  });
+
   it("orders a section newest-first when asked", () => {
     const { spec } = translate({
       sections: [{ path: "release-notes", label: "Release notes", order: "desc" }],
