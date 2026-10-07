@@ -7,6 +7,17 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [0.27.3] — 2026-10-07
+
+Depends on canopy ^0.28.4.
+
+### Fixed
+
+- A stream section holding a folder under a section of its own (a manual guide inside a blog)
+  listed that folder on its list too, while the list's pages were counted from its posts alone —
+  so "Page 1 of 2" could link a page that was never written. The list is its posts only (canopy
+  0.28.4). Writing a large stream's pages also takes far less time (canopy 0.28.3).
+
 ## [0.27.2] — 2026-10-07
 
 Depends on canopy ^0.28.2.
