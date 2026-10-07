@@ -7,6 +7,20 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [Unreleased]
+
+Depends on canopy ^0.23.0. Upgrading: nothing to do.
+
+### Fixed
+
+- **Building into an output folder inside the site folder no longer republishes the previous build.**
+  `canopy-page build` run from the site folder writes `./site` there; the next build read it back in
+  as part of the site and published it again one folder deeper (`site/site/…`), and the check before
+  the build looked at those files too. The output folder is now left out of both. The site folder
+  itself is refused as the output.
+- **A folder link (`[x](Guide/)`) to a folder with an index page reaches that page** in any letter
+  case and is written as it (`guide/index.html`), so `check` no longer reports it.
+
 ## [0.23.2] — 2026-10-07
 
 Depends on canopy ^0.22.0. Upgrading: a link to an image or other file, or to a folder, written in

@@ -62,11 +62,11 @@ error: index.md:3: image "IMG/Logo.svg" reaches "img/logo.svg" only by ignoring 
 
 On your own machine the link works: Windows and macOS find `img/logo.svg` from `IMG/Logo.svg`.
 The built page keeps the spelling you wrote for an image or any other file that is not a page, and
-for a link to a folder (`Guide/`), and GitHub Pages — like most hosts — serves nothing at it. Write
-the path as the file is spelled.
+GitHub Pages — like most hosts — serves nothing at it. Write the path as the file is spelled.
 
 A link to a page is not affected: `[x](Guide/Install.md)`, `Guide/Install`, `Guide/Install.html` and
-`[[Guide/Install]]` are all written as the page is spelled (`guide/install.html`). Links in a region
+`[[Guide/Install]]` are all written as the page is spelled (`guide/install.html`), and a folder link
+(`Guide/`) as the folder's index page (`guide/index.html`). Links in a region
 fragment are kept exactly as written, links to pages included, so every one of them is checked this way.
 
 ### A wikilink matches no page

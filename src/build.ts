@@ -99,7 +99,9 @@ export function canopyArgs(
 
 /** Build the site in `dir` into `out`, returning the exit code to leave with. */
 export async function buildSite({ dir, out }: BuildOptions): Promise<number> {
-  const site = await loadSite(dir);
+  // Given the output directory, the view is the build's own: an output inside
+  // the site from an earlier build is not part of the site.
+  const site = await loadSite(dir, out);
   // The same checks `check` runs, on the same view of the site, so a build can
   // never publish something a passing check said was sound.
   if (reportFindings(siteFindings(site))) return 1;

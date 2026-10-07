@@ -54,8 +54,13 @@ export interface Finding {
   page?: string;
 }
 
-/** Read a site directory into settings, files, and a navigation translation. */
-export async function loadSite(dir: string): Promise<LoadedSite> {
+/**
+ * Read a site directory into settings, files, and a navigation translation.
+ *
+ * `out`, when given, is where a build will write: an output directory inside
+ * the site is then not part of it, as canopy's build leaves it out.
+ */
+export async function loadSite(dir: string, out?: string): Promise<LoadedSite> {
   const root = path.resolve(dir);
   const settingsPath = path.join(root, SETTINGS_FILENAME);
 
@@ -87,7 +92,7 @@ export async function loadSite(dir: string): Promise<LoadedSite> {
   // The listing is the build's: with the layout, canopy leaves the fragments
   // out of it and names the index pages it will write.
   const listing = await withLayoutFile(layoutSpec(settings), (file) =>
-    listSite(root, publishingExcludes(settings), file),
+    listSite(root, publishingExcludes(settings), file, out),
   );
   const index = indexSite(listing);
   settings = inSiteSpelling(settings, index);

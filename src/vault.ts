@@ -1,3 +1,4 @@
+import path from "node:path";
 import { runCanopyForOutput } from "./canopy.js";
 import type { Settings } from "./settings.js";
 
@@ -39,11 +40,16 @@ export interface SiteListing {
   generated: string[];
 }
 
-/** Ask canopy what a build of `root` with these exclusions would publish. */
+/**
+ * Ask canopy what a build of `root` with these exclusions would publish — into
+ * `out`, when the build's output directory is known, which canopy leaves out of
+ * the listing as the build leaves it out of its input.
+ */
 export async function listSite(
   root: string,
   exclude: readonly string[] = [],
   layoutPath?: string,
+  out?: string,
 ): Promise<SiteListing> {
   const output = await runCanopyForOutput([
     "list",
@@ -51,6 +57,7 @@ export async function listSite(
     "--json",
     ...exclude.flatMap((pattern) => ["--exclude", pattern]),
     ...(layoutPath === undefined ? [] : ["--layout", layoutPath]),
+    ...(out === undefined ? [] : ["--out", path.resolve(out)]),
   ]);
   return JSON.parse(output) as SiteListing;
 }

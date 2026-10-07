@@ -22,7 +22,7 @@ path a settings file names is relative to that folder, never to where the comman
 
 | Option | For | Meaning |
 |---|---|---|
-| `-o <dir>`, `--out <dir>` | `build`, `watch` | Where the site is written. Defaults to `./site` |
+| `-o <dir>`, `--out <dir>` | `build`, `watch` | Where the site is written. Defaults to `./site`. It may be inside the site folder — a build never reads its own output back in as part of the site — but not the site folder itself |
 | `--port <n>` | `watch` | The port the site is served on, `1`–`65535`. Defaults to `8080` |
 | `-h`, `--help` | any | Print the usage text and leave with `0` |
 | `--version` | any | Print `canopy-page <version>` and leave with `0` |

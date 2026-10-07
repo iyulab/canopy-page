@@ -65,8 +65,9 @@ describe("referenceFindings", { timeout: LOADS_A_SITE }, () => {
   // A file the renderer does not match keeps the letter case it was written in,
   // and most hosts tell "Guide" from "guide" apart — so such a link leads
   // nowhere once deployed. A link the renderer matches to a page (a `.md`, an
-  // `.html` or an extension-less path naming a page, or a wikilink) is written
-  // in the page's own spelling, so it is not one of them.
+  // `.html` or an extension-less path naming a page, a folder with an index
+  // page, or a wikilink) is written in the page's own spelling, so it is not
+  // one of them.
   it("names a link or image that reaches its file only by ignoring letter case", async () => {
     const messages = await findings({
       "index.md":
@@ -79,7 +80,6 @@ describe("referenceFindings", { timeout: LOADS_A_SITE }, () => {
       `index.md:3: ${kind} "${target}" reaches "${file}" only by ignoring letter case — the built page keeps ` +
       `"${target}" as written, which leads nowhere on a host that tells letter case apart`;
     expect(messages).toEqual([
-      differs("link", "Guide/", "guide/index.md"),
       differs("image", "IMG/logo.png", "img/logo.png"),
       differs("link", "IMG/Logo.png", "img/logo.png"),
     ]);
@@ -89,7 +89,8 @@ describe("referenceFindings", { timeout: LOADS_A_SITE }, () => {
     expect(
       await findings({
         "index.md":
-          "[a](Guide/Install.md) [b](guide/INSTALL.html) [c](GUIDE/install) [d][r] [[Guide/Install]]\n\n[r]: Guide/Install.md#top\n",
+          "[a](Guide/Install.md) [b](guide/INSTALL.html) [c](GUIDE/install) [d][r] [e](Guide/) [[Guide/Install]]\n\n[r]: Guide/Install.md#top\n",
+        "guide/index.md": "# Guide",
         "guide/install.md": "# Install",
       }),
     ).toEqual([]);
@@ -921,5 +922,15 @@ describe("loadSite: a section named in another spelling than its folder", { time
     expect(loaded.settings.sections?.map((section) => section.path)).toEqual(["blog", "Missing"]);
     expect(feedDirs(loaded.settings)).toEqual(["blog"]);
     expect(Object.keys(loaded.layout?.dirs ?? {})).toEqual(["blog"]);
+  });
+});
+
+describe("loadSite", { timeout: LOADS_A_SITE }, () => {
+  // `canopy-page build` from inside the site folder writes ./site there; the
+  // next build's view of the site must not include the previous output.
+  it("leaves the build's output directory out of the site, given where the build writes", async () => {
+    const root = await site({ "settings.json": "{}", "index.md": "# Home", "site/index.html": "<p>a previous build</p>" });
+    expect((await loadSite(root)).index.assets).toEqual(["site/index.html"]);
+    expect((await loadSite(root, path.join(root, "site"))).index.assets).toEqual([]);
   });
 });
