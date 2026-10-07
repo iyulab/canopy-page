@@ -195,7 +195,7 @@ Every key is optional, and keeps its English default when left out:
 | `siteNav` | `Site navigation` | The sidebar's accessible label |
 | `pageNav` | `Page navigation` | The prev/next cards' accessible label |
 | `onThisPage` | `On this page` | The on-page outline's heading and accessible label |
-| `indexTitle` | `Contents` | Title and heading of the contents page written at the site root when it has no `index` page |
+| `indexTitle` | `Contents` | Title and heading of the contents page written at the site root when it has no `index` page (a whole-site stream without a `title` names its front page this way too) |
 | `backlinks` | `Linked references` | The heading above a page's backlinks |
 | `breadcrumb` | `Breadcrumb` | The top bar's trail's accessible label |
 | `searchFailed` | `Search failed to load.` | Shown in the results list when the search index fails to load |

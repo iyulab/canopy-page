@@ -7,7 +7,11 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
-## [Unreleased]
+## [0.23.1] — 2026-10-07
+
+Depends on canopy ^0.21.1. Upgrading: a settings file naming one directory in two sections, or a
+region fragment path with a wildcard, is now an error — remove the duplicate section, or name the
+fragment file.
 
 ### Fixed
 
@@ -18,6 +22,9 @@ to it — its fields, its validation, and what the checks reject — are what th
 - **A section whose `path` is spelled differently from its directory** (`"BLOG"` for `blog/`) is
   built in the directory's own spelling. Its feed link, stream index and sidebar heading used the
   settings' spelling, which leads nowhere on a host that tells the two apart.
+- **From canopy 0.21.1:** a whole-site stream with no front page and no `title` names the page it
+  gets written with `strings.indexTitle`, like the contents page; a stream page's reading time counts
+  every Han ideograph and kana by the character.
 
 ## [0.23.0] — 2026-10-07
 
