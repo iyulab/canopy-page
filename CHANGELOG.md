@@ -7,7 +7,11 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
-## [Unreleased]
+## [0.23.0] — 2026-10-07
+
+Depends on canopy ^0.21.0. Upgrading: a site file at a path the build writes is now an error —
+rename the file `check` names (a `styles` entry called `tokens.css` or `styles.css` is the usual
+one). A page named by its day (`2026-10-03-….md`) with no `date:` is now dated.
 
 ### Fixed
 
