@@ -529,6 +529,30 @@ describe("parseSettings: a stream's list in pages", () => {
     );
   });
 
+  it("takes featured posts on a site or section whose own profile is stream, each made a .md path", () => {
+    expect(parseSettings('{"profile":"stream","featured":["welcome"]}').featured).toEqual(["welcome.md"]);
+    expect(
+      parseSettings('{"sections":[{"path":"blog","profile":"stream","featured":["blog/a.md","./blog/b"]}]}').sections?.[0]
+        ?.featured,
+    ).toEqual(["blog/a.md", "blog/b.md"]);
+  });
+
+  it("refuses featured posts where there is no list of its own, or entries that are not pages", () => {
+    expect(() => parseSettings('{"featured":["a"]}')).toThrow(
+      'settings.featured: only a site with "profile": "stream" has posts to feature',
+    );
+    expect(() => parseSettings('{"profile":"stream","sections":[{"path":"blog","featured":["blog/a"]}]}')).toThrow(
+      'settings.sections[0].featured: only a section with its own "profile": "stream" has posts to feature',
+    );
+    expect(() => parseSettings('{"profile":"stream","featured":"a.md"}')).toThrow(
+      "settings.featured: expected a list of the posts' paths",
+    );
+    expect(() => parseSettings('{"profile":"stream","featured":["cover.png"]}')).toThrow(
+      'settings.featured[0]: "cover.png" is not a page',
+    );
+    expect(() => parseSettings('{"profile":"stream","featured":["../a.md"]}')).toThrow("settings.featured[0]");
+  });
+
   it("needs {n} in strings.pageOf", () => {
     expect(() => parseSettings('{"strings":{"pageOf":"Page"}}')).toThrow("settings.strings.pageOf");
     expect(parseSettings('{"strings":{"pageOf":"{n}/{total}"}}').strings?.pageOf).toBe("{n}/{total}");

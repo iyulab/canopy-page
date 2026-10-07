@@ -21,10 +21,12 @@ import {
 } from "@iyulab/canopy";
 import { extractReferences } from "./references.js";
 import {
+  featuredFindings,
   type Finding,
   type LoadedSite,
   loadSite,
   navFindings,
+  readNextFindings,
   reportFindings,
   settingsFindings,
   tagFindings,
@@ -514,7 +516,8 @@ export function siteFindings(site: LoadedSite): Finding[] {
     ...navFindings(site.nav),
     ...regionFindings(site),
     ...filenameEncodingFindings(site),
-    ...knownBrokenFindings(site, [...referenceFindings(site), ...imageFindings(site)]),
+    ...featuredFindings(site),
+    ...knownBrokenFindings(site, [...referenceFindings(site), ...imageFindings(site), ...readNextFindings(site)]),
     ...tagFindings(site),
     ...descriptionFindings(site),
     ...dateFindings(site),

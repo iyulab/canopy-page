@@ -1,12 +1,17 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import {
+  buildLinkIndex,
+  featuredProblems,
   type Layout,
   layoutFragments,
   type OutputOwner,
   outputCollisions,
+  type PageProblem,
   parseFrontmatter,
+  readNextProblems,
   streamTagPaths,
+  syntheticIndexPaths,
   type TaggedPage,
   tagProblems,
   toSitePath,
@@ -207,11 +212,37 @@ function taggedPages(site: LoadedSite): TaggedPage[] {
  * refuses to build them, so `check` names them first, by the post's source.
  */
 export function tagFindings(site: LoadedSite): Finding[] {
-  return tagProblems(site.layout, taggedPages(site)).map((problem) => {
-    const [sitePath = "", ...rest] = problem.split(": ");
-    const page = site.index.pages.find((candidate) => toSitePath(candidate) === sitePath) ?? sitePath;
-    return { page, level: "error" as const, message: `${page}: ${rest.join(": ")}` };
+  return tagProblems(site.layout, taggedPages(site)).map((problem) => bySource(site, problem));
+}
+
+/**
+ * `readNext:` values that name no page — canopy leaves each out of what to read
+ * next, so the author's choice silently shrinks. Resolved by canopy against the
+ * pages a reader can be sent to: the site's own, and the index pages written
+ * for stream sections that have none.
+ */
+export function readNextFindings(site: LoadedSite): Finding[] {
+  const sitePaths = site.index.pages.map(toSitePath);
+  const index = buildLinkIndex([...sitePaths, ...syntheticIndexPaths(site.layout, sitePaths)]);
+  return readNextProblems(taggedPages(site), index).map((problem) => bySource(site, problem));
+}
+
+/**
+ * A `featured` entry that is no post of its section — canopy refuses to build
+ * it, so `check` names it first, by the setting that wrote it.
+ */
+export function featuredFindings(site: LoadedSite): Finding[] {
+  return featuredProblems(site.layout, site.index.pages).map(({ dir, path: file, message }) => {
+    const at = (site.settings.sections ?? []).findIndex((section) => section.path.toLowerCase() === dir.toLowerCase());
+    const where = dir === "" || at === -1 ? "settings.featured" : `settings.sections[${at}].featured`;
+    return { level: "error" as const, message: `${where}: "${file}" ${message}. Paths are relative to the settings file` };
   });
+}
+
+/** A problem canopy names by a page's site path, as an error on the page's source. */
+function bySource(site: LoadedSite, { sitePath, message }: PageProblem): Finding {
+  const page = site.index.pages.find((candidate) => toSitePath(candidate) === sitePath) ?? sitePath;
+  return { page, level: "error", message: `${page}: ${message}` };
 }
 
 /**

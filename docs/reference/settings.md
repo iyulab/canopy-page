@@ -46,6 +46,7 @@ This is the file that produced the site you are reading:
       "label": "Showcase: a blog in a host site",
       "profile": "stream",
       "pageSize": 2,
+      "featured": ["showcase/host-blog/2026-09-20-capture"],
       "regions": {
         "head": "showcase/host-blog/_host/head.html",
         "header": "showcase/host-blog/_host/header.html",
@@ -86,6 +87,7 @@ The settings file itself is never published, and neither is anything `exclude` n
 | `rehypePlugins` | Installed npm package names of rehype plugins to run on every page — see [Extending what a page can render](#extending-what-a-page-can-render) |
 | `profile` | `"manual"` (the default: a tree to browse) or `"stream"` (dated pages, newest first), for the whole site; each section can choose its own. See [Profiles](theming.md#profiles) |
 | `pageSize` | With `"profile": "stream"`, how many posts the front page lists; the rest continue on `page/2.html`, `page/3.html` …. Defaults to 10 |
+| `featured` | With `"profile": "stream"`, posts the front page puts first — like a section's [`featured`](#sections) |
 | `regions` | HTML fragments that fill the parts of a page around the article — see [Regions](#regions) |
 | `sections` | Ordered regions of the site — see [Sections](#sections) |
 | `knownBroken` | Pages whose broken links and images are known and being fixed — see [`knownBroken`](#knownbroken) |
@@ -104,6 +106,7 @@ builds:
 | `feed` | `true` publishes an Atom feed of the section's dated pages at `<path>/feed.xml` — see [Feeds](#feeds). Needs `siteUrl` |
 | `profile` | `"manual"` or `"stream"` for this section; the site's `profile` applies where it is not set. A stream section takes neither `order` nor `items` |
 | `pageSize` | With this section's own `"profile": "stream"`, how many posts its index lists; the rest continue on `<path>/page/2.html` on. Defaults to 10 |
+| `featured` | With this section's own `"profile": "stream"`, posts it puts first, in this order — relative to the settings file, with or without `.md`. They stand atop the first page of its list, out of the dated pages, and in [what to read next](theming.md#what-to-read-next) after each post. An entry that is not a post of the section is an error |
 | `regions` | Overrides the site's `regions` key by key; `""` turns one off in this section |
 
 Note what this site's settings do **not** contain: a label for `guide` or for `release-notes`.
@@ -211,6 +214,8 @@ Every key is optional, and keeps its English default when left out:
 | `newerPosts` | `Newer posts` | The link to the page of a stream's list with newer posts |
 | `olderPosts` | `Older posts` | The link to the page of a stream's list with older posts |
 | `tags` | `Tags` | A stream post's tags' label, and the title of a stream's list of tags |
+| `readNext` | `Read next` | Over [what to read next](theming.md#what-to-read-next), when a page's `readNext:` or its section's `featured` chose any of it |
+| `related` | `Related posts` | Over what to read next after a stream post, when all of it was found by shared tags and links |
 
 There is no built-in translation table — canopy-page has no way to guess what your language calls
 "Search". [Publishing a non-English site](../guide/localizing.md) has a complete set for Korean.

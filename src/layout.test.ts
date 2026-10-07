@@ -36,6 +36,13 @@ describe("layoutSpec — pageSize", () => {
       dirs: { blog: { profile: "stream", pageSize: 2 } },
     });
   });
+
+  it("carries a stream's featured posts into its rule", () => {
+    expect(layoutSpec({ profile: "stream", featured: ["a.md"] })).toEqual({ default: { profile: "stream", featured: ["a.md"] } });
+    expect(layoutSpec({ sections: [{ path: "blog", profile: "stream", featured: ["blog/a.md"] }] })).toEqual({
+      dirs: { blog: { profile: "stream", featured: ["blog/a.md"] } },
+    });
+  });
 });
 
 describe("feedDirs", () => {

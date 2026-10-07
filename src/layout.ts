@@ -21,6 +21,7 @@ export function layoutSpec(settings: Settings): Layout | undefined {
     // and the site's own name is what that page should be called.
     ...(settings.profile === "stream" && settings.title !== undefined ? { title: settings.title } : {}),
     ...(settings.pageSize === undefined ? {} : { pageSize: settings.pageSize }),
+    ...(settings.featured === undefined ? {} : { featured: settings.featured }),
     ...(settings.regions === undefined ? {} : { regions: settings.regions }),
   };
   const dirs: Record<string, LayoutRule> = {};
@@ -31,6 +32,7 @@ export function layoutSpec(settings: Settings): Layout | undefined {
       ...(section.label === undefined ? {} : { title: section.label }),
       ...(section.regions === undefined ? {} : { regions: section.regions }),
       ...(section.pageSize === undefined ? {} : { pageSize: section.pageSize }),
+      ...(section.featured === undefined ? {} : { featured: section.featured }),
     };
   }
   const hasSiteRule = Object.keys(siteRule).length > 0;

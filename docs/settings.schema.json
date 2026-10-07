@@ -55,6 +55,11 @@
       "minimum": 1,
       "description": "With \"profile\": \"stream\", how many posts the front page lists; the rest continue on page/2.html on. Defaults to 10."
     },
+    "featured": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "With \"profile\": \"stream\", posts the front page puts first, in this order — relative to the settings file, with or without .md. They stand atop the first page, out of the dated pages, and in what to read next after each post."
+    },
     "regions": {
       "$ref": "#/$defs/regions",
       "description": "HTML fragments, relative to this file, that fill the site's regions. header and footer replace canopy's own with the fragment's markup; head, beforeArticle and afterArticle add to the page. canopy's controls go where <canopy-slot name=\"…\"></canopy-slot> elements say."
@@ -199,6 +204,16 @@
           "minLength": 1,
           "description": "A stream post's tags' label, and the title of a stream's list of tags. Defaults to \"Tags\"."
         },
+        "readNext": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Over what to read after a page, when its readNext: or its section's featured chose any of it. Defaults to \"Read next\"."
+        },
+        "related": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Over what to read after a stream post, when all of it was found by shared tags and links. Defaults to \"Related posts\"."
+        },
         "searchFailed": {
           "type": "string",
           "minLength": 1,
@@ -245,6 +260,11 @@
           "type": "integer",
           "minimum": 1,
           "description": "With this section's own \"profile\": \"stream\", how many posts its index lists; the rest continue on <path>/page/2.html on. Defaults to 10."
+        },
+        "featured": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "With this section's own \"profile\": \"stream\", posts it puts first, in this order — relative to the settings file, with or without .md. They stand atop the first page of its list, out of the dated pages, and in what to read next after each post."
         },
         "regions": {
           "$ref": "#/$defs/sectionRegions",

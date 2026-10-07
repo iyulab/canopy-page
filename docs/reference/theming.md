@@ -153,18 +153,44 @@ section's index (`.canopy-back`) where a manual page shows its breadcrumb.
 The section's index page lists its pages newest first (`.canopy-listing`), each with its cover,
 date, reading time and summary — and is written for the section when it has none. It lists ten
 (`pageSize` changes that); the rest continue on `page/2.html`, `page/3.html` … in the section,
-each page ending with the way to the pages beside it (`.canopy-pagination`).
+each page ending with the way to the pages beside it (`.canopy-pagination`). The section's
+[`featured`](settings.md#sections) posts stand atop the first page, in the order given
+(`.canopy-featured` on their items), and out of the dated pages.
 
 A post's `tags:` (a list, or one string) close the post and its item in the list (`.canopy-tags`),
 each leading to the tag's page, `tags/<slug>.html` in the section, which lists the posts carrying
-it. `tags/index.html` lists every tag of the section (`.canopy-tag-index`) with how many posts
-carry it (`.canopy-tag-count`); the section's index and each tag's page link to it
-(`.canopy-tag-index-link`). A slug is the tag lowercased, with spaces and `/ ? # % \` as `-` —
+it — `pageSize` to a page like the section's list, the rest on `tags/<slug>/page/2.html` ….
+`tags/index.html` lists every tag of the section (`.canopy-tag-index`) with how many posts
+carry it (`.canopy-tag-count`); the first page of the section's list and of each tag's link to
+it (`.canopy-tag-index-link`). A slug is the tag lowercased, with spaces and `/ ? # % \` as `-` —
 letters of any script stay — and tags with one slug are one tag, shown the way most of its posts
 spell it. A manual page's `tags:` are left alone. A stream section
 is ordered by each page's `date:`, so it takes no `order` or `items`; an undated page is listed
 last, and `check` names it. Once `siteUrl` is set, a stream section publishes a feed unless
 `"feed": false` says otherwise.
+
+### What to read next
+
+A page can name what to read after it in its frontmatter — on any page, in either profile, in
+the order written:
+
+```yaml
+---
+readNext:
+  - install.md          # a path, written as a link from this page
+  - "[[configuration]]" # or a wikilink, quoted
+---
+```
+
+They close the article as a short list (`.canopy-read-next`), each with its name, date and
+`description:`, under "Read next" ([`strings.readNext`](settings.md#strings)). Every one named is
+shown; one that names no page is a `check` error.
+
+A stream post always has the list, filled to three: what its `readNext:` names, then the section's
+`featured` posts, then the posts most like it, then the section's newest. A post is like another
+by the tags they share — a tag few posts carry counting for more, one on every post for nothing —
+and by a link from either to the other. With nothing named or featured, the list is titled
+"Related posts" ([`strings.related`](settings.md#strings)).
 
 [Hosting a blog in your own site](../guide/host-site.md) builds one end to end.
 

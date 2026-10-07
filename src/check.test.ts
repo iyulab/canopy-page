@@ -12,7 +12,7 @@ import {
   regionFindings,
 } from "./check.js";
 import { feedDirs } from "./layout.js";
-import { loadSite, settingsFindings, tagFindings } from "./site.js";
+import { featuredFindings, loadSite, readNextFindings, settingsFindings, tagFindings } from "./site.js";
 
 /**
  * Checking never builds, so these are milliseconds: a folder, a read per page,
@@ -998,5 +998,38 @@ describe("a stream section's tags", { timeout: LOADS_A_SITE }, () => {
       "blog/a.md": "---\ntags: [notes]\n---\n# A\n\n[more](tags/notes.html) [all](tags/index.html)",
     });
     expect(referenceFindings(await loadSite(root))).toEqual([]);
+  });
+});
+
+describe("what to read next", { timeout: LOADS_A_SITE }, () => {
+  it("names a readNext: value that names no page, by the page — resolved as canopy resolves it", async () => {
+    const root = await site({
+      "settings.json": JSON.stringify({ sections: [{ path: "blog", profile: "stream" }] }),
+      "guide/start.md": '---\nreadNext: [install.md, "[[Post]]", "../blog/", gone.md, "[[nowhere]]"]\n---\n# Start',
+      "guide/install.md": "# Install",
+      "blog/post.md": "# Post",
+    });
+    // `../blog/` is the index canopy writes for the stream section.
+    expect(readNextFindings(await loadSite(root)).map((finding) => finding.message)).toEqual([
+      'guide/start.md: readNext "gone.md" names no page of this site',
+      'guide/start.md: readNext "[[nowhere]]" names no page of this site',
+    ]);
+  });
+
+  it("names a featured entry that is no post of its section, by the setting", async () => {
+    const root = await site({
+      "settings.json": JSON.stringify({
+        sections: [
+          { path: "guide" },
+          { path: "Blog", profile: "stream", featured: ["blog/a", "blog/gone", "guide/x"] },
+        ],
+      }),
+      "blog/a.md": "# A",
+      "guide/x.md": "# X",
+    });
+    expect(featuredFindings(await loadSite(root)).map((finding) => finding.message)).toEqual([
+      'settings.sections[1].featured: "blog/gone.md" is not a page this site publishes. Paths are relative to the settings file',
+      'settings.sections[1].featured: "guide/x.md" is not a post of this stream. Paths are relative to the settings file',
+    ]);
   });
 });

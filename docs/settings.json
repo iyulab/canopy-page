@@ -32,6 +32,7 @@
       "label": "Showcase: a blog in a host site",
       "profile": "stream",
       "pageSize": 2,
+      "featured": ["showcase/host-blog/2026-09-20-capture"],
       "regions": {
         "head": "showcase/host-blog/_host/head.html",
         "header": "showcase/host-blog/_host/header.html",

@@ -78,6 +78,13 @@ export interface SettingsSection {
    * Defaults to 10.
    */
   pageSize?: number;
+  /**
+   * Posts this stream section puts first, relative to the settings file, with
+   * or without `.md`, in order: atop the first page of its list and out of the
+   * dated pages, and in what to read next after each post. Only with this
+   * section's own `"profile": "stream"`.
+   */
+  featured?: string[];
 }
 
 /** Pages whose broken references are known and being fixed — see `Settings.knownBroken`. */
@@ -135,6 +142,8 @@ export interface Settings {
   profile?: Profile;
   /** With `profile: "stream"`, how many posts the site's front page lists before `page/2.html`. Defaults to 10. */
   pageSize?: number;
+  /** With `profile: "stream"`, posts the site's front page puts first — see `SettingsSection.featured`. */
+  featured?: string[];
   /** Fragments that fill the site's regions — a host site's own header, footer and stylesheet links. */
   regions?: RegionPaths;
   /** Ordered regions of the site. Without them, navigation follows the folder tree. */
@@ -232,6 +241,10 @@ export interface Settings {
     olderPosts?: string;
     /** A stream post's tags' label, and the title of a stream's list of tags: "Tags". */
     tags?: string;
+    /** Over what to read after a page, when its `readNext:` or its section's `featured` chose any: "Read next". */
+    readNext?: string;
+    /** Over what to read after a stream post, when all of it was found by shared tags and links: "Related posts". */
+    related?: string;
     /**
      * Message shown in place of results when the client search index fails to
      * load. This key rides the same JSON `--strings` flag as every other one
@@ -266,6 +279,7 @@ export const SETTINGS_KEYS = new Set([
   "styles",
   "profile",
   "pageSize",
+  "featured",
   "regions",
   "exclude",
   "sections",
@@ -281,7 +295,17 @@ export const SETTINGS_KEYS = new Set([
 
 export const KNOWN_BROKEN_KEYS = new Set(["path", "reason"]);
 
-export const SECTION_KEYS = new Set(["path", "label", "order", "items", "feed", "profile", "regions", "pageSize"]);
+export const SECTION_KEYS = new Set([
+  "path",
+  "label",
+  "order",
+  "items",
+  "feed",
+  "profile",
+  "regions",
+  "pageSize",
+  "featured",
+]);
 
 export const HOME_KEYS = new Set(["url", "label"]);
 
@@ -303,6 +327,8 @@ export const STRINGS_KEYS = new Set([
   "newerPosts",
   "olderPosts",
   "tags",
+  "readNext",
+  "related",
   "searchFailed",
 ]);
 
@@ -337,7 +363,7 @@ function asString(value: unknown, where: string): string {
 
 /**
  * Normalize a path written in a settings file to the form the rest of the code
- * uses: forward slashes, no leading slash, no trailing slash.
+ * uses: forward slashes, no leading slash, no trailing slash, no `.` segments.
  *
  * Authors on Windows write backslashes, and both `guide` and `guide/` mean the
  * same directory. Paths that leave the site are refused here rather than at the
@@ -356,10 +382,16 @@ function asRelativePath(value: unknown, where: string): string {
   if (normalized.split("/").includes("..")) {
     fail(`${where}: must stay inside the site, so it cannot contain ".."`);
   }
-  if (normalized === "" || normalized === ".") {
+  // `./` says nothing a relative path does not already say, and a path kept
+  // with it would not match the same path written without it.
+  const plain = normalized
+    .split("/")
+    .filter((segment) => segment !== ".")
+    .join("/");
+  if (plain === "") {
     fail(`${where}: must name a path inside the site`);
   }
-  return normalized;
+  return plain;
 }
 
 /** `styles` takes one path or a list of them; either way it becomes a list, in link order. */
@@ -507,7 +539,7 @@ function parseSection(value: unknown, where: string, siteProfile: Profile | unde
   const section = asObject(value, where, 'expected an object with a "path"');
   rejectUnknownKeys(section, SECTION_KEYS, where);
 
-  const { path, label, order, items, feed, profile, regions, pageSize } = section;
+  const { path, label, order, items, feed, profile, regions, pageSize, featured } = section;
   if (feed !== undefined && typeof feed !== "boolean") fail(`${where}.feed: must be true or false`);
   if (path === undefined) fail(`${where}: needs a "path" naming the directory it covers`);
   if (label !== undefined) asString(label, `${where}.label`);
@@ -529,6 +561,10 @@ function parseSection(value: unknown, where: string, siteProfile: Profile | unde
     if (ownProfile !== "stream") {
       fail(`${where}.pageSize: only a section with its own "profile": "stream" has a list to page`);
     }
+  }
+  // Like pageSize: a section inheriting the site's stream is part of the site's list.
+  if (featured !== undefined && ownProfile !== "stream") {
+    fail(`${where}.featured: only a section with its own "profile": "stream" has posts to feature`);
   }
   // A stream is ordered by its pages' own dates. An order written here would
   // either be ignored or fight that, and neither should happen silently.
@@ -557,7 +593,19 @@ function parseSection(value: unknown, where: string, siteProfile: Profile | unde
     ...(ownProfile === undefined ? {} : { profile: ownProfile }),
     ...(regions === undefined ? {} : { regions: asRegions(regions, `${where}.regions`, true) }),
     ...(pageSize === undefined ? {} : { pageSize: pageSize as number }),
+    ...(featured === undefined ? {} : { featured: asFeatured(featured, `${where}.featured`) }),
   };
+}
+
+/** Featured posts: a list of pages, relative to the settings file, each made a `.md` path. */
+function asFeatured(value: unknown, where: string): string[] {
+  if (!Array.isArray(value)) fail(`${where}: expected a list of the posts' paths`);
+  return value.map((entry, i) => {
+    const path = asRelativePath(entry, `${where}[${i}]`);
+    if (/\.md$/i.test(path)) return path;
+    if (/\.[^/.]+$/.test(path)) fail(`${where}[${i}]: "${path}" is not a page — name its .md file, or leave off the extension`);
+    return `${path}.md`;
+  });
 }
 
 /** A count of posts to a page: a whole number of at least 1. */
@@ -616,6 +664,7 @@ export function parseSettings(json: string): Settings {
     styles,
     profile,
     pageSize,
+    featured,
     regions,
     exclude,
     sections,
@@ -643,6 +692,9 @@ export function parseSettings(json: string): Settings {
   if (pageSize !== undefined) {
     asPageSize(pageSize, "settings.pageSize");
     if (siteProfile !== "stream") fail('settings.pageSize: only a site with "profile": "stream" has a list to page');
+  }
+  if (featured !== undefined && siteProfile !== "stream") {
+    fail('settings.featured: only a site with "profile": "stream" has posts to feature');
   }
   if (exclude !== undefined && !Array.isArray(exclude)) fail("settings.exclude: must be an array");
   if (sections !== undefined && !Array.isArray(sections)) fail("settings.sections: must be an array");
@@ -738,6 +790,7 @@ export function parseSettings(json: string): Settings {
     ...(styles === undefined ? {} : { styles: asStylesList(styles) }),
     ...(siteProfile === undefined ? {} : { profile: siteProfile }),
     ...(pageSize === undefined ? {} : { pageSize: pageSize as number }),
+    ...(featured === undefined ? {} : { featured: asFeatured(featured, "settings.featured") }),
     ...(regions === undefined ? {} : { regions: asRegions(regions, "settings.regions", false) }),
     ...(exclude === undefined
       ? {}

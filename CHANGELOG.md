@@ -7,6 +7,31 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [0.27.0] — 2026-10-07
+
+Depends on canopy ^0.28.0. Upgrading: a stream section's posts now end with what to read next
+(`.canopy-read-next`); a tag's page with more than `pageSize` posts continues on
+`<path>/tags/<slug>/page/2.html` on, and a page of your own there is refused.
+
+### Added
+
+- **What to read next.** A page's `readNext:` (a path written as a link from the page, or a quoted
+  `"[[wikilink]]"`; one, or a list) closes it with those pages, on any page. A stream post always
+  has the list, filled to three with its section's featured posts, the posts sharing its rarer tags
+  or linked with it, and the section's newest. `check` names a `readNext:` value that names no page
+  (excused by `knownBroken` like a broken link). New `strings` keys `readNext` and `related`;
+  theming hook `.canopy-read-next`.
+- **Featured posts.** `featured` on a stream section — or on the site, for a whole-site stream —
+  lists posts (relative to the settings file, with or without `.md`) that stand atop the first page
+  of the list, out of the dated pages, and in what to read next. `check` names an entry that is not
+  a post of its section. Theming hook `.canopy-featured`.
+- **Tag pages in pages**, like the section's own list.
+
+### Fixed
+
+- A settings path written with `./` (`"./blog/a"`) is the same path as without it — before, it was
+  kept with the `./`, so it did not match the page it named.
+
 ## [0.26.0] — 2026-10-07
 
 Depends on canopy ^0.26.0. Upgrading: a stream section's posts' `tags:` now show and get pages under
