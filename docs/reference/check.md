@@ -93,6 +93,29 @@ be written over the list of all tags (`tags/index.html`); the build refuses eith
 A page of your own at a tag page's path is refused the same way as any
 [file where the build writes one of its own](#a-file-sits-where-the-build-writes-a-file-of-its-own).
 
+### What to read next leads nowhere
+
+```
+error: guide/start.md: readNext "instal.md" names no page of this site
+```
+
+A page's [`readNext:`](theming.md#what-to-read-next) names what to read after it, as a path written
+like a link from the page or as a quoted `"[[wikilink]]"`. One that names no page — a typo, a page
+that moved, a file that is not a page — is left out of the list, so the author's choice quietly
+shrinks; `check` names it instead. A [`knownBroken`](settings.md#knownbroken) entry excuses it like
+a broken link.
+
+### A featured post is not a post of its section
+
+```
+error: settings.sections[2].featured: "blog/welcom.md" is not a page this site publishes. Paths are relative to the settings file
+error: settings.sections[2].featured: "guide/start.md" is not a post of this stream. Paths are relative to the settings file
+```
+
+A stream section's [`featured`](settings.md#sections) posts stand atop its list, so each has to be
+one of its posts: a page the site publishes, inside the section's folder, other than its index. The
+build refuses an entry that is not.
+
 ### A wikilink matches no page
 
 ```

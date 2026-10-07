@@ -57,7 +57,8 @@ A site is configured by one `settings.json` beside its markdown. Every field is 
   cannot say it
 - **Highlighted code, math and callouts** at build time, and diagrams through rehype plugins
 - **Dated pages and feeds**, sitemaps and link-preview metadata once `siteUrl` is set
-- **A blog inside your own site**, wearing its header, footer and colors
+- **A blog inside your own site**, wearing its header, footer and colors — newest first, in pages,
+  with covers, authors, tags, featured posts and what to read next
 - **A theming contract**: your CSS always wins, against stable class names and design tokens
 
 ## Read more

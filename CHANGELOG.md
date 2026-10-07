@@ -7,6 +7,21 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [0.27.1] — 2026-10-07
+
+Depends on canopy ^0.28.1.
+
+### Fixed
+
+- A stream post's byline (author, date, reading time) no longer runs past the text on a narrow
+  screen, and a stream's list sets each title on its own line with the date and reading time
+  beneath (canopy 0.28.1).
+
+### Documentation
+
+- What `check` reports names the two new errors: a `readNext:` that leads nowhere, and a `featured`
+  entry that is not a post of its section.
+
 ## [0.27.0] — 2026-10-07
 
 Depends on canopy ^0.28.0. Upgrading: a stream section's posts now end with what to read next
