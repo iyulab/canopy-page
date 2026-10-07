@@ -43,6 +43,12 @@
 .lf-nav a { color: var(--lf-muted); text-decoration: none; }
 .lf-nav a:hover { color: var(--lf-accent); }
 .lf-controls { display: flex; align-items: center; gap: 0.75rem; margin-left: auto; }
+/* A phone: the brand and the controls share the first line, the menu takes the
+   second as one row that scrolls sideways rather than stacking line after line. */
+@media (max-width: 40rem) {
+  .lf-header { gap: 0.5rem 1rem; padding: 0.75rem 1rem; }
+  .lf-nav { order: 1; flex: 1 0 100%; flex-wrap: nowrap; gap: 0.75rem; overflow-x: auto; white-space: nowrap; font-size: 0.9rem; }
+}
 .lf-cta {
   display: flex;
   flex-wrap: wrap;
