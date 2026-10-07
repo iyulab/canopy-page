@@ -96,15 +96,21 @@ release. Select on them freely.
 
 | Part of the page | Hooks |
 |---|---|
-| Top bar and controls | `.canopy-topbar` `.canopy-topbar-controls` `.canopy-site-title` `.canopy-logo` `.canopy-home` `.canopy-home-external` `.canopy-back` `.canopy-breadcrumb` `.canopy-language` `.canopy-search` `.canopy-theme-toggle` |
+| Top bar and controls | `.canopy-topbar` `.canopy-topbar-controls` `.canopy-site-title` `.canopy-logo` `.canopy-home` `.canopy-home-external` `.canopy-back` `.canopy-breadcrumb` `.canopy-language` `.canopy-search` `.canopy-theme-toggle` `.canopy-skip-link` |
 | Layout and navigation | `.canopy-layout` `.canopy-sidebar` `.canopy-nav` `.canopy-nav-group` `.canopy-main` |
-| Article | `.canopy-content` `.canopy-contents` `.canopy-before-article` `.canopy-after-article` `.canopy-lead` `.canopy-byline` `.canopy-date` `.canopy-reading-time` `.canopy-toc` `.canopy-listing` `.canopy-listing-title` |
+| Article | `.canopy-content` `.canopy-contents` `.canopy-before-article` `.canopy-after-article` `.canopy-lead` `.canopy-byline` `.canopy-date` `.canopy-reading-time` `.canopy-toc` `.canopy-listing` `.canopy-listing-title` `.canopy-table` |
 | Callouts | `.callout` `.callout-note` `.callout-tip` `.callout-warning` `.callout-danger` `.callout-quote` `.callout-title` |
 | Around the article | `.canopy-outline` `.canopy-backlinks` `.canopy-page-nav` `.canopy-prev` `.canopy-next` |
 
 State is read from standard attributes, not classes: `aria-current="page"` on the current page's
 link, `[open]` on a disclosure, `[hidden]` on a control no script has revealed.
 `<html data-canopy-profile="manual">` or `"stream"` says which [profile](#profiles) drew the page.
+Every page's `<main>` has `id="canopy-main"`, a stable target for a link of your own.
+
+Every page opens with a skip link (`.canopy-skip-link`) to `#canopy-main`, out of sight until a
+keyboard reaches it, so a keyboard reader can pass the header and sidebar on every page. Its text
+is [`strings.skipToContent`](settings.md#strings). Each table in an article sits in a
+`.canopy-table` box that scrolls sideways on a narrow screen instead of widening the page.
 
 ```css
 /* A wider article and no sidebar. The layout paints the sidebar column's tint
@@ -186,6 +192,7 @@ nothing of the slot reaches the browser:
 | `language` | This page in the site's other language editions (`.canopy-language`) |
 | `search` | The search box (`.canopy-search`) |
 | `theme-toggle` | The dark/light toggle (`.canopy-theme-toggle`) |
+| `skip-link` | The skip link (`.canopy-skip-link`); placed here, the page no longer opens with its own |
 | `page:<key>` | The page's own frontmatter text for `<key>`, escaped; the slot's own content when the page has none |
 
 A control slot with nothing to show on a page — `language` on a site with no
@@ -201,6 +208,10 @@ What the build refuses, and `check` reports first:
   write the closing tag;
 - a slot inside another slot, or in the `head` region, where nothing is shown to a reader;
 - a page whose frontmatter value for a `page:` slot is not text — a list, a number, a date.
+
+What `check` warns about, without stopping the build: [`home`](settings.md#home) or
+[`logo`](settings.md#top-level-fields) set while no page shows it — every page has a `header`
+region, and none of their fragments places the `home` or `site-title` slot.
 
 Slot names are part of this contract: adding one is announced as a new feature, and removing or
 changing one as a breaking change.

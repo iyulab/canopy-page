@@ -1,5 +1,7 @@
 import {
+  type ControlSlot,
   decodeLinkPath,
+  fragmentControls,
   fragmentLinks,
   fragmentProblems,
   frontmatterDate,
@@ -366,7 +368,55 @@ export function regionFindings(site: LoadedSite): Finding[] {
       }
     }
   }
+  findings.push(...slotOutletFindings(site));
   return findings;
+}
+
+/**
+ * Settings that reach pages only through a control slot, shown on none of them.
+ *
+ * Once a header fragment replaces canopy's top bar, `home` and `logo` show
+ * only where a fragment places their slot. A setting accepted and then shown
+ * nowhere is the failure strict validation exists to prevent — it looks obeyed
+ * and is not — so it is said, naming the headers that leave it out. A setting
+ * some pages show is doing its job: a section whose own header leaves it out
+ * (a blog in a product site's header, beside docs in canopy-page's top bar)
+ * made that choice in its fragment.
+ */
+function slotOutletFindings(site: LoadedSite): Finding[] {
+  if (site.layout === undefined || site.index.pages.length === 0) return [];
+  const wanted: { key: string; slot: ControlSlot; what: string }[] = [];
+  if (site.settings.home !== undefined) wanted.push({ key: "home", slot: "home", what: "the link" });
+  if (site.settings.logo !== undefined) wanted.push({ key: "logo", slot: "site-title", what: "the logo" });
+  if (wanted.length === 0) return [];
+
+  const shown = new Set<ControlSlot>();
+  const headers = new Map<ControlSlot, Set<string>>();
+  for (const page of site.index.pages) {
+    const { regions } = resolvePageLayout(site.layout, toSitePath(page));
+    if (regions.header === undefined) {
+      // canopy's own top bar shows both.
+      for (const { slot } of wanted) shown.add(slot);
+      continue;
+    }
+    const placed = Object.values(regions).flatMap((file) => {
+      const html = site.fragments.get(file);
+      return html === undefined ? [] : fragmentControls(html);
+    });
+    for (const { slot } of wanted) {
+      if (placed.includes(slot)) shown.add(slot);
+      else headers.set(slot, (headers.get(slot) ?? new Set()).add(regions.header));
+    }
+  }
+  return wanted
+    .filter(({ slot }) => !shown.has(slot))
+    .map(({ key, slot, what }) => ({
+      level: "warning" as const,
+      message:
+        `settings: ${key} is set, but ${what} shows on no page — every page has a header region ` +
+        `(${[...(headers.get(slot) ?? [])].map((file) => `"${file}"`).join(", ")}) and no fragment of it places ` +
+        `<canopy-slot name="${slot}">`,
+    }));
 }
 
 /**

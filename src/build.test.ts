@@ -54,7 +54,7 @@ async function cleanup(): Promise<void> {
 
 /** Sidebar link targets, in the order the shell rendered them. */
 function sidebarOrder(html: string): string[] {
-  const sidebar = html.slice(html.indexOf("canopy-sidebar"), html.indexOf("canopy-main"));
+  const sidebar = html.slice(html.indexOf("canopy-sidebar"), html.indexOf("<main"));
   return [...sidebar.matchAll(/href="([^"]+)"/g)].map((match) => match[1] as string);
 }
 
@@ -338,6 +338,26 @@ describe("buildSite with a layout", () => {
     const index = await readFile(path.join(out, "blog", "index.html"), "utf8");
     expect(index.indexOf("second.html")).toBeLessThan(index.indexOf("first.html"));
     await expect(readFile(path.join(out, "partials", "header.html"), "utf8")).rejects.toThrow();
+  }, SPAWNS_A_PROCESS);
+});
+
+describe("buildSite: a site's own robots.txt", () => {
+  afterEach(cleanup);
+
+  it("publishes it as written instead of writing one", async () => {
+    const root = await fixture({
+      "settings.json": JSON.stringify({ siteUrl: "https://example.org/docs" }),
+      "index.md": "# Home\n",
+      "robots.txt": "User-agent: *\nDisallow: /drafts/\n",
+    });
+    const out = path.join(path.dirname(root), `${path.basename(root)}-out`);
+    temporary.push(out);
+    vi.spyOn(console, "log").mockImplementation(() => {});
+
+    expect(await buildSite({ dir: root, out })).toBe(0);
+
+    expect(await readFile(path.join(out, "robots.txt"), "utf8")).toBe("User-agent: *\nDisallow: /drafts/\n");
+    expect(await readFile(path.join(out, "sitemap.xml"), "utf8")).toContain("<urlset");
   }, SPAWNS_A_PROCESS);
 });
 

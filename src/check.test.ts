@@ -563,8 +563,36 @@ describe("settingsFindings — styles", { timeout: LOADS_A_SITE }, () => {
   it("refuses a site file where canopy-page writes its own stylesheet", async () => {
     const root = await site({ "settings.json": "{}", "index.md": "# Home\n", "assets/stylesheet-1.css": "a{}" });
     expect(settingsFindings(await loadSite(root)).map((finding) => finding.message)).toEqual([
-      "assets/stylesheet-1.css: canopy-page writes its own stylesheet to this path, so the site cannot " +
+      "assets/stylesheet-1.css: the build writes canopy-page's own stylesheet at this path, so the site cannot " +
         "publish a file there — rename or move it",
+    ]);
+  });
+
+  it("refuses a styles file named like one of canopy's own, and every other path the build writes", async () => {
+    const root = await site({
+      "settings.json": JSON.stringify({
+        siteUrl: "https://example.org/docs",
+        styles: ["tokens.css"],
+        sections: [{ path: "log", feed: true }],
+      }),
+      "index.md": "# Home\n",
+      "index.html": "<p>hand-written</p>",
+      "tokens.css": ":root {}",
+      "search-index.json": "[]",
+      "sitemap.xml": "<urlset/>",
+      "robots.txt": "User-agent: *",
+      "log/2026-09-28.md": "# Dated\n",
+      "log/feed.xml": "<feed/>",
+    });
+    const messages = settingsFindings(await loadSite(root)).map((finding) => finding.message);
+    const wrote = (file: string, what: string) =>
+      `${file}: the build writes ${what} at this path, so the site cannot publish a file there — rename or move it`;
+    expect(messages).toEqual([
+      wrote("index.html", "the page rendered from index.md"),
+      wrote("log/feed.xml", 'the feed of section "log"'),
+      wrote("search-index.json", "the search index"),
+      wrote("tokens.css", "canopy's design tokens"),
+      wrote("sitemap.xml", "the sitemap"),
     ]);
   });
 
@@ -656,6 +684,45 @@ describe("regionFindings", { timeout: LOADS_A_SITE }, () => {
       'error: partials/header.html: link "/blog/missing.html" points at nothing published — under ' +
         'settings.siteUrl\'s path "/blog/" it addresses "missing.html"',
     ]);
+  });
+
+  it("warns when home or logo is set but no page shows it, every header having left its slot out", async () => {
+    const messages = await regionMessages(
+      {
+        home: { url: "https://example.com/", label: "Example" },
+        logo: "assets/icon.svg",
+        regions: { header: "partials/header.html", footer: "partials/footer.html" },
+        sections: [{ path: "news", regions: { header: "partials/news-header.html", footer: "" } }],
+      },
+      {
+        "assets/icon.svg": "<svg></svg>",
+        "partials/header.html": '<header><canopy-slot name="search"></canopy-slot></header>',
+        // A slot in another region of the same page is an outlet too.
+        "partials/footer.html": '<footer><canopy-slot name="home"></canopy-slot></footer>',
+        "partials/news-header.html": '<header><canopy-slot name="search"></canopy-slot></header>',
+        "news/b.md": "# B\n",
+      },
+    );
+    // home shows on the root page through its footer; the logo shows nowhere.
+    expect(messages).toEqual([
+      "warning: settings: logo is set, but the logo shows on no page — every page has a header region " +
+        '("partials/header.html", "partials/news-header.html") and no fragment of it places <canopy-slot name="site-title">',
+    ]);
+  });
+
+  it("says nothing when some pages show the setting, though a section's own header leaves it out", async () => {
+    const messages = await regionMessages(
+      {
+        logo: "assets/icon.svg",
+        sections: [{ path: "blog", regions: { header: "partials/blog-header.html" } }],
+      },
+      {
+        "assets/icon.svg": "<svg></svg>",
+        "partials/blog-header.html": "<header>Product</header>",
+        "blog/a.md": "# A\n",
+      },
+    );
+    expect(messages).toEqual([]);
   });
 
   it("reports a page whose frontmatter cannot fill a page slot that reaches it", async () => {

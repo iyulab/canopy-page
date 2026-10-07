@@ -64,12 +64,18 @@ to reading. It starts closed on every page; a reader who leaves it open keeps it
 rest of that visit, not for days afterwards. Without a script it is simply open, so the
 navigation is always reachable.
 
-## Scrolling a wide code block
+## Scrolling a wide code block or table
 
 A code block wider than the screen scrolls sideways rather than wrapping, which would break its
 indentation. A shadow at whichever edge still has more code to scroll to marks it as
 scrollable — a cue for a scrollbar some browsers hide until you hover it — and disappears once
-you've scrolled that far.
+you've scrolled that far. A table wider than the screen does the same inside its own box, so the
+rest of the page stays put.
+
+## Skipping to the content
+
+The first thing a keyboard reaches on every page is a "Skip to content" link, out of sight until
+then. Following it passes the top bar and the sidebar and lands on the page itself.
 
 ## Knowing when a link leaves the site
 

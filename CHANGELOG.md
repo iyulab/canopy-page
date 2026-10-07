@@ -9,6 +9,27 @@ to it — its fields, its validation, and what the checks reject — are what th
 
 ## [Unreleased]
 
+### Fixed
+
+- **A site file where the build writes a file of its own is refused.** `check` and `build` now
+  name any site file that would land on a path the build writes: canopy's `tokens.css` and
+  `styles.css`, the math stylesheet and fonts, `search-index.json`, a page's `.html`, a stream
+  section's generated index, a section's `feed.xml`, and `sitemap.xml` (with `siteUrl`). Before,
+  only `assets/stylesheet-1.css` was checked, and the rest replaced each other silently — a
+  `styles` entry named `tokens.css` dropped canopy's design tokens. Rename the file the error
+  names.
+- **A site's own `robots.txt` is kept.** With `siteUrl`, the build used to overwrite it; it is now
+  published as written, and the build writes one only for a site that has none.
+- An `exclude` entry naming a dot-file (`.source-index.json`) is no longer warned about as
+  matching nothing: such files are never published, so the entry is redundant, not wrong.
+- A table wider than the screen scrolls within itself instead of pushing the page sideways.
+
+### Added
+
+- Every page opens with a "Skip to content" link for keyboard readers.
+- `check` warns when `home` or `logo` is set but shows on no page — every page has a `header`
+  region and none places the slot that would show it.
+
 ### Changed
 
 - **The documentation is the site.** <https://iyulab.github.io/canopy-page> is canopy-page's one

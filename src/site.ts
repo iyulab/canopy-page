@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { callerStylesheetPath, type Layout, layoutFragments } from "@iyulab/canopy";
-import { layoutSpec, withLayoutFile } from "./layout.js";
+import { type Layout, layoutFragments, type OutputOwner, outputCollisions } from "@iyulab/canopy";
+import { feedDirs, layoutSpec, withLayoutFile } from "./layout.js";
 import { type NavTranslation, translateNav } from "./nav.js";
 import { parseSettings, SettingsError, type Settings } from "./settings.js";
 import { indexSite, listSite, type PageIndex, publishingExcludes, SETTINGS_FILENAME } from "./vault.js";
@@ -132,15 +132,7 @@ export function settingsFindings(site: LoadedSite): Finding[] {
   // than first by the build that needed it.
   const published = new Set(site.index.assets);
   return [
-    // canopy-page always carries its own stylesheet into canopy's first caller
-    // stylesheet path. A site file there would fail the build with a message
-    // about a flag the author never wrote, so it is named here instead.
-    ...site.index.assets
-      .filter((asset) => asset.toLowerCase() === callerStylesheetPath(0))
-      .map((asset) => ({
-        level: "error" as const,
-        message: `${asset}: canopy-page writes its own stylesheet to this path, so the site cannot publish a file there — rename or move it`,
-      })),
+    ...outputFindings(site),
     ...(site.settings.styles ?? [])
       .filter((style) => !published.has(style))
       .map((style) => ({
@@ -156,6 +148,64 @@ export function settingsFindings(site: LoadedSite): Finding[] {
         "Patterns are relative to the settings file",
     })),
   ];
+}
+
+/** Where canopy-page has canopy write its search index (see build.ts). */
+export const SEARCH_INDEX_PATH = "search-index.json";
+
+/**
+ * Site files that would land where the build writes a file of its own.
+ *
+ * The build writes into the same tree the site's files are copied to, so a
+ * site file at one of those paths would replace the build's file or be
+ * replaced by it. Canopy refuses that for its own outputs — asked here with
+ * the invocation canopy-page's build makes, so the answer is canopy's rather
+ * than a list kept beside it, and worded in the settings' terms rather than
+ * in flags the author never wrote. `sitemap.xml` is canopy-page's own.
+ */
+function outputFindings(site: LoadedSite): Finding[] {
+  const files = [...site.index.pages, ...site.index.assets];
+  const collisions = outputCollisions(files, {
+    pages: site.index.pages,
+    // canopy-page's own stylesheet and script, and its search index (build.ts).
+    stylesheets: 1,
+    script: true,
+    searchIndexPath: SEARCH_INDEX_PATH,
+    feeds: feedDirs(site.settings),
+    ...(site.layout ? { layout: site.layout } : {}),
+  }).map(({ path: file, owner }) => ({ file, what: describeOutput(owner) }));
+  if (site.settings.siteUrl !== undefined) {
+    for (const file of site.index.assets) {
+      if (file.toLowerCase() === "sitemap.xml") collisions.push({ file, what: "the sitemap" });
+    }
+  }
+  return collisions.map(({ file, what }) => ({
+    level: "error" as const,
+    message: `${file}: the build writes ${what} at this path, so the site cannot publish a file there — rename or move it`,
+  }));
+}
+
+function describeOutput(owner: OutputOwner): string {
+  switch (owner.kind) {
+    case "tokens":
+      return "canopy's design tokens";
+    case "styles":
+      return "canopy's layout stylesheet";
+    case "katex":
+      return "the stylesheet and fonts math is drawn with";
+    case "stylesheet":
+      return "canopy-page's own stylesheet";
+    case "script":
+      return "canopy-page's own script";
+    case "search-index":
+      return "the search index";
+    case "feed":
+      return `the feed of section "${owner.dir || "."}"`;
+    case "page":
+      return `the page rendered from ${owner.page}`;
+    case "stream-index":
+      return `the index page of stream section "${owner.dir || "."}"`;
+  }
 }
 
 /**

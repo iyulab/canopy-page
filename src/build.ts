@@ -7,7 +7,7 @@ import { siteFindings } from "./check.js";
 import { feedDirs } from "./layout.js";
 import { resolveLastmods } from "./lastmod.js";
 import { listHtmlFiles, robotsTxt, sitemapXml } from "./sitemap.js";
-import { loadSite, reportFindings } from "./site.js";
+import { loadSite, reportFindings, SEARCH_INDEX_PATH } from "./site.js";
 import { publishingExcludes } from "./vault.js";
 
 /**
@@ -85,7 +85,7 @@ export function canopyArgs(
     // script that searches it are canopy-page's own contribution, not a site
     // author's choice to make.
     "--search-index",
-    "search-index.json",
+    SEARCH_INDEX_PATH,
     "--script",
     searchAssets.scriptPath,
     // The same list the check's listing ran against (see vault.ts), so what
@@ -159,7 +159,11 @@ export async function buildSite({ dir, out }: BuildOptions): Promise<number> {
         ),
         "utf8",
       );
-      await writeFile(path.join(outDir, "robots.txt"), robotsTxt(site.settings.siteUrl), "utf8");
+      // A site's own robots.txt is its author's policy, published as written;
+      // canopy-page writes one only for a site that has none.
+      if (!site.index.assets.some((asset) => asset.toLowerCase() === "robots.txt")) {
+        await writeFile(path.join(outDir, "robots.txt"), robotsTxt(site.settings.siteUrl), "utf8");
+      }
       console.log(`canopy-page: sitemap.xml with ${pages.length} page(s)`);
     }
     return code;

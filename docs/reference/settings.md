@@ -169,7 +169,9 @@ A directory (`"_drafts"` or `"_drafts/**"`), an extension at any depth (`"*.tmp"
 path (`"notes/scratch.md"`). A shape outside that list — `"images/*.md"` — is refused rather than
 left to match nothing quietly. A pattern that is valid but matched nothing is a warning, except an
 extension pattern: `*.tmp` in a site with no scratch files is a rule about what may never ship
-rather than a claim that something is there.
+rather than a claim that something is there. Nor is a pattern naming a dot-file, a dot-folder or
+something under `node_modules`: those are never published anyway, so the entry is redundant but
+harmless — keep it as a guard if you like.
 
 This site excludes `_drafts`, and the page inside it is not in the sidebar, not in the output, and
 not reachable. Its broken link is not reported either: an excluded page is not part of the site.
@@ -264,7 +266,8 @@ lets the same output be served from any sub-path and opened from a local folder 
 some things need an absolute address given separately. Without `siteUrl` none of them is written;
 with it:
 
-- `build` writes `sitemap.xml` and a `robots.txt` pointing at it;
+- `build` writes `sitemap.xml` and a `robots.txt` pointing at it — or keeps the site's own
+  `robots.txt`, if it publishes one;
 - every page's `<head>` gains `<link rel="canonical">`, `og:url`, `og:image` (`previewImage`, or
   the page's own `image:`) and the `hreflang` links `alternates` names;
 - a `feed` section can publish its feed, and a `stream` section does by default;

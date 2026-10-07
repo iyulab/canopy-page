@@ -83,11 +83,22 @@ error: settings: styles "brand.css" is not a published file (missing, or exclude
 A `styles` file is linked where the site publishes it, so a missing or excluded one would be a
 link to nothing.
 
-### A file sits where canopy-page writes its own stylesheet
+### A file sits where the build writes a file of its own
 
 ```
-error: assets/stylesheet-1.css: canopy-page writes its own stylesheet to this path, so the site cannot publish a file there — rename or move it
+error: tokens.css: the build writes canopy's design tokens at this path, so the site cannot publish a file there — rename or move it
+error: notes/a.html: the build writes the page rendered from notes/a.md at this path, so the site cannot publish a file there — rename or move it
 ```
+
+The build writes some files of its own into the same folder as your site's files: canopy's
+`tokens.css` and `styles.css`, the stylesheet and fonts math is drawn with (`assets/katex.css`,
+`assets/fonts/KaTeX_*`), canopy-page's own stylesheet and script (`assets/stylesheet-1.css`,
+`assets/script.js`), `search-index.json`, each page's `.html`, a stream section's index page when
+the section has no `index.md`, each section's `feed.xml`, and — with `siteUrl` — `sitemap.xml`.
+A site file at one of those paths would replace the build's file or be replaced by it, so it is
+refused, naming what the build puts there. A [`styles`](settings.md#branding) file is the
+common case: name it anything but `tokens.css` or `styles.css`. A site's own `robots.txt` is
+not refused — it is published as written, and the build then writes none.
 
 ### A region fragment is missing
 
@@ -102,7 +113,7 @@ other path in it.
 
 ```
 error: partials/header.html (header): <canopy-slot name="search"> must be empty — write it as <canopy-slot name="search"></canopy-slot>; HTML does not close a self-closing custom tag, so it takes in what follows
-error: partials/header.html (header): unknown slot "serach" — slots are site-title, home, back, breadcrumb, language, search, theme-toggle, or page:<frontmatter key>
+error: partials/header.html (header): unknown slot "serach" — slots are site-title, home, back, breadcrumb, language, search, theme-toggle, skip-link, or page:<frontmatter key>
 ```
 
 Named by fragment and region. Also reported: a slot with no name, a `page:` slot with no key, a
@@ -166,7 +177,20 @@ warning: settings: exclude "_archive" matched nothing, so everything it names is
 ```
 
 Usually a path written from the wrong place. Extension patterns (`*.tmp`) are never reported: a
-rule about what may never ship is not a claim that something is there now.
+rule about what may never ship is not a claim that something is there now. Nor are patterns
+naming a dot-file, a dot-folder or something under `node_modules`, which are never published.
+
+### A setting with no slot to show it
+
+```
+warning: settings: logo is set, but the logo shows on no page — every page has a header region ("partials/header.html") and no fragment of it places <canopy-slot name="site-title">
+```
+
+A [`header` region](settings.md#regions) replaces canopy-page's top bar, and `home` and `logo`
+then show only where a fragment places the `home` or `site-title` [slot](theming.md#slots). When
+that leaves a setting shown on no page at all, place the slot or remove the setting. A setting
+some pages show — the docs in canopy-page's top bar, beside a blog section in a site's own
+header — is not reported: leaving it out of that header was the header's choice.
 
 ### A published URL needs percent-encoding
 
@@ -277,5 +301,5 @@ A missing or invalid settings file is not a finding: nothing can be checked with
 command stops before reading any page — see [When the site cannot be read](commands.md#when-the-site-cannot-be-read).
 
 `build` also writes two files `check` never sees: with `siteUrl` set, `sitemap.xml` and a
-`robots.txt` pointing at it. Neither is checked, because neither exists until the build has
-succeeded.
+`robots.txt` pointing at it (unless the site publishes its own `robots.txt`). Neither is
+checked, because neither exists until the build has succeeded.
