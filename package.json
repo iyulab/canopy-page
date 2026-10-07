@@ -54,7 +54,7 @@
     "vitest": "^5.0.2"
   },
   "dependencies": {
-    "@iyulab/canopy": "^0.28.1",
+    "@iyulab/canopy": "^0.28.2",
     "chokidar": "^5.0.0"
   }
 }

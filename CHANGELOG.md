@@ -7,7 +7,15 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
-## [Unreleased]
+## [0.27.2] — 2026-10-07
+
+Depends on canopy ^0.28.2.
+
+### Fixed
+
+- A large stream section builds in half the time: what to read next and the tag pages no longer
+  re-read the whole section for every page (canopy 0.28.2) — a 1000-post section went from 26 to
+  13 seconds.
 
 ### Added
 
