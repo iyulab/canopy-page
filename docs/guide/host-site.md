@@ -32,7 +32,20 @@ The [showcase](../showcase/host-blog/index.md) is built exactly this way, for a 
 
 `profile: "stream"` reads the section as dated pages, newest first: one column, the page's
 `description:` as a lead, the date and reading time, then the contents. The section's index
-lists every post; canopy-page writes that index if the section has none.
+lists the posts, ten to a page ([`pageSize`](../reference/settings.md#sections) changes that);
+canopy-page writes that index if the section has none.
+
+A post's frontmatter carries the rest — `author:`, an `image:` for its cover, `tags:` that get
+pages of their own, and a `readNext:` naming what to read after it. Every post ends with what to
+read next, filled from the posts most like it when it names nothing. To pin a post atop the list —
+a welcome, a launch — name it in the section:
+
+```json
+{ "path": "blog", "profile": "stream", "featured": ["blog/welcome"] }
+```
+
+What each of these draws, and the hooks to restyle it, is in
+[Profiles](../reference/theming.md#profiles).
 
 ## The fragments
 
