@@ -10,6 +10,7 @@ import {
   referenceFindings,
   regionFindings,
 } from "./check.js";
+import { feedDirs } from "./layout.js";
 import { loadSite, settingsFindings } from "./site.js";
 
 /**
@@ -800,5 +801,25 @@ describe("root-absolute links and siteUrl's path", { timeout: LOADS_A_SITE }, ()
         'path "/help/" — though this site publishes "guide/install.md"; if that page is meant, write ' +
         '"/help/guide/install.md" or a relative link',
     ]);
+  });
+});
+
+// A section's path is matched ignoring case, like every path in a site; what the
+// build writes from it — a feed, a sidebar heading — has to follow the folder
+// as it is, or it leads nowhere on a host that tells the two spellings apart.
+describe("loadSite: a section named in another spelling than its folder", { timeout: LOADS_A_SITE }, () => {
+  it("takes the folder's own spelling", async () => {
+    const root = await site({
+      "settings.json": JSON.stringify({
+        siteUrl: "https://example.test",
+        sections: [{ path: "BLOG", profile: "stream" }, { path: "Missing" }],
+      }),
+      "index.md": "# Home\n",
+      "blog/a.md": "---\ndate: 2026-10-01\n---\n# A\n",
+    });
+    const loaded = await loadSite(root);
+    expect(loaded.settings.sections?.map((section) => section.path)).toEqual(["blog", "Missing"]);
+    expect(feedDirs(loaded.settings)).toEqual(["blog"]);
+    expect(Object.keys(loaded.layout?.dirs ?? {})).toEqual(["blog"]);
   });
 });

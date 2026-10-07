@@ -15,6 +15,9 @@ to it — its fields, its validation, and what the checks reject — are what th
   appeared in the sidebar twice, the second time empty. Directories are compared ignoring case.
 - **A region fragment path with `*`, `?`, `[` or `]` is a settings error.** `check` used to stop with
   an error from the renderer, naming a temporary file instead of the setting.
+- **A section whose `path` is spelled differently from its directory** (`"BLOG"` for `blog/`) is
+  built in the directory's own spelling. Its feed link, stream index and sidebar heading used the
+  settings' spelling, which leads nowhere on a host that tells the two apart.
 
 ## [0.23.0] — 2026-10-07
 

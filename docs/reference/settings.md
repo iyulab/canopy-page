@@ -95,7 +95,7 @@ builds:
 
 | Field | Meaning |
 |---|---|
-| `path` | The directory this section covers, relative to the settings file. A directory is one section: naming it twice (in any letter case) is an error |
+| `path` | The directory this section covers, relative to the settings file. Matched ignoring letter case; what the build writes follows the directory's own spelling. A directory is one section: naming it twice (in any letter case) is an error |
 | `label` | Heading shown for the section. Defaults to the name the section's own index page gives itself (its `title:`, else its opening heading), then the directory name — which `check` warns about |
 | `order` | `"asc"` or `"desc"` for the pages inside. `"desc"` is what a release log wants — newest first |
 | `items` | Explicit contents, in display order — see [Items](#items). Cannot be combined with `order`: a list *is* an order |

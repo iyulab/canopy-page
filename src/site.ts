@@ -84,11 +84,14 @@ export async function loadSite(dir: string): Promise<LoadedSite> {
     throw error;
   }
 
-  const layout = layoutSpec(settings);
   // The listing is the build's: with the layout, canopy leaves the fragments
   // out of it and names the index pages it will write.
-  const listing = await withLayoutFile(layout, (file) => listSite(root, publishingExcludes(settings), file));
+  const listing = await withLayoutFile(layoutSpec(settings), (file) =>
+    listSite(root, publishingExcludes(settings), file),
+  );
   const index = indexSite(listing);
+  settings = inSiteSpelling(settings, index);
+  const layout = layoutSpec(settings);
   // Only the author's own patterns are theirs to be told about: the ones
   // canopy-page adds (the settings file, the styles files) name configuration
   // that may legitimately be absent.
@@ -115,6 +118,28 @@ export async function loadSite(dir: string): Promise<LoadedSite> {
     sources,
     layout,
     fragments,
+  };
+}
+
+/**
+ * The settings with each section's directory spelled the way the site's own
+ * files spell it. A section is matched to its directory ignoring case, like
+ * every path in a site; what the build writes from it — the feed, the sidebar
+ * heading, the layout canopy is given — has to lead to the directory as it is,
+ * which a host that tells "BLOG" from "blog" apart will not forgive. A
+ * directory with nothing in it has no spelling to go by, and keeps the one the
+ * settings wrote.
+ */
+function inSiteSpelling(settings: Settings, index: PageIndex): Settings {
+  if (settings.sections === undefined) return settings;
+  const files = [...index.pages, ...index.assets];
+  return {
+    ...settings,
+    sections: settings.sections.map((section) => {
+      const prefix = `${section.path.toLowerCase()}/`;
+      const file = files.find((candidate) => candidate.toLowerCase().startsWith(prefix));
+      return file === undefined ? section : { ...section, path: file.slice(0, section.path.length) };
+    }),
   };
 }
 
