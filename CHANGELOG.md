@@ -7,7 +7,7 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
-## [Unreleased]
+## [0.24.0] — 2026-10-07
 
 Depends on canopy ^0.24.0. Upgrading: a page whose `image:` is not a published file (or is spelled
 in another letter case than its file) is now a `check` error — fix the path, or remove the line.
