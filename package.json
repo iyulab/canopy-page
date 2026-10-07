@@ -1,6 +1,6 @@
 {
   "name": "@iyulab/canopy-page",
-  "version": "0.24.0",
+  "version": "0.25.0",
   "description": "Authoring pipeline for markdown sites — documentation, blogs and release logs: one settings file, integrity checks, and a build.",
   "type": "module",
   "license": "MIT",

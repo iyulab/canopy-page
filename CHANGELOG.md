@@ -7,7 +7,7 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
-## [Unreleased]
+## [0.25.0] — 2026-10-07
 
 Depends on canopy ^0.25.0. Upgrading: a stream section with more than ten posts now lists the newest
 ten on its index and the rest on `<path>/page/2.html` on — set `pageSize` for another count. A page
