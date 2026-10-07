@@ -194,6 +194,11 @@
           "minLength": 1,
           "description": "The link to the page of a stream's list after this one, with older posts. Defaults to \"Older posts\"."
         },
+        "tags": {
+          "type": "string",
+          "minLength": 1,
+          "description": "A stream post's tags' label, and the title of a stream's list of tags. Defaults to \"Tags\"."
+        },
         "searchFailed": {
           "type": "string",
           "minLength": 1,

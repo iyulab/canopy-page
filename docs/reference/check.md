@@ -81,6 +81,18 @@ A link to a page is not affected: `[x](Guide/Install.md)`, `Guide/Install`, `Gui
 (`Guide/`) as the folder's index page (`guide/index.html`). Links in a region
 fragment are kept exactly as written, links to pages included, so every one of them is checked this way.
 
+### A tag can have no page
+
+```
+error: blog/launch.md: tag "#" has no letters or digits to name its page
+```
+
+In a `stream` section every tag gets a page, `tags/<slug>.html`, named by the tag with spaces and
+`/ ? # % \` turned into `-`. A tag made only of those has no name left, and one named `index` would
+be written over the list of all tags (`tags/index.html`); the build refuses either. Rename the tag.
+A page of your own at a tag page's path is refused the same way as any
+[file where the build writes one of its own](#a-file-sits-where-the-build-writes-a-file-of-its-own).
+
 ### A wikilink matches no page
 
 ```

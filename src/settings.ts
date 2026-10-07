@@ -230,6 +230,8 @@ export interface Settings {
     newerPosts?: string;
     /** The link to the page of a stream's list after this one, with older posts: "Older posts". */
     olderPosts?: string;
+    /** A stream post's tags' label, and the title of a stream's list of tags: "Tags". */
+    tags?: string;
     /**
      * Message shown in place of results when the client search index fails to
      * load. This key rides the same JSON `--strings` flag as every other one
@@ -300,6 +302,7 @@ export const STRINGS_KEYS = new Set([
   "pageOf",
   "newerPosts",
   "olderPosts",
+  "tags",
   "searchFailed",
 ]);
 

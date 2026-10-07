@@ -210,6 +210,7 @@ Every key is optional, and keeps its English default when left out:
 | `pageOf` | `Page {n} of {total}` | Where a page of a stream's list is. `{n}`, its number, is required; `{total}`, how many, is optional |
 | `newerPosts` | `Newer posts` | The link to the page of a stream's list with newer posts |
 | `olderPosts` | `Older posts` | The link to the page of a stream's list with older posts |
+| `tags` | `Tags` | A stream post's tags' label, and the title of a stream's list of tags |
 
 There is no built-in translation table — canopy-page has no way to guess what your language calls
 "Search". [Publishing a non-English site](../guide/localizing.md) has a complete set for Korean.

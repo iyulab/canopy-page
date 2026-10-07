@@ -27,6 +27,7 @@ import {
   navFindings,
   reportFindings,
   settingsFindings,
+  tagFindings,
 } from "./site.js";
 import { pagesMatching, toPageKey } from "./vault.js";
 
@@ -514,6 +515,7 @@ export function siteFindings(site: LoadedSite): Finding[] {
     ...regionFindings(site),
     ...filenameEncodingFindings(site),
     ...knownBrokenFindings(site, [...referenceFindings(site), ...imageFindings(site)]),
+    ...tagFindings(site),
     ...descriptionFindings(site),
     ...dateFindings(site),
   ];

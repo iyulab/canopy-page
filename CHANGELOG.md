@@ -7,6 +7,20 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [Unreleased]
+
+Depends on canopy ^0.26.0. Upgrading: a stream section's posts' `tags:` now show and get pages under
+`<path>/tags/`; a tag that can have no page (no letters or digits, or named "index") is a `check`
+error, and so is a page at a tag page's path.
+
+### Added
+
+- **Tags in a stream section.** A post's `tags:` close the post and its item in the list, each
+  leading to `<path>/tags/<slug>.html` with the posts carrying it; `<path>/tags/index.html` lists every
+  tag with its count, linked from the section's index. New `strings` key `tags`; theming hooks
+  `.canopy-tags`, `.canopy-tag-index`, `.canopy-tag-count`, `.canopy-tag-index-link`. `check` knows the
+  tag pages, so links to them are not broken, and names a tag that cannot have one.
+
 ## [0.25.0] — 2026-10-07
 
 Depends on canopy ^0.25.0. Upgrading: a stream section with more than ten posts now lists the newest

@@ -1,6 +1,16 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { type Layout, layoutFragments, type OutputOwner, outputCollisions } from "@iyulab/canopy";
+import {
+  type Layout,
+  layoutFragments,
+  type OutputOwner,
+  outputCollisions,
+  parseFrontmatter,
+  streamTagPaths,
+  type TaggedPage,
+  tagProblems,
+  toSitePath,
+} from "@iyulab/canopy";
 import { feedDirs, layoutSpec, withLayoutFile } from "./layout.js";
 import { type NavTranslation, translateNav } from "./nav.js";
 import { parseSettings, SettingsError, type Settings } from "./settings.js";
@@ -183,6 +193,27 @@ export function settingsFindings(site: LoadedSite): Finding[] {
 /** Where canopy-page has canopy write its search index (see build.ts). */
 export const SEARCH_INDEX_PATH = "search-index.json";
 
+/** The site's pages as tagging reads them: canopy's own frontmatter parser over each source. */
+function taggedPages(site: LoadedSite): TaggedPage[] {
+  return site.index.pages.map((page) => ({
+    sourcePath: page,
+    sitePath: toSitePath(page),
+    frontmatter: parseFrontmatter(site.sources.get(page) ?? "").data,
+  }));
+}
+
+/**
+ * Tags on a stream section's posts that can have no page of their own — canopy
+ * refuses to build them, so `check` names them first, by the post's source.
+ */
+export function tagFindings(site: LoadedSite): Finding[] {
+  return tagProblems(site.layout, taggedPages(site)).map((problem) => {
+    const [sitePath = "", ...rest] = problem.split(": ");
+    const page = site.index.pages.find((candidate) => toSitePath(candidate) === sitePath) ?? sitePath;
+    return { page, level: "error" as const, message: `${page}: ${rest.join(": ")}` };
+  });
+}
+
 /**
  * Site files that would land where the build writes a file of its own.
  *
@@ -202,6 +233,7 @@ function outputFindings(site: LoadedSite): Finding[] {
     script: true,
     searchIndexPath: SEARCH_INDEX_PATH,
     feeds: feedDirs(site.settings),
+    tagPaths: streamTagPaths(site.layout, taggedPages(site)),
     ...(site.layout ? { layout: site.layout } : {}),
   }).map(({ path: file, owner }) => ({ file, what: describeOutput(owner) }));
   if (site.settings.siteUrl !== undefined) {
@@ -237,6 +269,8 @@ function describeOutput(owner: OutputOwner): string {
       return `the index page of stream section "${owner.dir || "."}"`;
     case "stream-page":
       return `page ${owner.page} of stream section "${owner.dir || "."}"'s list`;
+    case "stream-tags":
+      return `the tag page ${owner.path}`;
   }
 }
 

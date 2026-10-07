@@ -12,7 +12,7 @@ import {
   regionFindings,
 } from "./check.js";
 import { feedDirs } from "./layout.js";
-import { loadSite, settingsFindings } from "./site.js";
+import { loadSite, settingsFindings, tagFindings } from "./site.js";
 
 /**
  * Checking never builds, so these are milliseconds: a folder, a read per page,
@@ -967,5 +967,36 @@ describe("imageFindings", { timeout: LOADS_A_SITE }, () => {
       'error: index.md: image: "IMG/Cover.png" reaches "img/cover.png" only by ignoring letter case — the built page ' +
         'keeps "IMG/Cover.png" as written, which leads nowhere on a host that tells letter case apart',
     ]);
+  });
+});
+
+describe("a stream section's tags", { timeout: LOADS_A_SITE }, () => {
+  const stream = JSON.stringify({ sections: [{ path: "blog", profile: "stream" }] });
+
+  it("names a tag that can have no page, by the post's source", async () => {
+    const root = await site({ "settings.json": stream, "blog/a.md": "---\ntags: [ok, Index]\n---\n# A" });
+    expect(tagFindings(await loadSite(root)).map((finding) => finding.message)).toEqual([
+      'blog/a.md: tag "Index" would be written at blog/tags/index.html, the list of all tags',
+    ]);
+  });
+
+  it("refuses a page of the site's own at a tag page's path", async () => {
+    const root = await site({
+      "settings.json": stream,
+      "blog/a.md": "---\ntags: [notes]\n---\n# A",
+      "blog/tags/notes.md": "# Not a tag page",
+    });
+    expect(settingsFindings(await loadSite(root)).map((finding) => finding.message)).toContain(
+      "blog/tags/notes.md: the build writes the tag page blog/tags/notes.html at this path, so the site cannot " +
+        "publish a file there — rename or move it",
+    );
+  });
+
+  it("knows a link to a tag page is not broken", async () => {
+    const root = await site({
+      "settings.json": stream,
+      "blog/a.md": "---\ntags: [notes]\n---\n# A\n\n[more](tags/notes.html) [all](tags/index.html)",
+    });
+    expect(referenceFindings(await loadSite(root))).toEqual([]);
   });
 });

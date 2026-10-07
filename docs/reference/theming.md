@@ -105,7 +105,7 @@ release. Select on them freely.
 |---|---|
 | Top bar and controls | `.canopy-topbar` `.canopy-topbar-controls` `.canopy-site-title` `.canopy-logo` `.canopy-home` `.canopy-home-external` `.canopy-back` `.canopy-breadcrumb` `.canopy-language` `.canopy-search` `.canopy-theme-toggle` `.canopy-skip-link` |
 | Layout and navigation | `.canopy-layout` `.canopy-sidebar` `.canopy-nav` `.canopy-nav-group` `.canopy-main` |
-| Article | `.canopy-content` `.canopy-contents` `.canopy-before-article` `.canopy-after-article` `.canopy-lead` `.canopy-byline` `.canopy-author` `.canopy-date` `.canopy-reading-time` `.canopy-cover` `.canopy-toc` `.canopy-listing` `.canopy-listing-title` `.canopy-pagination` `.canopy-table` |
+| Article | `.canopy-content` `.canopy-contents` `.canopy-before-article` `.canopy-after-article` `.canopy-lead` `.canopy-byline` `.canopy-author` `.canopy-date` `.canopy-reading-time` `.canopy-cover` `.canopy-toc` `.canopy-listing` `.canopy-listing-title` `.canopy-pagination` `.canopy-tags` `.canopy-tag-index` `.canopy-tag-count` `.canopy-tag-index-link` `.canopy-table` |
 | Callouts | `.callout` `.callout-note` `.callout-tip` `.callout-warning` `.callout-danger` `.callout-quote` `.callout-title` |
 | Around the article | `.canopy-outline` `.canopy-backlinks` `.canopy-page-nav` `.canopy-page-nav-label` `.canopy-prev` `.canopy-next` |
 
@@ -153,7 +153,15 @@ section's index (`.canopy-back`) where a manual page shows its breadcrumb.
 The section's index page lists its pages newest first (`.canopy-listing`), each with its cover,
 date, reading time and summary — and is written for the section when it has none. It lists ten
 (`pageSize` changes that); the rest continue on `page/2.html`, `page/3.html` … in the section,
-each page ending with the way to the pages beside it (`.canopy-pagination`). A stream section
+each page ending with the way to the pages beside it (`.canopy-pagination`).
+
+A post's `tags:` (a list, or one string) close the post and its item in the list (`.canopy-tags`),
+each leading to the tag's page, `tags/<slug>.html` in the section, which lists the posts carrying
+it. `tags/index.html` lists every tag of the section (`.canopy-tag-index`) with how many posts
+carry it (`.canopy-tag-count`); the section's index and each tag's page link to it
+(`.canopy-tag-index-link`). A slug is the tag lowercased, with spaces and `/ ? # % \` as `-` —
+letters of any script stay — and tags with one slug are one tag, shown the way most of its posts
+spell it. A manual page's `tags:` are left alone. A stream section
 is ordered by each page's `date:`, so it takes no `order` or `items`; an undated page is listed
 last, and `check` names it. Once `siteUrl` is set, a stream section publishes a feed unless
 `"feed": false` says otherwise.
