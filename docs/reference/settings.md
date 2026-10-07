@@ -72,6 +72,7 @@ The settings file itself is never published, and neither is anything `exclude` n
 | `title` | Site name, shown in the top bar and the browser tab. Defaults to the site folder's own name |
 | `description` | Fills `<meta name="description">` — what a link preview shows — for every page with no `description:` of its own |
 | `lang` | A [BCP 47](https://www.rfc-editor.org/rfc/rfc5646) tag for `<html lang>` (`"en"`, `"ko-KR"`). Changes that one attribute and nothing else — see [Publishing a non-English site](../guide/localizing.md) |
+| `colorScheme` | `"dark"` or `"light"`, for a site that has only one colour scheme: every page is drawn in it whatever the reader's system prefers, and there is no theme toggle — see [Dark mode](theming.md#dark-mode) |
 | `strings` | The reader-facing text canopy-page writes around your content, in your language — see [Strings](#strings) |
 | `icon` | Favicon, relative to the settings file. Must be a published file |
 | `logo` | Image shown beside the site title, relative to the settings file. Must be a published file — see [Branding](#branding) |
@@ -200,6 +201,7 @@ Every key is optional, and keeps its English default when left out:
 | `searchFailed` | `Search failed to load.` | Shown in the results list when the search index fails to load |
 | `readingTime` | `{n} min read` | A stream page's reading time under its heading. `{n}`, where the minutes go, is required |
 | `language` | `Languages` | The language links' accessible label |
+| `skipToContent` | `Skip to content` | The link every page opens with for keyboard readers, past the header and navigation |
 
 There is no built-in translation table — canopy-page has no way to guess what your language calls
 "Search". [Publishing a non-English site](../guide/localizing.md) has a complete set for Korean.

@@ -26,7 +26,15 @@ to it — its fields, its validation, and what the checks reject — are what th
 
 ### Added
 
-- Every page opens with a "Skip to content" link for keyboard readers.
+- **`colorScheme`** (`"dark"` or `"light"`) for a site that has only one colour scheme: every page
+  is drawn in it whatever the reader's system prefers, with no theme toggle — no need to restate
+  canopy's dark rules in your own stylesheet. `check` warns about a `theme-toggle` slot on such a
+  site.
+- **A file named by its day is dated.** `2026-10-03-launch.md` is dated 2026-10-03 without a
+  `date:` line — in streams, feeds, listings and the page itself. `check` warns when a `date:`
+  names a different day than the file name.
+- Every page opens with a "Skip to content" link for keyboard readers; its text is the new
+  `strings.skipToContent`.
 - `check` warns when `home` or `logo` is set but shows on no page — every page has a `header`
   region and none places the slot that would show it.
 

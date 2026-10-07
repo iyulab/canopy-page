@@ -1,12 +1,14 @@
 import {
   type ControlSlot,
   decodeLinkPath,
+  fileNameDate,
   fragmentControls,
   fragmentLinks,
   fragmentProblems,
   frontmatterDate,
   isExternalUrl,
   layoutFragments,
+  pageDate,
   pageSlotKeys,
   pageSlotText,
   parseFrontmatter,
@@ -369,6 +371,21 @@ export function regionFindings(site: LoadedSite): Finding[] {
     }
   }
   findings.push(...slotOutletFindings(site));
+  // The mirror case: a slot with nothing to show. A site with one colour
+  // scheme has no toggle, so a theme-toggle slot is an empty space in the
+  // header that looks like a missing control.
+  if (site.settings.colorScheme !== undefined) {
+    for (const [file, html] of site.fragments) {
+      if (fragmentControls(html).includes("theme-toggle")) {
+        findings.push({
+          level: "warning",
+          message:
+            `${file}: places <canopy-slot name="theme-toggle">, but settings.colorScheme gives the site one ` +
+            "scheme, so there is no toggle — the slot shows nothing",
+        });
+      }
+    }
+  }
   return findings;
 }
 
@@ -527,15 +544,20 @@ export function descriptionFindings(site: LoadedSite): Finding[] {
 /**
  * Dates that will not do what their author meant.
  *
- * Two ways a date goes quietly missing, both read with canopy's own rule
- * (`frontmatterDate`) so what is flagged here is exactly what canopy will and
- * will not treat as dated:
+ * Three ways a date goes quietly wrong, all read with canopy's own rule
+ * (`frontmatterDate`, `fileNameDate`, `pageDate`) so what is flagged here is
+ * exactly what canopy will and will not treat as dated:
  *
  * - a `date:` or `updated:` that is not a date (`2026-02-30`, `28/09/2026`) —
  *   the page renders as if the line were not there;
- * - a page in a `feed` section with no `date:` — it is left out of the feed,
- *   which a reader following the section never finds out. The section's own
- *   index page is exempt: it describes the series rather than being an entry.
+ * - a `date:` on another day than the one the file is named by
+ *   (`2026-10-03-launch.md` with `date: 2026-10-05`) — `date:` wins, so the
+ *   page's URL and its stated date disagree, usually because one of them was
+ *   edited and the other was not;
+ * - an undated page — no `date:`, no day in its file name — in a `feed`
+ *   section, which the feed leaves out without a reader following the section
+ *   ever finding out. The section's own index page is exempt: it describes
+ *   the series rather than being an entry.
  *
  * Warnings, not errors: an undated page is still a sound page.
  */
@@ -544,6 +566,7 @@ export function dateFindings(site: LoadedSite): Finding[] {
     .filter((section) => section.feed === true)
     .map((section) => section.path.toLowerCase());
   const malformed: string[] = [];
+  const disagreeing: string[] = [];
   const undatedInFeed: string[] = [];
   const undatedInStream: string[] = [];
   for (const page of site.index.pages) {
@@ -553,6 +576,12 @@ export function dateFindings(site: LoadedSite): Finding[] {
         malformed.push(`  ${page} (${key}: ${String(data[key])})`);
       }
     }
+    const stated = frontmatterDate(data.date);
+    const named = fileNameDate(page);
+    if (stated !== undefined && named !== undefined && stated.slice(0, 10) !== named) {
+      disagreeing.push(`  ${page} (date: ${stated})`);
+    }
+    const dated = pageDate({ sourcePath: page, frontmatter: data }) !== undefined;
     const key = page.toLowerCase();
     const sitePath = toSitePath(page);
     const { streamDir } = resolvePageLayout(site.layout, sitePath);
@@ -561,8 +590,8 @@ export function dateFindings(site: LoadedSite): Finding[] {
     const inFeed = feedDirs.some((dir) => key.startsWith(`${dir}/`) && key !== `${dir}/index.md`);
     // One warning per page: a stream's feed (when it has one) leaves the same
     // pages out, and the stream's ordering is the larger consequence.
-    if (inStream && data.date === undefined) undatedInStream.push(`  ${page}`);
-    else if (inFeed && data.date === undefined) undatedInFeed.push(`  ${page}`);
+    if (inStream && !dated) undatedInStream.push(`  ${page}`);
+    else if (inFeed && !dated) undatedInFeed.push(`  ${page}`);
   }
   const findings: Finding[] = [];
   if (malformed.length > 0) {
@@ -570,15 +599,24 @@ export function dateFindings(site: LoadedSite): Finding[] {
       level: "warning",
       message:
         `${malformed.length} frontmatter date(s) are not dates (expected YYYY-MM-DD, optionally ` +
-        "with a time), so those pages render as undated:\n" +
+        "with a time), so canopy reads those pages as if the line were not there:\n" +
         malformed.join("\n"),
+    });
+  }
+  if (disagreeing.length > 0) {
+    findings.push({
+      level: "warning",
+      message:
+        `${disagreeing.length} page(s) say a different day in "date:" than their file name does; ` +
+        `"date:" wins, so each page's URL and its date disagree:\n` +
+        disagreeing.join("\n"),
     });
   }
   if (undatedInFeed.length > 0) {
     findings.push({
       level: "warning",
       message:
-        `${undatedInFeed.length} page(s) in a feed section have no "date:", so the feed leaves ` +
+        `${undatedInFeed.length} page(s) in a feed section have no "date:" (nor a day in their file name), so the feed leaves ` +
         "them out:\n" +
         undatedInFeed.join("\n"),
     });
@@ -587,7 +625,7 @@ export function dateFindings(site: LoadedSite): Finding[] {
     findings.push({
       level: "warning",
       message:
-        `${undatedInStream.length} page(s) in a stream section have no "date:", so the stream lists them ` +
+        `${undatedInStream.length} page(s) in a stream section have no "date:" (nor a day in their file name), so the stream lists them ` +
         "last, after every dated page:\n" +
         undatedInStream.join("\n"),
     });

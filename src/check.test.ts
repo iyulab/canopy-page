@@ -516,7 +516,7 @@ describe("dateFindings", { timeout: LOADS_A_SITE }, () => {
       "blog/b.md": "# B\n",
     });
     expect(dateFindings(await loadSite(root)).map((finding) => finding.message)).toEqual([
-      '1 page(s) in a stream section have no "date:", so the stream lists them last, after every dated page:\n  blog/b.md',
+      '1 page(s) in a stream section have no "date:" (nor a day in their file name), so the stream lists them last, after every dated page:\n  blog/b.md',
     ]);
   });
 
@@ -542,6 +542,20 @@ describe("dateFindings", { timeout: LOADS_A_SITE }, () => {
     expect(messages[0]).toContain("\n  b.md (updated: 28/09/2026)");
   });
 
+  it("dates a page by its file name, and names one whose date: says another day", async () => {
+    const messages = await dates({
+      "settings.json": JSON.stringify({ sections: [{ path: "blog", profile: "stream" }] }),
+      "blog/index.md": "# Blog\n",
+      "blog/2026-10-01-named.md": "# Named only\n",
+      "blog/2026-10-02-same.md": "---\ndate: 2026-10-02T09:00:00+09:00\n---\n# Same day\n",
+      "blog/2026-10-03-launch.md": "---\ndate: 2026-10-05\n---\n# Moved\n",
+    });
+    expect(messages).toEqual([
+      '1 page(s) say a different day in "date:" than their file name does; "date:" wins, so each page\'s URL ' +
+        "and its date disagree:\n  blog/2026-10-03-launch.md (date: 2026-10-05)",
+    ]);
+  });
+
   it("names pages a feed section leaves out for having no date, but not the section's index", async () => {
     const messages = await dates({
       "settings.json": JSON.stringify({
@@ -554,7 +568,7 @@ describe("dateFindings", { timeout: LOADS_A_SITE }, () => {
       "guide/a.md": "# Not in a feed\n",
     });
     expect(messages).toEqual([
-      '1 page(s) in a feed section have no "date:", so the feed leaves them out:\n  log/notes.md',
+      '1 page(s) in a feed section have no "date:" (nor a day in their file name), so the feed leaves them out:\n  log/notes.md',
     ]);
   });
 });
@@ -707,6 +721,17 @@ describe("regionFindings", { timeout: LOADS_A_SITE }, () => {
     expect(messages).toEqual([
       "warning: settings: logo is set, but the logo shows on no page — every page has a header region " +
         '("partials/header.html", "partials/news-header.html") and no fragment of it places <canopy-slot name="site-title">',
+    ]);
+  });
+
+  it("warns about a theme-toggle slot on a site with one colour scheme, which has no toggle", async () => {
+    const messages = await regionMessages(
+      { colorScheme: "dark", regions: { header: "partials/header.html" } },
+      { "partials/header.html": '<header><canopy-slot name="theme-toggle"></canopy-slot></header>' },
+    );
+    expect(messages).toEqual([
+      'warning: partials/header.html: places <canopy-slot name="theme-toggle">, but settings.colorScheme gives ' +
+        "the site one scheme, so there is no toggle — the slot shows nothing",
     ]);
   });
 

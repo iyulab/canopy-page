@@ -105,6 +105,13 @@ export interface Settings {
   description?: string;
   /** BCP 47 language tag for `<html lang>`. Worth setting for any non-English site. */
   lang?: string;
+  /**
+   * The site's one colour scheme, for a site that has only one (a dark-only
+   * product site, say): every page is drawn in it whatever the reader's system
+   * prefers, and there is no theme toggle. Absent, pages follow the system
+   * preference and the toggle switches them.
+   */
+  colorScheme?: "light" | "dark";
   /** Favicon, relative to the settings file. Must be a published file. */
   icon?: string;
   /**
@@ -203,6 +210,8 @@ export interface Settings {
     language?: string;
     /** A stream page's reading time, with `{n}` where the minutes go: "{n} min read". */
     readingTime?: string;
+    /** The link every page opens with, past the header and navigation to the content. */
+    skipToContent?: string;
     /**
      * Message shown in place of results when the client search index fails to
      * load. This key rides the same JSON `--strings` flag as every other one
@@ -232,6 +241,7 @@ export const SETTINGS_KEYS = new Set([
   "title",
   "description",
   "lang",
+  "colorScheme",
   "icon",
   "styles",
   "profile",
@@ -265,6 +275,7 @@ export const STRINGS_KEYS = new Set([
   "breadcrumb",
   "language",
   "readingTime",
+  "skipToContent",
   "searchFailed",
 ]);
 
@@ -532,6 +543,7 @@ export function parseSettings(json: string): Settings {
     title,
     description,
     lang,
+    colorScheme,
     icon,
     styles,
     profile,
@@ -622,6 +634,9 @@ export function parseSettings(json: string): Settings {
     }
   }
 
+  if (colorScheme !== undefined && colorScheme !== "light" && colorScheme !== "dark") {
+    fail(`settings.colorScheme: expected "light" or "dark", got ${JSON.stringify(colorScheme)}`);
+  }
   let parsedStrings: Settings["strings"];
   if (strings !== undefined) {
     const object = asObject(strings, "settings.strings", "expected an object");
@@ -642,6 +657,7 @@ export function parseSettings(json: string): Settings {
     ...(title === undefined ? {} : { title: title as string }),
     ...(description === undefined ? {} : { description: description as string }),
     ...(lang === undefined ? {} : { lang: lang as string }),
+    ...(colorScheme === undefined ? {} : { colorScheme: colorScheme as "light" | "dark" }),
     ...(icon === undefined ? {} : { icon: asRelativePath(icon, "settings.icon") }),
     ...(styles === undefined ? {} : { styles: asStylesList(styles) }),
     ...(siteProfile === undefined ? {} : { profile: siteProfile }),

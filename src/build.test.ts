@@ -107,6 +107,12 @@ describe("canopyArgs", () => {
     expect(args).toContain("제품 홈");
   });
 
+  it("passes a site's one colour scheme, and nothing when it has two", () => {
+    const fixed = canopyArgs(siteWith({ colorScheme: "dark" }), "/out", undefined, SEARCH_ASSETS);
+    expect(fixed[fixed.indexOf("--color-scheme") + 1]).toBe("dark");
+    expect(canopyArgs(siteWith({}), "/out", undefined, SEARCH_ASSETS)).not.toContain("--color-scheme");
+  });
+
   it("always wires canopy-page's own stylesheet and script, with no settings field", () => {
     const args = canopyArgs(siteWith({}), "/out", undefined, SEARCH_ASSETS);
     expect(args[args.indexOf("--stylesheet") + 1]).toBe(SEARCH_ASSETS.stylesheetPath);

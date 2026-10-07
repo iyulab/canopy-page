@@ -97,6 +97,11 @@ page's sitemap entry. Every page in [Release notes](../../release-notes/index.md
 way. A page without `date:` stays a plain document page, exactly as before; a value that is not a
 real day (`2026-02-30`, `28/09/2026`) is not a date, and `check` says so.
 
+A file named by its day — `2026-10-03-launch.md`, or just `2026-10-03.md` — is dated that day
+without a `date:` line, the way most blog tools read such names. Write `date:` too only to add a
+time; when both are there `date:` wins, and `check` warns if they name different days, since the
+page's address would then say one day and the page another.
+
 ## Index pages that list their pages
 
 A folder's index page can list the pages beneath it with `listing: true` in its frontmatter —

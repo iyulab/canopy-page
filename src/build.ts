@@ -66,6 +66,7 @@ export function canopyArgs(
       `${hreflang}=${url}`,
     ]),
     ...(settings.lang === undefined ? [] : ["--lang", settings.lang]),
+    ...(settings.colorScheme === undefined ? [] : ["--color-scheme", settings.colorScheme]),
     ...(settings.icon === undefined ? [] : ["--site-icon", settings.icon]),
     // canopy-page's own CSS, always — no settings field for it, matching the
     // minimal-configuration principle — carried in from outside the site.

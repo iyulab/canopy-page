@@ -86,7 +86,8 @@ says so before you click it. A `home` that stays on the same host, such as `/`, 
 
 ## Dates on dated pages
 
-A page whose frontmatter names a `date:` shows it under its heading, spelled for the site's
+A dated page — one whose frontmatter names a `date:`, or whose file name begins with a day — shows
+it under its heading, spelled for the site's
 language — see [Dated pages](writing/index.md#dated-pages). Undated pages are unchanged.
 
 ## What search engines and link previews see

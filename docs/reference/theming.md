@@ -80,6 +80,13 @@ colour schemes, so a file naming only a light-mode colour would put that colour 
 too. And a plain `:root` inside the media query, without `:not([data-theme="light"])`, would
 override a reader who switched the page to light.
 
+A site that has only one scheme — a dark-only product site, say — says so instead with
+[`"colorScheme": "dark"`](settings.md#top-level-fields) (or `"light"`). Every page then carries
+`data-theme="dark"` from the start, so canopy's palette, the code colours and the
+`[data-theme="dark"]` block of your own stylesheet apply for every reader, whatever their system
+prefers; there is no theme toggle, and a `theme-toggle` slot shows nothing (`check` warns about
+one). The light and media-query blocks are then never used for that site.
+
 ### An override that does nothing
 
 A custom property canopy never reads is not an error — it is silently ignored. No warning, and

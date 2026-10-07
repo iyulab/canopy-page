@@ -32,6 +32,17 @@ describe("parseSettings", () => {
     });
   });
 
+  it("reads a site's one colour scheme, and refuses any other value", () => {
+    expect(parseSettings(JSON.stringify({ colorScheme: "dark" }))).toEqual({ colorScheme: "dark" });
+    rejects(JSON.stringify({ colorScheme: "auto" }), /settings\.colorScheme: expected "light" or "dark", got "auto"/);
+  });
+
+  it("accepts the skip link's text among the strings", () => {
+    expect(parseSettings(JSON.stringify({ strings: { skipToContent: "본문 바로가기" } }))).toEqual({
+      strings: { skipToContent: "본문 바로가기" },
+    });
+  });
+
   it("rejects an unknown key rather than ignoring it", () => {
     rejects(JSON.stringify({ titel: "typo" }), /settings: unknown key "titel"/);
   });

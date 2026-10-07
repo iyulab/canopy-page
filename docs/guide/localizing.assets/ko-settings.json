@@ -11,6 +11,7 @@
     "breadcrumb": "이동 경로",
     "searchFailed": "검색을 불러오지 못했습니다.",
     "readingTime": "{n}분 분량",
-    "language": "언어"
+    "language": "언어",
+    "skipToContent": "본문 바로가기"
   }
 }

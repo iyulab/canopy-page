@@ -249,20 +249,25 @@ back to the site's `description`, which is fine for a site nobody searches and a
 on every result for one that is public. A site published somewhere but not meant to be found that
 way can ignore it.
 
-### Dates that are not dates, and undated pages where a date is needed
+### Dates that are not dates, disagree, or are missing where one is needed
 
 ```
-warning: 1 frontmatter date(s) are not dates (expected YYYY-MM-DD, optionally with a time), so those pages render as undated:
+warning: 1 frontmatter date(s) are not dates (expected YYYY-MM-DD, optionally with a time), so canopy reads those pages as if the line were not there:
   release-notes/2026-02-30.md (date: 2026-02-30)
-warning: 1 page(s) in a feed section have no "date:", so the feed leaves them out:
+warning: 1 page(s) say a different day in "date:" than their file name does; "date:" wins, so each page's URL and its date disagree:
+  blog/2026-10-03-launch.md (date: 2026-10-05)
+warning: 1 page(s) in a feed section have no "date:" (nor a day in their file name), so the feed leaves them out:
   release-notes/draft.md
-warning: 1 page(s) in a stream section have no "date:", so the stream lists them last, after every dated page:
+warning: 1 page(s) in a stream section have no "date:" (nor a day in their file name), so the stream lists them last, after every dated page:
   blog/about.md
 ```
 
 A `date:` or `updated:` that is not a real day is ignored, as if the line were not there. A page
-in a `feed` section without a `date:` is silently missing from the feed, and one in a `stream`
-section is listed after every dated page. A section's own index page is exempt from both.
+whose file name begins with a day (`2026-10-03-launch.md`) is dated by it without a `date:` line;
+with one, `date:` wins, and a different day there is reported, since the page's URL then says one
+day and the page another. A page with neither in a `feed` section is silently missing from the
+feed, and one in a `stream` section is listed after every dated page. A section's own index page
+is exempt from both.
 
 ## Root-absolute references
 

@@ -25,6 +25,10 @@
       "minLength": 1,
       "description": "BCP 47 language tag for <html lang> (e.g. \"en\", \"ko-KR\"). Worth setting for any non-English site — it changes only what <html lang> declares; the reader chrome's own text needs `strings` as well."
     },
+    "colorScheme": {
+      "enum": ["light", "dark"],
+      "description": "The site's one colour scheme, for a site that has only one: every page is drawn in it whatever the reader's system prefers, and there is no theme toggle. Absent, pages follow the system preference."
+    },
     "icon": {
       "type": "string",
       "minLength": 1,
@@ -154,6 +158,11 @@
           "type": "string",
           "pattern": "\\{n\\}",
           "description": "A stream page's reading time, with {n} where the minutes go. Defaults to \"{n} min read\"."
+        },
+        "skipToContent": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The link every page opens with for keyboard readers, past the header and navigation to the content. Defaults to \"Skip to content\"."
         },
         "searchFailed": {
           "type": "string",
