@@ -141,20 +141,49 @@ function rootAbsoluteProblem(
  * link as broken.
  */
 function existsInSite(site: LoadedSite, sitePath: string): boolean {
-  // Matched the way the renderer matches a link target against its pages:
-  // the exact path, case-insensitively — not through `toPageKey`, whose
-  // forgiveness (a backslash read as a separator) is for settings references
-  // and would pass a link the renderer leaves broken.
+  return findPublished(site, sitePath) !== undefined;
+}
+
+/**
+ * The file a target reaches — a page's source, a written index page, or a
+ * copied file — and whether the target spells it exactly.
+ *
+ * Matched the way the renderer matches a link target against its pages: the
+ * exact path, case-insensitively — not through `toPageKey`, whose forgiveness
+ * (a backslash read as a separator) is for settings references and would pass
+ * a link the renderer leaves broken. But the renderer writes a link as it was
+ * written, so a target that matches only by ignoring case is published in a
+ * spelling most hosts serve nothing at; `exact` says which it is.
+ */
+function findPublished(site: LoadedSite, sitePath: string): { file: string; exact: boolean } | undefined {
   const directory = sitePath.endsWith("/");
-  const bare = (directory ? sitePath.replace(/\/+$/, "") : sitePath).toLowerCase();
-  const pages = new Set(site.index.pages.map((page) => page.toLowerCase()));
+  const written = directory ? sitePath.replace(/\/+$/, "") : sitePath;
+  const key = written.toLowerCase();
+  const page = (path: string) => site.index.pages.find((candidate) => candidate.toLowerCase() === path);
   // A stream folder's index page canopy writes for it has no source here, but
   // is published all the same.
-  const generated = new Set(site.index.generated.map((page) => page.toLowerCase()));
-  if (directory) return pages.has(`${bare}/index.md`) || generated.has(`${bare}/index.html`);
-  if (pages.has(bare) || pages.has(`${bare}.md`) || generated.has(bare)) return true;
-  if (bare.endsWith(".html") && pages.has(bare.replace(/\.html$/, ".md"))) return true;
-  return site.index.assets.some((asset) => asset.toLowerCase() === bare);
+  const generated = (path: string) => site.index.generated.find((candidate) => candidate.toLowerCase() === path);
+  const found = (file: string, spelled: string) => ({ file, exact: spelled === written });
+  if (directory) {
+    const index = page(`${key}/index.md`) ?? generated(`${key}/index.html`);
+    return index === undefined ? undefined : found(index, index.slice(0, written.length));
+  }
+  const exact = page(key) ?? generated(key);
+  if (exact !== undefined) return found(exact, exact);
+  const extensionless = page(`${key}.md`);
+  if (extensionless !== undefined) return found(extensionless, extensionless.slice(0, -".md".length));
+  const rendered = key.endsWith(".html") ? page(key.replace(/\.html$/, ".md")) : undefined;
+  if (rendered !== undefined) return found(rendered, `${rendered.slice(0, -".md".length)}.html`);
+  const asset = site.index.assets.find((candidate) => candidate.toLowerCase() === key);
+  return asset === undefined ? undefined : found(asset, asset);
+}
+
+/** Why a target that reaches its file only by ignoring letter case is still broken. */
+function caseOnlyMessage(kind: string, target: string, file: string): string {
+  return (
+    `${kind} "${target}" reaches "${file}" only by ignoring letter case — the built page keeps ` +
+    `"${target}" as written, which leads nowhere on a host that tells letter case apart`
+  );
 }
 
 /**
@@ -274,7 +303,17 @@ export function referenceFindings(site: LoadedSite): Finding[] {
       if (resolved === undefined || resolved === "") continue;
       // Resolution drops a trailing slash along with the empty segment it makes,
       // and with it the fact that the target named a directory.
-      if (existsInSite(site, decoded.endsWith("/") ? `${resolved}/` : resolved)) continue;
+      const published = findPublished(site, decoded.endsWith("/") ? `${resolved}/` : resolved);
+      if (published !== undefined) {
+        if (!published.exact) {
+          findings.push({
+            page,
+            level: "error",
+            message: `${where}: ${caseOnlyMessage(reference.kind, reference.target, published.file)}`,
+          });
+        }
+        continue;
+      }
 
       if (reference.cutAtSpace) {
         findings.push({
@@ -314,7 +353,11 @@ function fragmentLinkProblem(
   }
   if (isExternalUrl(target)) return undefined;
   const decoded = (decodeLinkPath(target) ?? target).replace(/^\.\//, "");
-  if (decoded === "" || existsInSite(site, decoded)) return undefined;
+  if (decoded === "") return undefined;
+  const published = findPublished(site, decoded);
+  if (published !== undefined) {
+    return published.exact ? undefined : { level: "error", message: caseOnlyMessage("link", url, published.file) };
+  }
   return {
     level: "error",
     message: `link "${url}" points at nothing published (fragment links are written from the site root)`,

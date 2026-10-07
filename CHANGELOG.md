@@ -7,6 +7,15 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [Unreleased]
+
+### Fixed
+
+- **`check` reports a link or image that reaches its file only by ignoring letter case**
+  (`Guide/Install.md` for `guide/install.md`), in a page or a region fragment. The built link keeps the
+  spelling as written, which most hosts serve nothing at, while `check` said nothing was broken.
+  Wikilinks are not affected.
+
 ## [0.23.1] — 2026-10-07
 
 Depends on canopy ^0.21.1. Upgrading: a settings file naming one directory in two sections, or a

@@ -54,6 +54,17 @@ Covers both cases that end the same way for a reader: the file does not exist, o
 excluded. A path that climbs above the site root is not checked at all — see [What is never
 reported](#what-is-never-reported).
 
+### A link or image reaches its file only by ignoring letter case
+
+```
+error: index.md:3: link "Guide/Install.md" reaches "guide/install.md" only by ignoring letter case — the built page keeps "Guide/Install.md" as written, which leads nowhere on a host that tells letter case apart
+```
+
+On your own machine the link works: Windows and macOS find `guide/install.md` from `Guide/Install.md`.
+The built link keeps the spelling you wrote, though, and GitHub Pages — like most hosts — serves
+nothing at `Guide/Install.html`. Write the path as the file is spelled. A wikilink is not affected:
+it is written from the page it finds. The same applies to a link in a region fragment.
+
 ### A wikilink matches no page
 
 ```

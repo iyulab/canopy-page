@@ -62,6 +62,28 @@ describe("referenceFindings", { timeout: LOADS_A_SITE }, () => {
     expect(messages).toEqual(["index.md:3: link \"guide/gone.md\" points at nothing published"]);
   });
 
+  // The built link keeps the letter case it was written in, and most hosts
+  // tell "Guide" from "guide" apart — so a link that only reaches its file by
+  // ignoring case leads nowhere once deployed. A wikilink is spelled from the
+  // page it resolves to, so it is not one of them.
+  it("names a link or image that reaches its file only by ignoring letter case", async () => {
+    const messages = await findings({
+      "index.md": "# Home\n\n[a](Guide/Install.md) [b](guide/INSTALL.html) [c](Guide/) ![d](IMG/logo.png) [[Guide/Install]]\n",
+      "guide/index.md": "# Guide",
+      "guide/install.md": "# Install",
+      "img/logo.png": "binary",
+    });
+    const differs = (kind: string, target: string, file: string) =>
+      `index.md:3: ${kind} "${target}" reaches "${file}" only by ignoring letter case — the built page keeps ` +
+      `"${target}" as written, which leads nowhere on a host that tells letter case apart`;
+    expect(messages).toEqual([
+      differs("link", "Guide/Install.md", "guide/install.md"),
+      differs("link", "guide/INSTALL.html", "guide/install.md"),
+      differs("link", "Guide/", "guide/index.md"),
+      differs("image", "IMG/logo.png", "img/logo.png"),
+    ]);
+  });
+
   it("catches an image that is not a published file", async () => {
     const messages = await findings({ "index.md": "![shot](assets/missing.png)" });
     expect(messages[0]).toContain('image "assets/missing.png" is not a published file');
@@ -707,6 +729,21 @@ describe("regionFindings", { timeout: LOADS_A_SITE }, () => {
     ).toEqual([
       'warning: partials/footer.html: link "/pricing" — nothing is published at "pricing". A root-absolute path ' +
         "resolves against wherever the site is served from, so this is right only if something else answers it there",
+    ]);
+  });
+
+  it("reports a fragment link that reaches its file only by ignoring letter case", async () => {
+    expect(
+      await regionMessages({ regions: { footer: "partials/footer.html" } }, {
+        "partials/footer.html": '<footer><a href="Guide/Install.html">Install</a><img src="img/Logo.svg" alt=""></footer>',
+        "guide/install.md": "# Install",
+        "img/logo.svg": "<svg></svg>",
+      }),
+    ).toEqual([
+      'error: partials/footer.html: link "Guide/Install.html" reaches "guide/install.md" only by ignoring letter case — ' +
+        'the built page keeps "Guide/Install.html" as written, which leads nowhere on a host that tells letter case apart',
+      'error: partials/footer.html: link "img/Logo.svg" reaches "img/logo.svg" only by ignoring letter case — ' +
+        'the built page keeps "img/Logo.svg" as written, which leads nowhere on a host that tells letter case apart',
     ]);
   });
 
