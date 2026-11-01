@@ -1,5 +1,9 @@
 ---
 description: "Every error and warning canopy-page's check reports, what each one means, and what to do about it."
+sourceGlobs:
+  - ../src/check.ts
+  - ../src/site.ts
+  - ../src/staleness.ts
 ---
 # What check reports
 

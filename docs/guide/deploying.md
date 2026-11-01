@@ -12,6 +12,9 @@ output folder there.
 This is the shape this site's own deploy takes, on every push that changes it:
 
 ```yaml
+- uses: actions/checkout@v7
+  with:
+    fetch-depth: 0
 - run: npm ci
 - run: npx canopy-page check docs/site
 - run: npx canopy-page build docs/site -o dist/help
@@ -21,6 +24,11 @@ This is the shape this site's own deploy takes, on every push that changes it:
     path: dist/help
 - uses: actions/deploy-pages@v5
 ```
+
+`fetch-depth: 0` checks out the whole history, which two things read: the sitemap's `<lastmod>`
+dates and [`sourceGlobs`](writing/index.md#pages-that-document-code). A shallow clone — the
+checkout action's default — withholds both rather than publish a date or a judgement git cannot
+back, so a site deployed from one has a sitemap without `<lastmod>`.
 
 The deploy job needs the `pages: write` and `id-token: write` permissions, and the repository's
 Pages source set to GitHub Actions. A site that names `rehype-mermaid` in

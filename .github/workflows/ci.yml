@@ -24,6 +24,10 @@ jobs:
       # The canopy submodule is not checked out: this package depends on the
       # published one and runs its command line. The submodule is here to read.
       - uses: actions/checkout@v7
+        with:
+          # The whole history: the sitemap's <lastmod> dates and `sourceGlobs` are read from it,
+          # and a shallow clone withholds both.
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           # Matches the `engines` floor declared in package.json. Raising one

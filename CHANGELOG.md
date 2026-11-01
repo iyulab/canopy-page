@@ -20,6 +20,13 @@ to it — its fields, its validation, and what the checks reject — are what th
   be judged, rather than as nothing. A site that uses no `sourceGlobs` starts no `git` process for this.
   Two new `check` findings, documented in What `check` reports.
 
+### Documentation
+
+- Deploying says to check the site out with its whole history (`fetch-depth: 0`): the sitemap's
+  `<lastmod>` dates and `sourceGlobs` come from it, and a shallow clone — the checkout action's
+  default — withholds both. This site's own workflows now do, and its reference pages name the code
+  they describe with `sourceGlobs`.
+
 ### Fixed
 
 - **A site in a git repository builds far faster.** The sitemap's `<lastmod>` dates were read with one

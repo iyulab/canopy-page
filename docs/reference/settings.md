@@ -1,5 +1,7 @@
 ---
 description: "Every field of settings.json, the one file a canopy-page site is configured by, with the file that built this site as the example."
+sourceGlobs:
+  - ../src/settings.ts
 ---
 # The settings file
 

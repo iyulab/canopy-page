@@ -1,5 +1,8 @@
 ---
 description: "Every canopy-page command and option: init, check, build and watch, what each prints, and the exit code it leaves with."
+sourceGlobs:
+  - ../src/cli.ts
+  - ../src/cli-args.ts
 ---
 # Commands
 

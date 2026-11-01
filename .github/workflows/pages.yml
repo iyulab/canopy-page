@@ -35,6 +35,10 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
+        with:
+          # The whole history: the sitemap's <lastmod> dates and `sourceGlobs` are read from it,
+          # and a shallow clone withholds both.
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version: 22
