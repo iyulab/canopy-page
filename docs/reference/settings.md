@@ -205,6 +205,7 @@ Every key is optional, and keeps its English default when left out:
 | `backlinks` | `Linked references` | The heading above a page's backlinks |
 | `breadcrumb` | `Breadcrumb` | The top bar's trail's accessible label |
 | `searchFailed` | `Search failed to load.` | Shown in the results list when the search index fails to load |
+| `lightboxClose` | `Close` | The image lightbox's close button's accessible label |
 | `readingTime` | `{n} min read` | A stream page's reading time under its heading. `{n}`, where the minutes go, is required |
 | `language` | `Languages` | The language links' accessible label |
 | `skipToContent` | `Skip to content` | The link every page opens with for keyboard readers, past the header and navigation |

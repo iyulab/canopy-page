@@ -7,6 +7,20 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [Unreleased]
+
+### Added
+
+- `strings.lightboxClose` — the accessible name of the image lightbox's close button. It was always
+  "Close", so a site in another language read that one button aloud in English however fully its other
+  `strings` were filled in. The key is optional and keeps `Close` when left out.
+
+### Changed
+
+- Every sentence canopy-page's own scripts show a reader is now listed in one place and overridden through
+  `settings.strings` the same way, and a test fails any script that shows a hard-coded sentence not on
+  that list. The settings reference's Strings table and the Korean example now include the new key.
+
 ## [0.27.3] — 2026-10-07
 
 Depends on canopy ^0.28.4.

@@ -251,9 +251,11 @@ export interface Settings {
      * here (canopy just never reads it), but it is consumed by canopy-page's
      * own script assembly (`assembleScript`), not by canopy — every other key
      * styles canopy's own shell markup, this one styles canopy-page's own
-     * search UI (see `assets/search.js`).
+     * search UI (see `assets/search.js`). `ASSET_STRINGS` lists every such key.
      */
     searchFailed?: string;
+    /** The image lightbox's close button's accessible label: "Close" (see `assets/image-lightbox.js`). */
+    lightboxClose?: string;
   };
 }
 
@@ -330,6 +332,7 @@ export const STRINGS_KEYS = new Set([
   "readNext",
   "related",
   "searchFailed",
+  "lightboxClose",
 ]);
 
 export const NAV_ITEM_KEYS = new Set(["label", "path", "items"]);

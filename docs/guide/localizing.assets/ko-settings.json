@@ -10,6 +10,7 @@
     "backlinks": "관련 문서",
     "breadcrumb": "이동 경로",
     "searchFailed": "검색을 불러오지 못했습니다.",
+    "lightboxClose": "닫기",
     "readingTime": "{n}분 분량",
     "language": "언어",
     "skipToContent": "본문 바로가기"

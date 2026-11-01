@@ -184,7 +184,7 @@ describe("buildSite", () => {
         styles: "brand.css",
         siteUrl: "https://example.test/handbook",
         sections: [{ path: "release-notes", label: "Release notes", order: "desc", feed: true }],
-        strings: { searchFailed: "Could not load search." },
+        strings: { searchFailed: "Could not load search.", lightboxClose: "Dismiss" },
       }),
       "brand.css": ":root { --accent: #0a7c5a; }\n",
       "index.md": "# Home\n\nSee [[guide/install]].\n",
@@ -305,6 +305,12 @@ describe("buildSite", () => {
     const script = await readFile(path.join(out, "assets", "script.js"), "utf8");
     expect(script).toContain('"Could not load search."');
     expect(script).not.toContain("Search failed to load.");
+  });
+
+  it("carries a settings.strings.lightboxClose override into the published script", async () => {
+    const script = await readFile(path.join(out, "assets", "script.js"), "utf8");
+    expect(script).toContain('setAttribute("aria-label", "Dismiss")');
+    expect(script).not.toContain('"Close"');
   });
 });
 

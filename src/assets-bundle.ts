@@ -24,35 +24,57 @@ async function readAsset(name: string): Promise<string> {
   return readFile(path.join(ASSETS_DIR, name), "utf8");
 }
 
-/** The literal `search.js` falls back to when no override is given — the substitution target. */
-const SEARCH_FAILED_DEFAULT = "Search failed to load.";
+/**
+ * Every sentence canopy-page's own scripts show a reader, and the `settings.strings` key that
+ * overrides it. This table is the whole list: a script that shows a hard-coded sentence adds a row
+ * here (and the key to `settings.strings`), and a test fails any script that shows one without a row.
+ *
+ * `default` is the source literal in `file` — a source literal, not a template placeholder, so the
+ * shipped asset stays valid, readable JavaScript on its own. It must occur exactly once there.
+ */
+export const ASSET_STRINGS = {
+  searchFailed: { file: "search.js", default: "Search failed to load." },
+  lightboxClose: { file: "image-lightbox.js", default: "Close" },
+} as const;
+
+export type AssetStringKey = keyof typeof ASSET_STRINGS;
+
+/** The `settings.strings` keys that reach canopy-page's own scripts rather than canopy's shell. */
+export const ASSET_STRING_KEYS = Object.keys(ASSET_STRINGS) as AssetStringKey[];
+
+export type AssetStrings = Partial<Record<AssetStringKey, string>>;
+
+/** The scripts a site carries, in the order they are concatenated. */
+const SCRIPTS = ["search.js", "scrollspy.js", "theme-toggle.js", "mobile-nav.js", "image-lightbox.js"] as const;
 
 /**
  * The single script every canopy-page site carries via canopy's `--script`.
  *
- * `searchFailed` overrides the message `search.js` shows when its fetch of the
- * search index fails — the one reader-facing string in canopy-page's own
- * assets, `settings.strings.searchFailed` in the settings surface. The other
- * two files carry no site-specific text, so only `search.js` takes this
- * substitution; a source literal, not a template placeholder, so the shipped
- * asset stays valid, readable JavaScript on its own.
+ * `strings` overrides the sentences in {@link ASSET_STRINGS} — the reader-facing text of
+ * canopy-page's own assets, `settings.strings` in the settings surface. A key left out keeps its
+ * English default.
  */
-export async function assembleScript(searchFailed?: string): Promise<string> {
-  const [search, scrollspy, themeToggle, mobileNav, imageLightbox] = await Promise.all([
-    readAsset("search.js"),
-    readAsset("scrollspy.js"),
-    readAsset("theme-toggle.js"),
-    readAsset("mobile-nav.js"),
-    readAsset("image-lightbox.js"),
-  ]);
-  // A function replacer, not a replacement string: String.replace treats
-  // "$&"/"$'"/"$$" etc. in a replacement string as patterns, and a site
-  // author's searchFailed text is free to contain a literal "$".
-  const searchWithStrings =
-    searchFailed === undefined
-      ? search
-      : search.replace(JSON.stringify(SEARCH_FAILED_DEFAULT), () => JSON.stringify(searchFailed));
-  return `${searchWithStrings}\n${scrollspy}\n${themeToggle}\n${mobileNav}\n${imageLightbox}`;
+export async function assembleScript(strings: AssetStrings = {}): Promise<string> {
+  const sources = await Promise.all(SCRIPTS.map((name) => readAsset(name)));
+  return sources
+    .map((source, index) => {
+      const file = SCRIPTS[index];
+      let result = source;
+      for (const key of ASSET_STRING_KEYS) {
+        const entry = ASSET_STRINGS[key];
+        const override = strings[key];
+        if (entry.file !== file || override === undefined) continue;
+        const target = JSON.stringify(entry.default);
+        if (result.split(target).length !== 2) {
+          throw new Error(`${file} must carry ${target} exactly once, for settings.strings.${key} to replace`);
+        }
+        // A function replacer, not a replacement string: String.replace treats "$&"/"$'"/"$$"
+        // etc. in a replacement string as patterns, and a site author's text is free to contain a literal "$".
+        result = result.replace(target, () => JSON.stringify(override));
+      }
+      return result;
+    })
+    .join("\n");
 }
 
 /**

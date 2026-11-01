@@ -218,6 +218,11 @@
           "type": "string",
           "minLength": 1,
           "description": "Message shown when the client search index fails to load. Default: \"Search failed to load.\""
+        },
+        "lightboxClose": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The image lightbox's close button's accessible label. Default: \"Close\""
         }
       }
     }
