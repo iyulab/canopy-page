@@ -7,7 +7,9 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
-## [Unreleased]
+## [0.28.0] — 2026-11-01
+
+Depends on canopy ^0.28.4. Upgrading: nothing to do.
 
 ### Added
 
