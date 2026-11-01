@@ -34,7 +34,7 @@ async function frontmatterUpdated(absPath: string): Promise<string | undefined> 
 }
 
 /** Told of every git process this module starts — what lets a test hold the number of them to a bound. */
-type GitObserver = (args: readonly string[]) => void;
+export type GitObserver = (args: readonly string[]) => void;
 
 /** The date (YYYY-MM-DD) git last recorded a change to `file`, or undefined when it has none. */
 async function lastCommitDate(file: string, cwd: string, observe?: GitObserver): Promise<string | undefined> {
@@ -58,13 +58,21 @@ async function lastCommitDate(file: string, cwd: string, observe?: GitObserver):
  * control character (even with `core.quotePath=false`, which only spares the bytes above ASCII), and
  * a quoted name cannot be matched to the page it came from without undoing git's escaping.
  */
-function gitQuotes(file: string): boolean {
+export function gitQuotes(file: string): boolean {
   // biome-ignore lint/suspicious/noControlCharactersInRegex: control characters are exactly what git quotes
   return /["\\\u0000-\u001f\u007f]/.test(file);
 }
 
+/** When a file was last committed: the instant, and the day as the committer's own calendar spells it. */
+export interface CommitStamp {
+  /** Seconds since the epoch. */
+  seconds: number;
+  /** `YYYY-MM-DD`. */
+  day: string;
+}
+
 /**
- * The last commit date of every file in `wanted` (paths relative to `cwd`, `/`-separated), read from
+ * The last commit of every file in `wanted` (paths relative to `cwd`, `/`-separated), read from
  * ONE `git log` of the history under `cwd` instead of one process per file — a process per file was
  * ~95 s of a 105 s build of a thousand posts on Windows. History is read newest first, so the first
  * commit that lists a file is its last; the read stops as soon as every wanted file has one.
@@ -72,17 +80,17 @@ function gitQuotes(file: string): boolean {
  * `undefined` when git cannot read the history (not a repository, or no commit yet): the caller then
  * has no dates to publish, the same answer a failing per-file `git log` gave.
  */
-async function lastCommitDates(
+export async function lastCommits(
   cwd: string,
   wanted: ReadonlySet<string>,
   observe?: GitObserver,
-): Promise<Map<string, string> | undefined> {
+): Promise<Map<string, CommitStamp> | undefined> {
   const args = [
     "-c",
     "core.quotePath=false",
     "log",
     "--no-color",
-    "--format=%x01%cs",
+    "--format=%x01%ct %cs",
     "--name-only",
     "--relative",
     "--",
@@ -90,23 +98,24 @@ async function lastCommitDates(
   ];
   observe?.(args);
   return new Promise((resolve) => {
-    const found = new Map<string, string>();
+    const found = new Map<string, CommitStamp>();
     if (wanted.size === 0) return resolve(found);
     const child = spawn("git", args, { cwd, stdio: ["ignore", "pipe", "ignore"] });
-    let date = "";
+    let stamp: CommitStamp | undefined;
     let pending = "";
     let done = false;
     let stoppedEarly = false;
-    const finish = (value: Map<string, string> | undefined) => {
+    const finish = (value: Map<string, CommitStamp> | undefined) => {
       if (done) return;
       done = true;
       resolve(value);
     };
     const take = (line: string) => {
       if (line.startsWith("\u0001")) {
-        date = line.slice(1).trim();
-      } else if (line !== "" && date !== "" && wanted.has(line) && !found.has(line)) {
-        found.set(line, date);
+        const [seconds, day] = line.slice(1).trim().split(" ");
+        stamp = { seconds: Number.parseInt(seconds ?? "", 10), day: day ?? "" };
+      } else if (line !== "" && stamp !== undefined && wanted.has(line) && !found.has(line)) {
+        found.set(line, stamp);
       }
     };
     child.stdout.setEncoding("utf8");
@@ -187,10 +196,10 @@ export async function resolveLastmods(
     else needGit.push({ htmlPath, mdPath });
   }
   const plain = needGit.filter(({ mdPath }) => !gitQuotes(mdPath));
-  const dates = await lastCommitDates(siteRoot, new Set(plain.map(({ mdPath }) => mdPath)), observe);
-  if (dates === undefined) return { byPath, shallowClone: false };
+  const stamps = await lastCommits(siteRoot, new Set(plain.map(({ mdPath }) => mdPath)), observe);
+  if (stamps === undefined) return { byPath, shallowClone: false };
   for (const { htmlPath, mdPath } of needGit) {
-    const date = gitQuotes(mdPath) ? await lastCommitDate(mdPath, siteRoot, observe) : dates.get(mdPath);
+    const date = gitQuotes(mdPath) ? await lastCommitDate(mdPath, siteRoot, observe) : stamps.get(mdPath)?.day;
     if (date !== undefined) byPath[htmlPath] = date;
   }
   return { byPath, shallowClone: false };

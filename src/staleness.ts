@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { parseFrontmatter } from "@iyulab/canopy";
-import { isShallowClone } from "./lastmod.js";
+import { type CommitStamp, type GitObserver, gitQuotes, isShallowClone, lastCommits } from "./lastmod.js";
 import type { Finding } from "./site.js";
 
 const execFileAsync = promisify(execFile);
@@ -16,9 +16,6 @@ const execFileAsync = promisify(execFile);
  *
  * Opt-in by page: a site that uses no `sourceGlobs` pays nothing, not even a `git` process.
  */
-
-/** Told of every git process this module starts — what lets a test hold the number of them to a bound. */
-type GitObserver = (args: readonly string[]) => void;
 
 /** One `sourceGlobs` entry, and when git last saw a file it names change (seconds since the epoch). */
 export interface SourceTime {
@@ -144,15 +141,29 @@ export async function readSourceFreshness(
   await inParallel(distinct, async (glob) => {
     globTimes.set(glob, await lastCommitTime(`:(glob)${glob}`, root, observe));
   });
+  // Every page's last commit from ONE pass over the history (the one the sitemap's dates use) — a
+  // process per page is what made a thousand-post build take a hundred seconds. A page whose name
+  // git prints quoted cannot be matched in that pass and is asked for by itself.
   const askedPages = [...asked.keys()];
-  const pageTimes = await inParallel(askedPages, (page) => lastCommitTime(`:(literal)${page}`, root, observe));
-  askedPages.forEach((page, index) => {
+  const plain = askedPages.filter((page) => !gitQuotes(page));
+  const stamps = (await lastCommits(root, new Set(plain), observe)) ?? new Map<string, CommitStamp>();
+  const pageTimes = new Map<string, number | undefined>();
+  await inParallel(
+    askedPages,
+    async (page) => {
+      pageTimes.set(
+        page,
+        gitQuotes(page) ? await lastCommitTime(`:(literal)${page}`, root, observe) : stamps.get(page)?.seconds,
+      );
+    },
+  );
+  for (const page of askedPages) {
     pages.set(page, {
       problems: [],
-      pageTime: pageTimes[index],
+      pageTime: pageTimes.get(page),
       sources: (asked.get(page) ?? []).map((glob) => ({ glob, time: globTimes.get(glob) })),
     });
-  });
+  }
   return { pages };
 }
 

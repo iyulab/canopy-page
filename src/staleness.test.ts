@@ -203,6 +203,21 @@ describe("sourceGlobs: the cost of looking", { timeout: RUNS_GIT }, () => {
     expect(calls).toEqual([]);
   });
 
+  it("starts a bounded number of git processes however many pages name their sources", async () => {
+    const files: Record<string, string> = { "src/a.ts": "1" };
+    const site: Record<string, string> = {};
+    for (let i = 0; i < 40; i++) {
+      files[`p${i}.md`] = doc("src/*.ts");
+      site[`p${i}.md`] = doc("src/*.ts");
+    }
+    const root = await repoWith([{ files, date: "2026-01-05T00:00:00Z" }]);
+    const calls: (readonly string[])[] = [];
+    const freshness = await readSourceFreshness(root, pages(site), (args) => calls.push(args));
+    expect(freshness?.pages.size).toBe(40);
+    // The work-tree probe, the shallow probe, one pattern, one pass over the history for every page.
+    expect(calls.length).toBeLessThanOrEqual(5);
+  });
+
   it("asks git once per distinct pattern, however many pages share it", async () => {
     const files: Record<string, string> = { "src/a.ts": "1" };
     const site: Record<string, string> = {};
