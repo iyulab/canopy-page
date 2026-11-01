@@ -31,6 +31,7 @@ import {
   settingsFindings,
   tagFindings,
 } from "./site.js";
+import { sourceFreshnessFindings } from "./staleness.js";
 import { pagesMatching, toPageKey } from "./vault.js";
 
 /**
@@ -551,6 +552,7 @@ export function siteFindings(site: LoadedSite): Finding[] {
     ...tagFindings(site),
     ...descriptionFindings(site),
     ...dateFindings(site),
+    ...sourceFreshnessFindings(site.sourceFreshness),
   ];
 }
 

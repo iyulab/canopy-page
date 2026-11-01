@@ -102,6 +102,30 @@ without a `date:` line, the way most blog tools read such names. Write `date:` t
 time; when both are there `date:` wins, and `check` warns if they name different days, since the
 page's address would then say one day and the page another.
 
+## Pages that document code {#pages-that-document-code}
+
+A page about code goes out of date the day the code changes and the page does not. Say which
+files a page documents, and `check` warns when one of them was committed after the page was:
+
+```markdown
+---
+sourceGlobs:
+  - src/install/**/*.ts     # from the site folder; may start with ../ to leave it
+  - package.json
+---
+```
+
+A pattern is a path from the folder that holds `settings.json`, written with `/`; `*` and `**`
+work as they do in a `.gitignore`. One pattern may be written as a plain value. A pattern that
+begins with `*` has to be quoted (`"**/*.ts"`), as anywhere in YAML.
+
+The judgement is git's history and nothing else: no hash is stored, and nothing has to be run to
+say a page was reviewed — commit it. Committed together with its sources, a page is current. A
+site that names no `sourceGlobs` starts no `git` process for this. In CI, check out the whole history
+(`fetch-depth: 0`): a shallow clone cannot be judged, and `check` says so. The warnings are in [What
+check reports](../../reference/check.md#a-page-is-older-than-the-sources-it-documents); they
+never stop a build.
+
 ## Index pages that list their pages
 
 A folder's index page can list the pages beneath it with `listing: true` in its frontmatter —

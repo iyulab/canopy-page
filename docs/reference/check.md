@@ -342,6 +342,31 @@ day and the page another. A page with neither in a `feed` section is silently mi
 feed, and one in a `stream` section is listed after every dated page. A section's own index page
 is exempt from both.
 
+### A page is older than the sources it documents
+
+```
+warning: guide/install.md: last committed 2026-01-05, but what it documents changed since — src/cli.ts (2026-03-09), src/install/**/*.ts (2026-02-11)
+```
+
+Only for a page that names its sources with `sourceGlobs:` in its frontmatter (see [Pages that
+document code](../guide/writing/index.md#pages-that-document-code)). The page is older when git
+last committed a change to one of the files its patterns name after it last committed the page.
+It is a nudge, not a defect: look at the page, and commit it — changed or not — once it is right.
+
+### A sourceGlobs entry cannot be judged
+
+```
+warning: guide/install.md: `sourceGlobs` entry "src/instal/**" matches no file git has committed
+warning: guide/api.md: `sourceGlobs` must be a path pattern or a list of them
+warning: some pages name `sourceGlobs` but they cannot be judged: the clone is shallow, so its history stops at an arbitrary commit and every page would look newer than its sources (fetch the full history)
+```
+
+A pattern that matches nothing never says a page is stale, so a typo would silence the check
+quietly; this says so instead. The same goes for a value that is not a path pattern, an absolute
+or drive path, and git's own pathspec magic (`:(top)…`). Outside a git repository, or in a shallow
+clone, no page can be judged and this is said once rather than for every page. A page git has no
+commit of yet is not reported: it cannot be older than anything.
+
 ## Root-absolute references
 
 A link or image that starts with `/` — `/assets/logo.png`, `/pricing` — is left exactly as

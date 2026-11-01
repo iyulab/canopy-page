@@ -9,6 +9,17 @@ to it — its fields, its validation, and what the checks reject — are what th
 
 ## [Unreleased]
 
+### Added
+
+- **`sourceGlobs`: a page that says which files it documents is warned about when they change after it.**
+  A page's frontmatter names the paths it documents (`sourceGlobs: src/install/**/*.ts`, or a list;
+  from the site folder, `../` may leave it); `check` warns, once per page, when git last committed one of
+  those files after it last committed the page. Nothing is stored and nothing is run to say a page was
+  reviewed — committing it is that. A pattern that matches no committed file, a value that is not a path
+  pattern, and a folder that is not a git repository or is a shallow clone are reported as what cannot
+  be judged, rather than as nothing. A site that uses no `sourceGlobs` starts no `git` process for this.
+  Two new `check` findings, documented in What `check` reports.
+
 ### Fixed
 
 - **A site in a git repository builds far faster.** The sitemap's `<lastmod>` dates were read with one

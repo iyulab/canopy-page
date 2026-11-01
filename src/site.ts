@@ -19,6 +19,7 @@ import {
 import { feedDirs, layoutSpec, withLayoutFile } from "./layout.js";
 import { type NavTranslation, translateNav } from "./nav.js";
 import { parseSettings, type Settings, SettingsError } from "./settings.js";
+import { readSourceFreshness, type SourceFreshness } from "./staleness.js";
 import { indexSite, listSite, type PageIndex, publishingExcludes, SETTINGS_FILENAME } from "./vault.js";
 
 /**
@@ -58,6 +59,11 @@ export interface LoadedSite {
    * `check` says so.
    */
   fragments: ReadonlyMap<string, string>;
+  /**
+   * When each page that names `sourceGlobs` and the files it names were last committed, read
+   * once like the pages are; `undefined` when no page names any (and git was not asked).
+   */
+  sourceFreshness?: SourceFreshness;
 }
 
 /**
@@ -96,6 +102,8 @@ export const FINDING_KINDS = [
   "pages-excused-by-knownbroken",
   "pages-with-no-description",
   "dates-that-are-not-dates-disagree-or-are-missing-where-one-is-needed",
+  "a-page-is-older-than-the-sources-it-documents",
+  "a-sourceglobs-entry-cannot-be-judged",
 ] as const;
 
 /** What a finding is about — see {@link FINDING_KINDS}. */
@@ -172,6 +180,7 @@ export async function loadSite(dir: string, out?: string): Promise<LoadedSite> {
       // Reported by check (regionFindings), naming the regions that wanted it.
     }
   }
+  const sourceFreshness = await readSourceFreshness(root, sources);
   return {
     root,
     settings,
@@ -181,6 +190,7 @@ export async function loadSite(dir: string, out?: string): Promise<LoadedSite> {
     sources,
     layout,
     fragments,
+    ...(sourceFreshness === undefined ? {} : { sourceFreshness }),
   };
 }
 
