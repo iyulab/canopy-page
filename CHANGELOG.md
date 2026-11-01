@@ -7,6 +7,17 @@ Notable changes to canopy-page. The format follows
 The `settings.json` contract is what consuming projects plan their upgrades around, so changes
 to it — its fields, its validation, and what the checks reject — are what this file is about.
 
+## [Unreleased]
+
+### Fixed
+
+- **A site in a git repository builds far faster.** The sitemap's `<lastmod>` dates were read with one
+  `git log` process per page, one after another — on Windows about 100 of the 105 seconds of a build of a
+  thousand posts. They are now read from one pass over the history, which stops as soon as every page has
+  its date: the same site builds in about 7 seconds, and its `sitemap.xml` is byte-identical. A page whose
+  file name git prints quoted (a double quote, a backslash or a control character in it) is still asked
+  for by itself.
+
 ## [0.28.0] — 2026-11-01
 
 Depends on canopy ^0.28.4. Upgrading: nothing to do.

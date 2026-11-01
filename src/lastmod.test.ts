@@ -112,6 +112,66 @@ describe("resolveLastmods", { timeout: RUNS_GIT }, () => {
   });
 });
 
+describe("resolveLastmods over many pages", { timeout: RUNS_GIT }, () => {
+  // A sitemap covers every page, so what it costs per page is what a large site pays: one git process
+  // per page was ~95 s of a 105 s build of a thousand posts on Windows.
+  it("asks git a bounded number of times however many pages there are", async () => {
+    const files: Record<string, string> = {};
+    for (let i = 0; i < 40; i++) files[`posts/p${i}.md`] = `# P${i}\n`;
+    const root = await repoWith([{ files, date: "2026-01-05T00:00:00Z" }]);
+    const calls: (readonly string[])[] = [];
+    const { byPath } = await resolveLastmods(
+      root,
+      Object.keys(files).map((f) => f.replace(/\.md$/, ".html")),
+      (args) => calls.push(args),
+    );
+    expect(Object.keys(byPath)).toHaveLength(40);
+    // Counted at all (the observer is wired), and bounded: the shallow-clone probe plus one history read.
+    expect(calls.length).toBeGreaterThanOrEqual(1);
+    expect(calls.length).toBeLessThanOrEqual(3);
+  });
+
+  it("dates each page by its own last commit, not by the repository's", async () => {
+    const root = await repoWith([
+      { files: { "a.md": "# A\n", "b.md": "# B\n", "c.md": "# C\n" }, date: "2026-01-05T00:00:00Z" },
+      { files: { "b.md": "# B2\n" }, date: "2026-02-10T00:00:00Z" },
+      { files: { "c.md": "# C2\n", "d.md": "# D\n" }, date: "2026-03-15T00:00:00Z" },
+    ]);
+    const { byPath } = await resolveLastmods(root, ["a.html", "b.html", "c.html", "d.html"]);
+    expect(byPath).toEqual({
+      "a.html": "2026-01-05",
+      "b.html": "2026-02-10",
+      "c.html": "2026-03-15",
+      "d.html": "2026-03-15",
+    });
+  });
+
+  it("dates a page whose path has spaces or non-ASCII letters", async () => {
+    const root = await repoWith([
+      { files: { "guide/with space.md": "# S\n", "한국어/문서 하나.md": "# K\n" }, date: "2026-04-01T00:00:00Z" },
+    ]);
+    const { byPath } = await resolveLastmods(root, ["guide/with space.html", "한국어/문서 하나.html"]);
+    expect(byPath).toEqual({ "guide/with space.html": "2026-04-01", "한국어/문서 하나.html": "2026-04-01" });
+  });
+
+  it("omits a page git does not track, even when its neighbours are dated", async () => {
+    const root = await repoWith([{ files: { "tracked.md": "# T\n" }, date: "2026-01-05T00:00:00Z" }]);
+    await writeFile(path.join(root, "untracked.md"), "# U\n", "utf8");
+    const { byPath } = await resolveLastmods(root, ["tracked.html", "untracked.html"]);
+    expect(byPath).toEqual({ "tracked.html": "2026-01-05" });
+  });
+
+  it("dates a site that lives in a subfolder of its repository", async () => {
+    const root = await repoWith([
+      { files: { "README.md": "# R\n", "site/index.md": "# Home\n" }, date: "2026-01-05T00:00:00Z" },
+      { files: { "README.md": "# R2\n" }, date: "2026-06-01T00:00:00Z" },
+      { files: { "site/guide.md": "# G\n" }, date: "2026-02-02T00:00:00Z" },
+    ]);
+    const { byPath } = await resolveLastmods(path.join(root, "site"), ["index.html", "guide.html"]);
+    expect(byPath).toEqual({ "index.html": "2026-01-05", "guide.html": "2026-02-02" });
+  });
+});
+
 describe("isShallowClone", { timeout: RUNS_GIT }, () => {
   it("is false for an ordinary repository", async () => {
     const root = await repoWith([{ files: { "a.md": "# A\n" }, date: "2026-01-01T00:00:00Z" }]);
