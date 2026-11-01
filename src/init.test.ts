@@ -1,9 +1,9 @@
-import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { checkSite } from "./check.js";
-import { initSite, InitError, titleFromDirectory } from "./init.js";
+import { InitError, initSite, titleFromDirectory } from "./init.js";
 import { loadSite } from "./site.js";
 
 const temporary: string[] = [];

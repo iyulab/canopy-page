@@ -163,7 +163,8 @@ describe("assembleStylesheet", () => {
  * language and are skipped.
  */
 function readerFacingSentences(source: string): string[] {
-  const literal = String.raw`("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|` + "`[^`]*`)";
+  const tick = "`";
+  const literal = String.raw`("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|${tick}[^${tick}]*${tick})`;
   const named = "(?:aria-label|aria-description|aria-placeholder|aria-roledescription|aria-valuetext|title|placeholder|alt)";
   const patterns = [
     new RegExp(String.raw`setAttribute\(\s*["']${named}["']\s*,\s*${literal}\s*\)`, "g"),

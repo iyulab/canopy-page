@@ -4,10 +4,10 @@ import path from "node:path";
 import { assembleScript, assembleStylesheet } from "./assets-bundle.js";
 import { runCanopy } from "./canopy.js";
 import { siteFindings } from "./check.js";
-import { feedDirs } from "./layout.js";
 import { resolveLastmods } from "./lastmod.js";
-import { listHtmlFiles, robotsTxt, sitemapXml } from "./sitemap.js";
+import { feedDirs } from "./layout.js";
 import { loadSite, reportFindings, SEARCH_INDEX_PATH } from "./site.js";
+import { listHtmlFiles, robotsTxt, sitemapXml } from "./sitemap.js";
 import { publishingExcludes } from "./vault.js";
 
 /**

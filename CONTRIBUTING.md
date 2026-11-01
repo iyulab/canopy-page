@@ -5,7 +5,7 @@
 ```sh
 npm install
 npm run check   # tsc --noEmit
-npm run lint    # biome lint ./src
+npm run lint    # biome check ./src (lint rules and import order)
 npm test        # vitest run
 npm run build   # compiles to dist/, required before dist/cli.js runs
 ```

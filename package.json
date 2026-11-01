@@ -38,7 +38,7 @@
   ],
   "scripts": {
     "check": "tsc --noEmit",
-    "lint": "biome lint ./src",
+    "lint": "biome check ./src",
     "test": "vitest run",
     "build": "tsc -p tsconfig.build.json && node scripts/copy-assets.mjs",
     "prepublishOnly": "npm run build"

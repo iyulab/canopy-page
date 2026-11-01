@@ -21,8 +21,8 @@ import {
 } from "@iyulab/canopy";
 import { extractReferences } from "./references.js";
 import {
-  featuredFindings,
   type Finding,
+  featuredFindings,
   type LoadedSite,
   loadSite,
   navFindings,

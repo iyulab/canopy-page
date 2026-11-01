@@ -1,9 +1,9 @@
 #!/usr/bin/env node
+import { readFile } from "node:fs/promises";
 import { buildSite } from "./build.js";
 import { checkSite } from "./check.js";
-import { initSite, InitError } from "./init.js";
-import { readFile } from "node:fs/promises";
 import { parseArgs, requestedInfo, USAGE } from "./cli-args.js";
+import { InitError, initSite } from "./init.js";
 import { SiteError } from "./site.js";
 import { WatchError, watchSite } from "./watch.js";
 

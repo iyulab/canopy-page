@@ -18,7 +18,7 @@ import {
 } from "@iyulab/canopy";
 import { feedDirs, layoutSpec, withLayoutFile } from "./layout.js";
 import { type NavTranslation, translateNav } from "./nav.js";
-import { parseSettings, SettingsError, type Settings } from "./settings.js";
+import { parseSettings, type Settings, SettingsError } from "./settings.js";
 import { indexSite, listSite, type PageIndex, publishingExcludes, SETTINGS_FILENAME } from "./vault.js";
 
 /**

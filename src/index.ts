@@ -9,24 +9,24 @@
  * The command line is the intended way in. This entry point exposes the same
  * pieces for a caller that wants to run a check inside its own tooling.
  */
-export { buildSite, type BuildOptions } from "./build.js";
+export { type BuildOptions, buildSite } from "./build.js";
 export { checkSite, referenceFindings, siteFindings } from "./check.js";
-export { initSite, InitError, type InitResult } from "./init.js";
+export { InitError, type InitResult, initSite } from "./init.js";
 export { extractReferences, type Reference } from "./references.js";
 export {
+  parseSettings,
+  type Settings,
+  SettingsError,
+  type SettingsNavItem,
+  type SettingsSection,
+} from "./settings.js";
+export {
   FINDING_KINDS,
+  type Finding,
+  type FindingKind,
+  type LoadedSite,
   loadSite,
   navFindings,
   reportFindings,
   SiteError,
-  type Finding,
-  type FindingKind,
-  type LoadedSite,
 } from "./site.js";
-export {
-  parseSettings,
-  SettingsError,
-  type Settings,
-  type SettingsNavItem,
-  type SettingsSection,
-} from "./settings.js";

@@ -1,12 +1,12 @@
-import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { buildSite, canopyArgs } from "./build.js";
+import { translateNav } from "./nav.js";
 import type { Settings } from "./settings.js";
 import type { LoadedSite } from "./site.js";
 import { indexSite } from "./vault.js";
-import { translateNav } from "./nav.js";
 
 /**
  * These run the real canopy, on a real folder, and read the files that come out.
