@@ -18,7 +18,7 @@ check, and everything a published site ships with. It is built with canopy-page 
 npm install --save-dev @iyulab/canopy-page
 ```
 
-Node 22 or newer.
+Node 22.22 or newer.
 
 ## Quick start
 

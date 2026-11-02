@@ -34,6 +34,12 @@ to it — its fields, its validation, and what the checks reject — are what th
   default — withholds both. This site's own workflows now do, and its reference pages name the code
   they describe with `sourceGlobs`.
 
+### Changed
+
+- **Node 22.22 or newer** (was 22). `watch` now runs on chokidar 6, which needs it: one observation
+  pipeline that confirms each change against the filesystem before reporting it, and native recursive
+  watching on Windows and macOS. What `watch` rebuilds on, and what it ignores, is unchanged.
+
 ### Fixed
 
 - **A site in a git repository builds far faster.** The sitemap's `<lastmod>` dates were read with one

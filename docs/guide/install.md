@@ -3,7 +3,7 @@ description: "Install canopy-page with npm, then the four commands (init, check,
 ---
 # Installing canopy-page
 
-Node 22 or newer.
+Node 22.22 or newer.
 
 ```sh
 npm install --save-dev @iyulab/canopy-page
