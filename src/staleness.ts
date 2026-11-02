@@ -40,6 +40,8 @@ export interface PageFreshness {
   pageDay: string | undefined;
   /** That commit's hash; `undefined` alongside `pageDay`. */
   pageCommit?: string;
+  /** The commit the page's `sourcesReviewed` names, when it names one git has in HEAD's history — the page is judged from it. */
+  review?: { named: string; day: string };
   sources: SourceTime[];
 }
 
@@ -74,15 +76,16 @@ interface Commit {
 
 /**
  * The newest commit in `range` (a revision range — `HEAD` for the whole history) that changed
- * anything `pathspec` names, relative to `cwd`; `undefined` for none.
+ * anything `pathspec` names, relative to `cwd` — with no pathspec, the newest commit in it at all;
+ * `undefined` for none.
  */
 async function newestCommit(
   range: string,
-  pathspec: string,
+  pathspec: string | undefined,
   cwd: string,
   observe?: GitObserver,
 ): Promise<Commit | undefined> {
-  const args = ["log", "-1", "--format=%H %cs", range, "--", pathspec];
+  const args = ["log", "-1", "--format=%H %cs", range, "--", ...(pathspec === undefined ? [] : [pathspec])];
   observe?.(args);
   try {
     const { stdout } = await execFileAsync("git", args, { cwd });
@@ -91,6 +94,46 @@ async function newestCommit(
   } catch {
     return undefined;
   }
+}
+
+/**
+ * The commit a page's `sourcesReviewed` names, or why it names none we can use. Only a commit hash
+ * (abbreviated or full) is taken: a review is of one fixed state of the sources, which a branch or
+ * tag name — free to move — does not pin.
+ */
+function reviewedOf(value: unknown): { hash: string } | { problem: string } {
+  if (typeof value === "number") {
+    return { problem: "`sourcesReviewed` must be quoted: YAML read the commit hash as a number" };
+  }
+  if (typeof value !== "string" || !/^[0-9a-f]{7,64}$/i.test(value.trim())) {
+    return { problem: "`sourcesReviewed` must be a commit hash (at least 7 hex digits)" };
+  }
+  return { hash: value.trim().toLowerCase() };
+}
+
+/**
+ * The commit `hash` abbreviates, when it is one in HEAD's history — a review of a state the branch
+ * never reached (another branch, a rewritten history) says nothing about the sources it now has.
+ */
+async function resolveReview(
+  hash: string,
+  cwd: string,
+  observe?: GitObserver,
+): Promise<Commit | { problem: (named: string) => string }> {
+  const commit = await newestCommit(hash, undefined, cwd, observe);
+  if (commit === undefined || !commit.hash.startsWith(hash)) {
+    return { problem: (named) => `\`sourcesReviewed\` names ${named}, which is no commit git knows` };
+  }
+  const args = ["merge-base", "--is-ancestor", commit.hash, "HEAD"];
+  observe?.(args);
+  const inHistory = await execFileAsync("git", args, { cwd }).then(
+    () => true,
+    () => false,
+  );
+  if (!inHistory) {
+    return { problem: (named) => `\`sourcesReviewed\` names ${named}, which is not in the history of the checked-out commit` };
+  }
+  return commit;
 }
 
 /** The patterns a page names, or why it names none we can use. */
@@ -125,6 +168,10 @@ export async function readSourceFreshness(
 ): Promise<SourceFreshness | undefined> {
   const asked = new Map<string, string[]>();
   const pages = new Map<string, PageFreshness>();
+  /** page → the commit its `sourcesReviewed` names, as written. */
+  const markers = new Map<string, string>();
+  /** page → why its `sourcesReviewed` cannot be used. */
+  const markerProblems = new Map<string, string>();
   for (const [page, markdown] of sources) {
     let data: Record<string, unknown>;
     try {
@@ -134,12 +181,26 @@ export async function readSourceFreshness(
       // read only asks whether the page names its sources.
       continue;
     }
-    if (!("sourceGlobs" in data)) continue;
+    if (!("sourceGlobs" in data)) {
+      if ("sourcesReviewed" in data) {
+        pages.set(page, {
+          problems: ["`sourcesReviewed` without `sourceGlobs` names a review of nothing"],
+          pageDay: undefined,
+          sources: [],
+        });
+      }
+      continue;
+    }
     const patterns = patternsOf(data.sourceGlobs);
     if ("problem" in patterns) {
       pages.set(page, { problems: [patterns.problem], pageDay: undefined, sources: [] });
-    } else {
-      asked.set(page, patterns.globs);
+      continue;
+    }
+    asked.set(page, patterns.globs);
+    if ("sourcesReviewed" in data) {
+      const marker = reviewedOf(data.sourcesReviewed);
+      if ("problem" in marker) markerProblems.set(page, marker.problem);
+      else markers.set(page, marker.hash);
     }
   }
   if (asked.size === 0 && pages.size === 0) return undefined;
@@ -153,7 +214,11 @@ export async function readSourceFreshness(
     // repository would send them looking for a problem their repository does not have.
     (error: NodeJS.ErrnoException): "no" | "no-git" => (error.code === "ENOENT" ? "no-git" : "no"),
   );
-  const withhold = (reason: string): SourceFreshness => ({ withheld: { reason, pages: asked.size }, pages });
+  const withhold = (reason: string): SourceFreshness => {
+    // A marker that is not even a commit hash is wrong with or without a history to read it against.
+    for (const [page, problem] of markerProblems) pages.set(page, { problems: [problem], pageDay: undefined, sources: [] });
+    return { withheld: { reason, pages: asked.size }, pages };
+  };
   if (inside === "no-git") return withhold("git is not installed, or not on the PATH");
   if (inside === "no") return withhold("the site is not inside a git repository");
   if (await isShallowClone(root, observe)) {
@@ -180,15 +245,31 @@ export async function readSourceFreshness(
       gitQuotes(page) ? await newestCommit("HEAD", `:(literal)${page}`, root, observe) : stamps.get(page),
     );
   });
-  // What each page has not seen: the changes to its patterns that its last commit does not contain.
-  // Pages last committed together share that question, so it is asked once per (commit, pattern).
+  // A page that names `sourcesReviewed` is judged from that commit instead of its own last one: an edit
+  // to the page that was not a review of its sources (a typo fixed) then does not silence it.
+  const reviews = new Map<string, Commit>();
+  await inParallel([...new Set(markers.values())], async (hash) => {
+    const review = await resolveReview(hash, root, observe);
+    if ("problem" in review) {
+      for (const [page, named] of markers) if (named === hash) markerProblems.set(page, review.problem(named));
+    } else {
+      reviews.set(hash, review);
+    }
+  });
+  const basisOf = (page: string): Commit | undefined => {
+    const named = markers.get(page);
+    const review = named === undefined ? undefined : reviews.get(named);
+    return review ?? pageCommits.get(page);
+  };
+  // What each page has not seen: the changes to its patterns that its basis commit does not contain.
+  // Pages sharing a basis share that question, so it is asked once per (commit, pattern).
   const question = (hash: string, glob: string) => JSON.stringify([hash, glob]);
   const questions = new Map<string, { hash: string; glob: string }>();
   for (const page of askedPages) {
-    const commit = pageCommits.get(page);
-    if (commit === undefined) continue;
+    const basis = basisOf(page);
+    if (basis === undefined) continue;
     for (const glob of asked.get(page) ?? []) {
-      if (committed.get(glob)) questions.set(question(commit.hash, glob), { hash: commit.hash, glob });
+      if (committed.get(glob)) questions.set(question(basis.hash, glob), { hash: basis.hash, glob });
     }
   }
   const unseen = new Map<string, string | undefined>();
@@ -197,14 +278,18 @@ export async function readSourceFreshness(
   });
   for (const page of askedPages) {
     const commit = pageCommits.get(page);
+    const basis = basisOf(page);
+    const named = markers.get(page);
+    const problem = markerProblems.get(page);
     pages.set(page, {
-      problems: [],
+      problems: problem === undefined ? [] : [problem],
       pageDay: commit?.day,
       pageCommit: commit?.hash,
+      review: named !== undefined && reviews.has(named) ? { named, day: (basis as Commit).day } : undefined,
       sources: (asked.get(page) ?? []).map((glob) => ({
         glob,
         committed: committed.get(glob) ?? false,
-        unseen: commit === undefined ? undefined : unseen.get(question(commit.hash, glob)),
+        unseen: basis === undefined ? undefined : unseen.get(question(basis.hash, glob)),
       })),
     });
   }
@@ -240,15 +325,19 @@ export function sourceFreshnessFindings(freshness: SourceFreshness | undefined):
         message: `${page}: ${problems.join("; ")}`,
       });
     }
-    if (known.pageDay === undefined) continue;
+    if (known.pageDay === undefined && known.review === undefined) continue;
     const unseen = known.sources.filter((source) => source.unseen !== undefined);
     if (unseen.length === 0) continue;
+    const basis =
+      known.review === undefined
+        ? `its own last commit (${known.pageDay})`
+        : `its review (sourcesReviewed ${known.review.named}, ${known.review.day})`;
     findings.push({
       kind: "a-page-is-older-than-the-sources-it-documents",
       level: "warning",
       page,
       message:
-        `${page}: what it documents changed in commits its own last commit (${known.pageDay}) does not contain — ` +
+        `${page}: what it documents changed in commits ${basis} does not contain — ` +
         unseen.map(({ glob, unseen }) => `${glob} (${unseen})`).join(", "),
     });
   }

@@ -21,6 +21,11 @@ to it — its fields, its validation, and what the checks reject — are what th
   pattern, a folder that is not a git repository or is a shallow clone, and a `git` that cannot be
   started are reported as what cannot be judged, rather than as nothing. A site that uses no `sourceGlobs` starts no `git` process for this.
   Two new `check` findings, documented in What `check` reports.
+- **`sourcesReviewed`: a page can be held to a review, not just to its last edit.** Committing a page
+  clears its `sourceGlobs` warning, a typo fix included. A page that names the commit it was reviewed
+  against (`sourcesReviewed: "3f9c2e1"`, a commit hash) is judged from that commit instead, so only moving
+  the marker clears it. A value that is not a commit hash, names no commit git knows, or names one outside
+  the checked-out history is reported, and so is the key on a page without `sourceGlobs`.
 
 ### Documentation
 

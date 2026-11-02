@@ -360,11 +360,19 @@ change merged in from a branch is caught even when it is dated before the page's
 date given for each pattern is that of its newest such change. It is a nudge, not a defect: look
 at the page, and commit it — changed or not — once it is right.
 
+```
+warning: guide/install.md: what it documents changed in commits its review (sourcesReviewed 3f9c2e1, 2026-01-05) does not contain — src/cli.ts (2026-03-09)
+```
+
+A page that names `sourcesReviewed` is judged from that commit instead: only moving the marker to
+a commit that contains the changes, once they are read, clears it.
+
 ### A sourceGlobs entry cannot be judged
 
 ```
 warning: guide/install.md: `sourceGlobs` entry "src/instal/**" matches no file git has committed
 warning: guide/api.md: `sourceGlobs` must be a path pattern or a list of them
+warning: guide/cli.md: `sourcesReviewed` names 3f9c2e1, which is no commit git knows
 warning: 12 pages name `sourceGlobs` but cannot be judged: the clone is shallow, so its history stops at an arbitrary commit and every page would look newer than its sources (fetch the full history)
 ```
 

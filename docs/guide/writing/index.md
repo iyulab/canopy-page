@@ -127,6 +127,22 @@ site that names no `sourceGlobs` starts no `git` process for this. In CI, check 
 check reports](../../reference/check.md#a-page-is-older-than-the-sources-it-documents); they
 never stop a build.
 
+Committing the page is the review — any commit, which includes one that only fixes a typo. When
+a page should stay flagged until someone has actually read it against the code, name the commit
+it was reviewed against:
+
+```markdown
+---
+sourceGlobs: src/install/**/*.ts
+sourcesReviewed: "3f9c2e1"    # the commit you read the code at; quoted, so YAML keeps it text
+---
+```
+
+The page is then judged from that commit instead of its own last one: other edits to the page
+leave the warning standing, and moving `sourcesReviewed` to a newer commit — after reading what
+changed — clears it. The value is a commit hash, at least seven hex digits; a branch or tag name
+is refused, since it moves while the review it records does not.
+
 ## Index pages that list their pages
 
 A folder's index page can list the pages beneath it with `listing: true` in its frontmatter —

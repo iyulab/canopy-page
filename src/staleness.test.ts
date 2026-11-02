@@ -186,6 +186,63 @@ describe("sourceGlobs: a page older than the sources it documents", { timeout: R
   });
 });
 
+describe("sourcesReviewed: judging a page from the commit it was reviewed against", { timeout: RUNS_GIT }, () => {
+  const head = async (root: string) => (await execFileAsync("git", ["rev-parse", "HEAD"], { cwd: root })).stdout.trim();
+  const reviewed = (globs: string, hash: string, body = "") =>
+    `---\nsourceGlobs: ${globs}\nsourcesReviewed: "${hash}"\n---\n# Doc\n${body}`;
+
+  it("keeps warning after an edit that was not a review — a typo fixed — until the marker moves", async () => {
+    const root = await repoWith([{ files: { "src/a.ts": "1" }, date: "2026-01-05T00:00:00Z" }]);
+    const base = await head(root);
+    await writeFile(path.join(root, "guide.md"), reviewed("src/*.ts", base), "utf8");
+    await execFileAsync("git", ["add", "."], { cwd: root });
+    await execFileAsync("git", ["commit", "--quiet", "-m", "page"], { cwd: root });
+    await writeFile(path.join(root, "src/a.ts"), "2", "utf8");
+    await execFileAsync("git", ["commit", "--quiet", "-am", "source"], { cwd: root });
+    const typo = reviewed("src/*.ts", base, "Typo fixed.\n");
+    await writeFile(path.join(root, "guide.md"), typo, "utf8");
+    await execFileAsync("git", ["commit", "--quiet", "-am", "typo"], { cwd: root });
+
+    const findings = await findingsFor(root, pages({ "guide.md": typo }));
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.kind).toBe("a-page-is-older-than-the-sources-it-documents");
+    expect(findings[0]?.message).toContain(`sourcesReviewed ${base}`);
+
+    const moved = reviewed("src/*.ts", (await head(root)).slice(0, 7), "Typo fixed.\n");
+    expect(await findingsFor(root, pages({ "guide.md": moved }))).toEqual([]);
+  });
+
+  it("says so when the marker names no commit git knows, and judges the page from its own last commit", async () => {
+    const root = await repoWith([
+      { files: { "guide.md": doc("src/*.ts"), "src/a.ts": "1" }, date: "2026-01-05T00:00:00Z" },
+      { files: { "src/a.ts": "2" }, date: "2026-03-09T00:00:00Z" },
+    ]);
+    const findings = await findingsFor(root, pages({ "guide.md": reviewed("src/*.ts", "deadbeef") }));
+    expect(findings.map((finding) => finding.kind).sort()).toEqual([
+      "a-page-is-older-than-the-sources-it-documents",
+      "a-sourceglobs-entry-cannot-be-judged",
+    ]);
+    expect(findings.find((f) => f.kind === "a-sourceglobs-entry-cannot-be-judged")?.message).toContain(
+      "names deadbeef, which is no commit git knows",
+    );
+  });
+
+  it("refuses a marker that is not a commit hash, or one YAML read as a number", async () => {
+    const root = await repoWith([{ files: { "src/a.ts": "1" }, date: "2026-01-05T00:00:00Z" }]);
+    const unquoted = "---\nsourceGlobs: src/*.ts\nsourcesReviewed: 1234567\n---\n# Doc\n";
+    const named = "---\nsourceGlobs: src/*.ts\nsourcesReviewed: main\n---\n# Doc\n";
+    expect((await findingsFor(root, pages({ "a.md": unquoted })))[0]?.message).toContain("must be quoted");
+    expect((await findingsFor(root, pages({ "a.md": named })))[0]?.message).toContain("must be a commit hash");
+  });
+
+  it("says a marker without sourceGlobs reviews nothing", async () => {
+    const root = await repoWith([{ files: { "a.md": "# A\n" }, date: "2026-01-05T00:00:00Z" }]);
+    const findings = await findingsFor(root, pages({ "a.md": '---\nsourcesReviewed: "abcdef0"\n---\n# A\n' }));
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.message).toContain("without `sourceGlobs`");
+  });
+});
+
 describe("sourceGlobs: what cannot be judged", { timeout: RUNS_GIT }, () => {
   it("says so when a pattern matches no file git knows", async () => {
     const root = await repoWith([{ files: { "guide.md": doc("src/nothing/*.ts") }, date: "2026-01-05T00:00:00Z" }]);
