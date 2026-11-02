@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { parseFrontmatter } from "@iyulab/canopy";
+import { commitsTouching, readHistory } from "./history.js";
 import { type CommitStamp, type GitObserver, gitQuotes, isShallowClone, lastCommits } from "./lastmod.js";
 import type { Finding } from "./site.js";
 
@@ -74,18 +75,9 @@ interface Commit {
   day: string;
 }
 
-/**
- * The newest commit in `range` (a revision range — `HEAD` for the whole history) that changed
- * anything `pathspec` names, relative to `cwd` — with no pathspec, the newest commit in it at all;
- * `undefined` for none.
- */
-async function newestCommit(
-  range: string,
-  pathspec: string | undefined,
-  cwd: string,
-  observe?: GitObserver,
-): Promise<Commit | undefined> {
-  const args = ["log", "-1", "--format=%H %cs", range, "--", ...(pathspec === undefined ? [] : [pathspec])];
+/** The last commit that changed anything `pathspec` names, relative to `cwd`; `undefined` for none. */
+async function lastCommitOf(pathspec: string, cwd: string, observe?: GitObserver): Promise<Commit | undefined> {
+  const args = ["log", "-1", "--format=%H %cs", "HEAD", "--", pathspec];
   observe?.(args);
   try {
     const { stdout } = await execFileAsync("git", args, { cwd });
@@ -109,31 +101,6 @@ function reviewedOf(value: unknown): { hash: string } | { problem: string } {
     return { problem: "`sourcesReviewed` must be a commit hash (at least 7 hex digits)" };
   }
   return { hash: value.trim().toLowerCase() };
-}
-
-/**
- * The commit `hash` abbreviates, when it is one in HEAD's history — a review of a state the branch
- * never reached (another branch, a rewritten history) says nothing about the sources it now has.
- */
-async function resolveReview(
-  hash: string,
-  cwd: string,
-  observe?: GitObserver,
-): Promise<Commit | { problem: (named: string) => string }> {
-  const commit = await newestCommit(hash, undefined, cwd, observe);
-  if (commit === undefined || !commit.hash.startsWith(hash)) {
-    return { problem: (named) => `\`sourcesReviewed\` names ${named}, which is no commit git knows` };
-  }
-  const args = ["merge-base", "--is-ancestor", commit.hash, "HEAD"];
-  observe?.(args);
-  const inHistory = await execFileAsync("git", args, { cwd }).then(
-    () => true,
-    () => false,
-  );
-  if (!inHistory) {
-    return { problem: (named) => `\`sourcesReviewed\` names ${named}, which is not in the history of the checked-out commit` };
-  }
-  return commit;
 }
 
 /** The patterns a page names, or why it names none we can use. */
@@ -227,11 +194,15 @@ export async function readSourceFreshness(
     );
   }
 
-  const committed = new Map<string, boolean>();
+  // The graph once, and once per pattern the commits that changed it: every (page, pattern) question
+  // below is then answered in memory.
+  const history = await readHistory(root, observe);
+  const touching = new Map<string, string[]>();
   const distinct = [...new Set([...asked.values()].flat())];
   await inParallel(distinct, async (glob) => {
-    committed.set(glob, (await newestCommit("HEAD", `:(glob)${glob}`, root, observe)) !== undefined);
+    touching.set(glob, history === undefined ? [] : await commitsTouching(`:(glob)${glob}`, root, observe));
   });
+  const committed = new Map(distinct.map((glob) => [glob, (touching.get(glob)?.length ?? 0) > 0]));
   // Every page's last commit from ONE pass over the history (the one the sitemap's dates use) — a
   // process per page is what made a thousand-post build take a hundred seconds. A page whose name
   // git prints quoted cannot be matched in that pass and is asked for by itself.
@@ -242,40 +213,35 @@ export async function readSourceFreshness(
   await inParallel(askedPages, async (page) => {
     pageCommits.set(
       page,
-      gitQuotes(page) ? await newestCommit("HEAD", `:(literal)${page}`, root, observe) : stamps.get(page),
+      gitQuotes(page) ? await lastCommitOf(`:(literal)${page}`, root, observe) : stamps.get(page),
     );
   });
   // A page that names `sourcesReviewed` is judged from that commit instead of its own last one: an edit
   // to the page that was not a review of its sources (a typo fixed) then does not silence it.
   const reviews = new Map<string, Commit>();
-  await inParallel([...new Set(markers.values())], async (hash) => {
-    const review = await resolveReview(hash, root, observe);
-    if ("problem" in review) {
-      for (const [page, named] of markers) if (named === hash) markerProblems.set(page, review.problem(named));
+  for (const [page, named] of markers) {
+    const found = history?.find(named);
+    if (found === "ambiguous") {
+      markerProblems.set(page, `\`sourcesReviewed\` names ${named}, which more than one commit begins with — write more of it`);
+    } else if (found === undefined) {
+      // A review of a state this branch never reached (another branch, a rewritten history) says
+      // nothing about the sources it now has — the same answer as a hash git does not know at all.
+      markerProblems.set(page, `\`sourcesReviewed\` names ${named}, which is no commit in the history of the checked-out commit`);
     } else {
-      reviews.set(hash, review);
+      reviews.set(named, { hash: found, day: history?.day(found) ?? "" });
     }
-  });
+  }
   const basisOf = (page: string): Commit | undefined => {
     const named = markers.get(page);
     const review = named === undefined ? undefined : reviews.get(named);
     return review ?? pageCommits.get(page);
   };
-  // What each page has not seen: the changes to its patterns that its basis commit does not contain.
-  // Pages sharing a basis share that question, so it is asked once per (commit, pattern).
-  const question = (hash: string, glob: string) => JSON.stringify([hash, glob]);
-  const questions = new Map<string, { hash: string; glob: string }>();
-  for (const page of askedPages) {
-    const basis = basisOf(page);
-    if (basis === undefined) continue;
-    for (const glob of asked.get(page) ?? []) {
-      if (committed.get(glob)) questions.set(question(basis.hash, glob), { hash: basis.hash, glob });
-    }
-  }
-  const unseen = new Map<string, string | undefined>();
-  await inParallel([...questions], async ([id, { hash, glob }]) => {
-    unseen.set(id, (await newestCommit(`${hash}..HEAD`, `:(glob)${glob}`, root, observe))?.day);
-  });
+  // What a page has not seen: the newest change to a pattern that its basis commit does not contain.
+  const unseenBy = (basis: Commit, glob: string): string | undefined => {
+    if (history === undefined) return undefined;
+    const change = touching.get(glob)?.find((commit) => !history.contains(basis.hash, commit));
+    return change === undefined ? undefined : history.day(change);
+  };
   for (const page of askedPages) {
     const commit = pageCommits.get(page);
     const basis = basisOf(page);
@@ -289,7 +255,7 @@ export async function readSourceFreshness(
       sources: (asked.get(page) ?? []).map((glob) => ({
         glob,
         committed: committed.get(glob) ?? false,
-        unseen: basis === undefined ? undefined : unseen.get(question(basis.hash, glob)),
+        unseen: basis === undefined ? undefined : unseenBy(basis, glob),
       })),
     });
   }

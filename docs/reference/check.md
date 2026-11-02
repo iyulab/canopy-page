@@ -372,7 +372,7 @@ a commit that contains the changes, once they are read, clears it.
 ```
 warning: guide/install.md: `sourceGlobs` entry "src/instal/**" matches no file git has committed
 warning: guide/api.md: `sourceGlobs` must be a path pattern or a list of them
-warning: guide/cli.md: `sourcesReviewed` names 3f9c2e1, which is no commit git knows
+warning: guide/cli.md: `sourcesReviewed` names 3f9c2e1, which is no commit in the history of the checked-out commit
 warning: 12 pages name `sourceGlobs` but cannot be judged: the clone is shallow, so its history stops at an arbitrary commit and every page would look newer than its sources (fetch the full history)
 ```
 

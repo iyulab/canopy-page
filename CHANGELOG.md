@@ -19,7 +19,9 @@ to it — its fields, its validation, and what the checks reject — are what th
   last edit, and so is one committed the same second. Nothing is stored and nothing is run to say a page was
   reviewed — committing it is that. A pattern that matches no committed file, a value that is not a path
   pattern, a folder that is not a git repository or is a shallow clone, and a `git` that cannot be
-  started are reported as what cannot be judged, rather than as nothing. A site that uses no `sourceGlobs` starts no `git` process for this.
+  started are reported as what cannot be judged, rather than as nothing. A site that uses no
+  `sourceGlobs` starts no `git` process for this; one that does reads the history once, plus once per
+  pattern — two hundred pages, each last committed on its own, are judged in under a second.
   Two new `check` findings, documented in What `check` reports.
 - **`sourcesReviewed`: a page can be held to a review, not just to its last edit.** Committing a page
   clears its `sourceGlobs` warning, a typo fix included. A page that names the commit it was reviewed

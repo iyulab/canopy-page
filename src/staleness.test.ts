@@ -212,7 +212,7 @@ describe("sourcesReviewed: judging a page from the commit it was reviewed agains
     expect(await findingsFor(root, pages({ "guide.md": moved }))).toEqual([]);
   });
 
-  it("says so when the marker names no commit git knows, and judges the page from its own last commit", async () => {
+  it("says so when the marker names no commit in the checked-out history, and judges the page from its own last commit", async () => {
     const root = await repoWith([
       { files: { "guide.md": doc("src/*.ts"), "src/a.ts": "1" }, date: "2026-01-05T00:00:00Z" },
       { files: { "src/a.ts": "2" }, date: "2026-03-09T00:00:00Z" },
@@ -223,7 +223,7 @@ describe("sourcesReviewed: judging a page from the commit it was reviewed agains
       "a-sourceglobs-entry-cannot-be-judged",
     ]);
     expect(findings.find((f) => f.kind === "a-sourceglobs-entry-cannot-be-judged")?.message).toContain(
-      "names deadbeef, which is no commit git knows",
+      "names deadbeef, which is no commit in the history of the checked-out commit",
     );
   });
 
@@ -341,7 +341,25 @@ describe("sourceGlobs: the cost of looking", { timeout: RUNS_GIT }, () => {
     expect(calls.length).toBeLessThanOrEqual(5);
   });
 
-  it("asks about a pattern once, and once more per commit its pages were last committed in", async () => {
+  it("starts as many git processes for pages each last committed apart as for pages committed together", async () => {
+    const root = await repoWith([{ files: { "src/a.ts": "1", "src/b.ts": "1" }, date: "2026-01-05T00:00:00Z" }]);
+    const site: Record<string, string> = {};
+    for (let i = 0; i < 30; i++) {
+      site[`p${i}.md`] = doc("\n  - src/a.ts\n  - src/b.ts");
+      await writeFile(path.join(root, `p${i}.md`), site[`p${i}.md`] as string, "utf8");
+      await execFileAsync("git", ["add", "."], { cwd: root });
+      await execFileAsync("git", ["commit", "--quiet", "-m", `p${i}`], { cwd: root });
+    }
+    await writeFile(path.join(root, "src/a.ts"), "2", "utf8");
+    await execFileAsync("git", ["commit", "--quiet", "-am", "source"], { cwd: root });
+    const calls: (readonly string[])[] = [];
+    const findings = await findingsFor(root, pages(site), (args) => calls.push(args));
+    expect(findings.filter((f) => f.kind === "a-page-is-older-than-the-sources-it-documents")).toHaveLength(30);
+    // The two probes, the graph, the pass for the pages' own commits, and one per pattern.
+    expect(calls.length).toBeLessThanOrEqual(6);
+  });
+
+  it("asks git about a pattern once, however many pages share it", async () => {
     const files: Record<string, string> = { "src/a.ts": "1" };
     const site: Record<string, string> = {};
     for (let i = 0; i < 12; i++) {
@@ -352,8 +370,7 @@ describe("sourceGlobs: the cost of looking", { timeout: RUNS_GIT }, () => {
     const calls: (readonly string[])[] = [];
     await readSourceFreshness(root, pages(site), (args) => calls.push(args));
     const patternCalls = calls.filter((args) => args.some((arg) => arg.startsWith(":(glob)")));
-    // Whether git has committed anything it matches, and what the one commit all twelve share has not seen.
-    expect(patternCalls).toHaveLength(2);
+    expect(patternCalls).toHaveLength(1);
   });
 });
 
