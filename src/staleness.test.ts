@@ -219,7 +219,24 @@ describe("sourceGlobs: what cannot be judged", { timeout: RUNS_GIT }, () => {
     const findings = await findingsFor(root, pages({ "a.md": doc("x.ts"), "b.md": doc("y.ts") }));
     expect(findings).toHaveLength(1);
     expect(findings[0]?.kind).toBe("a-sourceglobs-entry-cannot-be-judged");
-    expect(findings[0]?.message).toMatch(/git repository/);
+    expect(findings[0]?.message).toBe(
+      "2 pages name `sourceGlobs` but cannot be judged: the site is not inside a git repository",
+    );
+  });
+
+  it("says git is missing, not that the folder is no repository, when git cannot be started", async () => {
+    const root = await repoWith([{ files: { "a.md": doc("x.ts"), "x.ts": "1" }, date: "2026-01-05T00:00:00Z" }]);
+    const saved = process.env.PATH;
+    process.env.PATH = "";
+    try {
+      const findings = await findingsFor(root, pages({ "a.md": doc("x.ts") }));
+      expect(findings).toHaveLength(1);
+      expect(findings[0]?.message).toBe(
+        "1 page names `sourceGlobs` but cannot be judged: git is not installed, or not on the PATH",
+      );
+    } finally {
+      process.env.PATH = saved;
+    }
   });
 
   it("withholds judgement in a shallow clone, whose history stops at an arbitrary commit", async () => {

@@ -45,8 +45,8 @@ export interface PageFreshness {
 
 /** Everything `check` needs to judge `sourceGlobs`, read once when the site is loaded. */
 export interface SourceFreshness {
-  /** Why no page could be judged against history, when that is the case. */
-  withheld?: string;
+  /** Why no page could be judged against history, when that is the case, and how many pages that leaves unjudged. */
+  withheld?: { reason: string; pages: number };
   pages: ReadonlyMap<string, PageFreshness>;
 }
 
@@ -148,16 +148,18 @@ export async function readSourceFreshness(
   const insideArgs = ["rev-parse", "--is-inside-work-tree"];
   observe?.(insideArgs);
   const inside = await execFileAsync("git", insideArgs, { cwd: root }).then(
-    ({ stdout }) => stdout.trim() === "true",
-    () => false,
+    ({ stdout }): "yes" | "no" | "no-git" => (stdout.trim() === "true" ? "yes" : "no"),
+    // A git that cannot be started says nothing about the folder; telling the user it is not a
+    // repository would send them looking for a problem their repository does not have.
+    (error: NodeJS.ErrnoException): "no" | "no-git" => (error.code === "ENOENT" ? "no-git" : "no"),
   );
-  if (!inside) return { withheld: "the site is not inside a git repository", pages };
+  const withhold = (reason: string): SourceFreshness => ({ withheld: { reason, pages: asked.size }, pages });
+  if (inside === "no-git") return withhold("git is not installed, or not on the PATH");
+  if (inside === "no") return withhold("the site is not inside a git repository");
   if (await isShallowClone(root, observe)) {
-    return {
-      withheld:
-        "the clone is shallow, so its history stops at an arbitrary commit and every page would look newer than its sources (fetch the full history)",
-      pages,
-    };
+    return withhold(
+      "the clone is shallow, so its history stops at an arbitrary commit and every page would look newer than its sources (fetch the full history)",
+    );
   }
 
   const committed = new Map<string, boolean>();
@@ -215,10 +217,11 @@ export function sourceFreshnessFindings(freshness: SourceFreshness | undefined):
   if (freshness === undefined) return [];
   const findings: Finding[] = [];
   if (freshness.withheld !== undefined) {
+    const { reason, pages } = freshness.withheld;
     findings.push({
       kind: "a-sourceglobs-entry-cannot-be-judged",
       level: "warning",
-      message: `${freshness.pages.size === 0 ? "" : "some pages "}name \`sourceGlobs\` but they cannot be judged: ${freshness.withheld}`,
+      message: `${pages === 1 ? "1 page names" : `${pages} pages name`} \`sourceGlobs\` but cannot be judged: ${reason}`,
     });
   }
   for (const page of [...freshness.pages.keys()].sort()) {

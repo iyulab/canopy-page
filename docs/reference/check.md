@@ -365,13 +365,14 @@ at the page, and commit it — changed or not — once it is right.
 ```
 warning: guide/install.md: `sourceGlobs` entry "src/instal/**" matches no file git has committed
 warning: guide/api.md: `sourceGlobs` must be a path pattern or a list of them
-warning: some pages name `sourceGlobs` but they cannot be judged: the clone is shallow, so its history stops at an arbitrary commit and every page would look newer than its sources (fetch the full history)
+warning: 12 pages name `sourceGlobs` but cannot be judged: the clone is shallow, so its history stops at an arbitrary commit and every page would look newer than its sources (fetch the full history)
 ```
 
 A pattern that matches nothing never says a page is stale, so a typo would silence the check
 quietly; this says so instead. The same goes for a value that is not a path pattern, an absolute
-or drive path, and git's own pathspec magic (`:(top)…`). Outside a git repository, or in a shallow
-clone, no page can be judged and this is said once rather than for every page. A page git has no
+or drive path, and git's own pathspec magic (`:(top)…`). Outside a git repository, in a shallow
+clone, or where `git` itself cannot be started (not installed, or not on the `PATH`), no page can
+be judged and this is said once, with how many pages it leaves unjudged. A page git has no
 commit of yet is not reported: it cannot be older than anything.
 
 ## Root-absolute references

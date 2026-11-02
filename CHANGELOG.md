@@ -18,8 +18,8 @@ to it — its fields, its validation, and what the checks reject — are what th
   not its dates, so a change merged in from a branch is caught even when it is dated before the page's
   last edit, and so is one committed the same second. Nothing is stored and nothing is run to say a page was
   reviewed — committing it is that. A pattern that matches no committed file, a value that is not a path
-  pattern, and a folder that is not a git repository or is a shallow clone are reported as what cannot
-  be judged, rather than as nothing. A site that uses no `sourceGlobs` starts no `git` process for this.
+  pattern, a folder that is not a git repository or is a shallow clone, and a `git` that cannot be
+  started are reported as what cannot be judged, rather than as nothing. A site that uses no `sourceGlobs` starts no `git` process for this.
   Two new `check` findings, documented in What `check` reports.
 
 ### Documentation
