@@ -105,7 +105,8 @@ page's address would then say one day and the page another.
 ## Pages that document code {#pages-that-document-code}
 
 A page about code goes out of date the day the code changes and the page does not. Say which
-files a page documents, and `check` warns when one of them was committed after the page was:
+files a page documents, and `check` warns when one of them changed in a commit the page has not
+seen — one its own last commit does not contain:
 
 ```markdown
 ---

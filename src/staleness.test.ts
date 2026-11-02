@@ -70,6 +70,55 @@ describe("sourceGlobs: a page older than the sources it documents", { timeout: R
     expect(findings[0]?.message).toContain("2026-03-09");
   });
 
+  it("warns when a source change merged in from a branch is one the page was never shown", async () => {
+    // The branch's change is dated before the page edit on main, so a comparison of dates passes it.
+    const root = await repoWith([
+      { files: { "guide.md": doc("src/*.ts"), "src/a.ts": "1" }, date: "2026-01-05T00:00:00Z" },
+    ]);
+    const git = (args: string[], date: string) =>
+      execFileAsync("git", args, { cwd: root, env: { ...process.env, GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date } });
+    const main = (await execFileAsync("git", ["branch", "--show-current"], { cwd: root })).stdout.trim();
+    await git(["checkout", "--quiet", "-b", "feature"], "2026-02-01T00:00:00Z");
+    await writeFile(path.join(root, "src/a.ts"), "2", "utf8");
+    await git(["commit", "--quiet", "-am", "source"], "2026-02-01T00:00:00Z");
+    await git(["checkout", "--quiet", main], "2026-02-01T00:00:00Z");
+    await writeFile(path.join(root, "guide.md"), `${doc("src/*.ts")}More.\n`, "utf8");
+    await git(["commit", "--quiet", "-am", "page"], "2026-03-01T00:00:00Z");
+    await git(["merge", "--quiet", "--no-ff", "-m", "merge", "feature"], "2026-04-01T00:00:00Z");
+    const findings = await findingsFor(root, pages({ "guide.md": doc("src/*.ts") }));
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.kind).toBe("a-page-is-older-than-the-sources-it-documents");
+    expect(findings[0]?.message).toContain("2026-03-01");
+    expect(findings[0]?.message).toContain("src/*.ts (2026-02-01)");
+  });
+
+  it("warns when a source changed in a later commit of the same second", async () => {
+    const root = await repoWith([
+      { files: { "guide.md": doc("src/*.ts"), "src/a.ts": "1" }, date: "2026-01-05T00:00:00Z" },
+      { files: { "src/a.ts": "2" }, date: "2026-01-05T00:00:00Z" },
+    ]);
+    const findings = await findingsFor(root, pages({ "guide.md": doc("src/*.ts") }));
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.kind).toBe("a-page-is-older-than-the-sources-it-documents");
+  });
+
+  it("is quiet when the page was edited after a branch with the source change was merged", async () => {
+    const root = await repoWith([
+      { files: { "guide.md": doc("src/*.ts"), "src/a.ts": "1" }, date: "2026-01-05T00:00:00Z" },
+    ]);
+    const git = (args: string[], date: string) =>
+      execFileAsync("git", args, { cwd: root, env: { ...process.env, GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date } });
+    const main = (await execFileAsync("git", ["branch", "--show-current"], { cwd: root })).stdout.trim();
+    await git(["checkout", "--quiet", "-b", "feature"], "2026-02-01T00:00:00Z");
+    await writeFile(path.join(root, "src/a.ts"), "2", "utf8");
+    await git(["commit", "--quiet", "-am", "source"], "2026-02-01T00:00:00Z");
+    await git(["checkout", "--quiet", main], "2026-02-01T00:00:00Z");
+    await git(["merge", "--quiet", "--no-ff", "-m", "merge", "feature"], "2026-03-01T00:00:00Z");
+    await writeFile(path.join(root, "guide.md"), `${doc("src/*.ts")}More.\n`, "utf8");
+    await git(["commit", "--quiet", "-am", "page"], "2026-04-01T00:00:00Z");
+    expect(await findingsFor(root, pages({ "guide.md": doc("src/*.ts") }))).toEqual([]);
+  });
+
   it("is quiet when the page was committed after its sources", async () => {
     const root = await repoWith([
       { files: { "src/a.ts": "1" }, date: "2026-01-05T00:00:00Z" },
@@ -218,7 +267,7 @@ describe("sourceGlobs: the cost of looking", { timeout: RUNS_GIT }, () => {
     expect(calls.length).toBeLessThanOrEqual(5);
   });
 
-  it("asks git once per distinct pattern, however many pages share it", async () => {
+  it("asks about a pattern once, and once more per commit its pages were last committed in", async () => {
     const files: Record<string, string> = { "src/a.ts": "1" };
     const site: Record<string, string> = {};
     for (let i = 0; i < 12; i++) {
@@ -229,7 +278,8 @@ describe("sourceGlobs: the cost of looking", { timeout: RUNS_GIT }, () => {
     const calls: (readonly string[])[] = [];
     await readSourceFreshness(root, pages(site), (args) => calls.push(args));
     const patternCalls = calls.filter((args) => args.some((arg) => arg.startsWith(":(glob)")));
-    expect(patternCalls).toHaveLength(1);
+    // Whether git has committed anything it matches, and what the one commit all twelve share has not seen.
+    expect(patternCalls).toHaveLength(2);
   });
 });
 

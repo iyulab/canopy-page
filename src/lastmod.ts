@@ -63,10 +63,10 @@ export function gitQuotes(file: string): boolean {
   return /["\\\u0000-\u001f\u007f]/.test(file);
 }
 
-/** When a file was last committed: the instant, and the day as the committer's own calendar spells it. */
+/** When a file was last committed: the commit, and the day as the committer's own calendar spells it. */
 export interface CommitStamp {
-  /** Seconds since the epoch. */
-  seconds: number;
+  /** The commit's full hash. */
+  hash: string;
   /** `YYYY-MM-DD`. */
   day: string;
 }
@@ -90,7 +90,7 @@ export async function lastCommits(
     "core.quotePath=false",
     "log",
     "--no-color",
-    "--format=%x01%ct %cs",
+    "--format=%x01%H %cs",
     "--name-only",
     "--relative",
     "--",
@@ -112,8 +112,8 @@ export async function lastCommits(
     };
     const take = (line: string) => {
       if (line.startsWith("\u0001")) {
-        const [seconds, day] = line.slice(1).trim().split(" ");
-        stamp = { seconds: Number.parseInt(seconds ?? "", 10), day: day ?? "" };
+        const [hash, day] = line.slice(1).trim().split(" ");
+        stamp = { hash: hash ?? "", day: day ?? "" };
       } else if (line !== "" && stamp !== undefined && wanted.has(line) && !found.has(line)) {
         found.set(line, stamp);
       }

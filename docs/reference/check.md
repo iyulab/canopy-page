@@ -349,13 +349,16 @@ is exempt from both.
 ### A page is older than the sources it documents
 
 ```
-warning: guide/install.md: last committed 2026-01-05, but what it documents changed since — src/cli.ts (2026-03-09), src/install/**/*.ts (2026-02-11)
+warning: guide/install.md: what it documents changed in commits its own last commit (2026-01-05) does not contain — src/cli.ts (2026-03-09), src/install/**/*.ts (2026-02-11)
 ```
 
 Only for a page that names its sources with `sourceGlobs:` in its frontmatter (see [Pages that
-document code](../guide/writing/index.md#pages-that-document-code)). The page is older when git
-last committed a change to one of the files its patterns name after it last committed the page.
-It is a nudge, not a defect: look at the page, and commit it — changed or not — once it is right.
+document code](../guide/writing/index.md#pages-that-document-code)). The page is older when a file
+its patterns name changed in a commit that the page's own last commit does not contain — the page
+was never shown that change. This is read from the shape of the history, not from its dates, so a
+change merged in from a branch is caught even when it is dated before the page's last edit; the
+date given for each pattern is that of its newest such change. It is a nudge, not a defect: look
+at the page, and commit it — changed or not — once it is right.
 
 ### A sourceGlobs entry cannot be judged
 

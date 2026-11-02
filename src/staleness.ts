@@ -10,26 +10,36 @@ const execFileAsync = promisify(execFile);
  * Whether a page still describes what it documents.
  *
  * A page names the files it documents with `sourceGlobs:` in its frontmatter. It is stale
- * when one of those files was committed after the page itself: the code moved and the page
- * did not. The answer comes from git's history alone — no stored hash, no step that has to be
- * run to say "I reviewed this" (committing the page, even unchanged in meaning, says it).
+ * when one of those files changed in a commit that the page's own last commit does not contain:
+ * the code moved and the page never saw it. That is a question about the history's shape, not
+ * its clock — a change merged in from a branch can carry an earlier date than the page edit it
+ * was never shown, and two commits a second apart carry the same one. The answer comes from
+ * git's history alone — no stored hash, no step that has to be run to say "I reviewed this"
+ * (committing the page, even unchanged in meaning, says it).
  *
  * Opt-in by page: a site that uses no `sourceGlobs` pays nothing, not even a `git` process.
  */
 
-/** One `sourceGlobs` entry, and when git last saw a file it names change (seconds since the epoch). */
+/** One `sourceGlobs` entry, judged against the page that names it. */
 export interface SourceTime {
   glob: string;
-  /** `undefined`: no file git has committed matches. */
-  time: number | undefined;
+  /** Whether any file git has committed matches it. */
+  committed: boolean;
+  /**
+   * The day (`YYYY-MM-DD`, on the committer's calendar) of the newest change to a file it names
+   * that the page's last commit does not contain; `undefined` when the page has seen every such change.
+   */
+  unseen: string | undefined;
 }
 
 /** What is known about one page that names its sources. */
 export interface PageFreshness {
   /** What kept the page from being judged at all (a value that is not a list of paths, say). */
   problems: string[];
-  /** When git last committed the page; `undefined` for a page it has no commit of. */
-  pageTime: number | undefined;
+  /** The day git last committed the page, as the sitemap dates it; `undefined` for a page it has no commit of. */
+  pageDay: string | undefined;
+  /** That commit's hash; `undefined` alongside `pageDay`. */
+  pageCommit?: string;
   sources: SourceTime[];
 }
 
@@ -56,14 +66,28 @@ async function inParallel<T, R>(items: readonly T[], work: (item: T) => Promise<
   return results;
 }
 
-/** When git last committed a change to anything `pathspec` names, relative to `cwd`; `undefined` for none. */
-async function lastCommitTime(pathspec: string, cwd: string, observe?: GitObserver): Promise<number | undefined> {
-  const args = ["log", "-1", "--format=%ct", "--", pathspec];
+/** A commit, by hash and the day (`YYYY-MM-DD`) as its committer's own calendar spells it. */
+interface Commit {
+  hash: string;
+  day: string;
+}
+
+/**
+ * The newest commit in `range` (a revision range — `HEAD` for the whole history) that changed
+ * anything `pathspec` names, relative to `cwd`; `undefined` for none.
+ */
+async function newestCommit(
+  range: string,
+  pathspec: string,
+  cwd: string,
+  observe?: GitObserver,
+): Promise<Commit | undefined> {
+  const args = ["log", "-1", "--format=%H %cs", range, "--", pathspec];
   observe?.(args);
   try {
     const { stdout } = await execFileAsync("git", args, { cwd });
-    const seconds = Number.parseInt(stdout.trim(), 10);
-    return Number.isNaN(seconds) ? undefined : seconds;
+    const [hash, day] = stdout.trim().split(" ");
+    return hash === undefined || hash === "" || day === undefined ? undefined : { hash, day };
   } catch {
     return undefined;
   }
@@ -113,7 +137,7 @@ export async function readSourceFreshness(
     if (!("sourceGlobs" in data)) continue;
     const patterns = patternsOf(data.sourceGlobs);
     if ("problem" in patterns) {
-      pages.set(page, { problems: [patterns.problem], pageTime: undefined, sources: [] });
+      pages.set(page, { problems: [patterns.problem], pageDay: undefined, sources: [] });
     } else {
       asked.set(page, patterns.globs);
     }
@@ -136,10 +160,10 @@ export async function readSourceFreshness(
     };
   }
 
-  const globTimes = new Map<string, number | undefined>();
+  const committed = new Map<string, boolean>();
   const distinct = [...new Set([...asked.values()].flat())];
   await inParallel(distinct, async (glob) => {
-    globTimes.set(glob, await lastCommitTime(`:(glob)${glob}`, root, observe));
+    committed.set(glob, (await newestCommit("HEAD", `:(glob)${glob}`, root, observe)) !== undefined);
   });
   // Every page's last commit from ONE pass over the history (the one the sitemap's dates use) — a
   // process per page is what made a thousand-post build take a hundred seconds. A page whose name
@@ -147,27 +171,44 @@ export async function readSourceFreshness(
   const askedPages = [...asked.keys()];
   const plain = askedPages.filter((page) => !gitQuotes(page));
   const stamps = (await lastCommits(root, new Set(plain), observe)) ?? new Map<string, CommitStamp>();
-  const pageTimes = new Map<string, number | undefined>();
-  await inParallel(
-    askedPages,
-    async (page) => {
-      pageTimes.set(
-        page,
-        gitQuotes(page) ? await lastCommitTime(`:(literal)${page}`, root, observe) : stamps.get(page)?.seconds,
-      );
-    },
-  );
+  const pageCommits = new Map<string, Commit | undefined>();
+  await inParallel(askedPages, async (page) => {
+    pageCommits.set(
+      page,
+      gitQuotes(page) ? await newestCommit("HEAD", `:(literal)${page}`, root, observe) : stamps.get(page),
+    );
+  });
+  // What each page has not seen: the changes to its patterns that its last commit does not contain.
+  // Pages last committed together share that question, so it is asked once per (commit, pattern).
+  const question = (hash: string, glob: string) => JSON.stringify([hash, glob]);
+  const questions = new Map<string, { hash: string; glob: string }>();
   for (const page of askedPages) {
+    const commit = pageCommits.get(page);
+    if (commit === undefined) continue;
+    for (const glob of asked.get(page) ?? []) {
+      if (committed.get(glob)) questions.set(question(commit.hash, glob), { hash: commit.hash, glob });
+    }
+  }
+  const unseen = new Map<string, string | undefined>();
+  await inParallel([...questions], async ([id, { hash, glob }]) => {
+    unseen.set(id, (await newestCommit(`${hash}..HEAD`, `:(glob)${glob}`, root, observe))?.day);
+  });
+  for (const page of askedPages) {
+    const commit = pageCommits.get(page);
     pages.set(page, {
       problems: [],
-      pageTime: pageTimes.get(page),
-      sources: (asked.get(page) ?? []).map((glob) => ({ glob, time: globTimes.get(glob) })),
+      pageDay: commit?.day,
+      pageCommit: commit?.hash,
+      sources: (asked.get(page) ?? []).map((glob) => ({
+        glob,
+        committed: committed.get(glob) ?? false,
+        unseen: commit === undefined ? undefined : unseen.get(question(commit.hash, glob)),
+      })),
     });
   }
   return { pages };
 }
 
-const day = (seconds: number) => new Date(seconds * 1000).toISOString().slice(0, 10);
 
 /** What `check` says about `sourceGlobs`: pages older than their sources, and what could not be judged. */
 export function sourceFreshnessFindings(freshness: SourceFreshness | undefined): Finding[] {
@@ -183,8 +224,8 @@ export function sourceFreshnessFindings(freshness: SourceFreshness | undefined):
   for (const page of [...freshness.pages.keys()].sort()) {
     const known = freshness.pages.get(page) as PageFreshness;
     const problems = [...known.problems];
-    for (const { glob, time } of known.sources) {
-      if (time === undefined && freshness.withheld === undefined) {
+    for (const { glob, committed } of known.sources) {
+      if (!committed && freshness.withheld === undefined) {
         problems.push(`\`sourceGlobs\` entry "${glob}" matches no file git has committed`);
       }
     }
@@ -196,16 +237,16 @@ export function sourceFreshnessFindings(freshness: SourceFreshness | undefined):
         message: `${page}: ${problems.join("; ")}`,
       });
     }
-    if (known.pageTime === undefined) continue;
-    const newer = known.sources.filter(({ time }) => time !== undefined && time > (known.pageTime as number));
-    if (newer.length === 0) continue;
+    if (known.pageDay === undefined) continue;
+    const unseen = known.sources.filter((source) => source.unseen !== undefined);
+    if (unseen.length === 0) continue;
     findings.push({
       kind: "a-page-is-older-than-the-sources-it-documents",
       level: "warning",
       page,
       message:
-        `${page}: last committed ${day(known.pageTime)}, but what it documents changed since — ` +
-        newer.map(({ glob, time }) => `${glob} (${day(time as number)})`).join(", "),
+        `${page}: what it documents changed in commits its own last commit (${known.pageDay}) does not contain — ` +
+        unseen.map(({ glob, unseen }) => `${glob} (${unseen})`).join(", "),
     });
   }
   return findings;
